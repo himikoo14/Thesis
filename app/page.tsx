@@ -6,7 +6,7 @@ const Page = () => {
 
   return (
     <div className="p-4">
-      <h1 className="text-xl font-bold mb-2">Page</h1>
+      <h1 className="text-xl font-bold mb-2">Calculator</h1>
 
       <input
         type="text"
