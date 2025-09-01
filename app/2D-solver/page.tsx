@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Header from "../components/Header";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
 
 export default function Solver2D() {
   return (
@@ -114,13 +115,7 @@ export default function Solver2D() {
         </button>
       </div>
 
-      {/* Footer */}
-      <footer className="text-center text-sm text-gray-600 mt-10 py-6">
-        <Link href="/about" className="mx-2 hover:text-black">About</Link> |
-        <Link href="/references" className="mx-2 hover:text-black">References</Link> |
-        <Link href="/contact" className="mx-2 hover:text-black">Contact</Link> |
-        <Link href="/developer" className="mx-2 hover:text-black">Developer</Link>
-      </footer>
+      < Footer />
     </div>
   );
 }
