@@ -5,7 +5,21 @@ import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 
-// ------------------ ForceSystem2D Logic in JS ------------------
+// ------------------ Types ------------------
+type ForceInput = {
+  magnitude: string;
+  angle: string;
+};
+
+type StepByStepResult = {
+  steps: string[];
+  sumFx: number;
+  sumFy: number;
+  R: number;
+  theta: number;
+};
+
+// ------------------ ForceSystem2D Logic ------------------
 class ForceSystem2D {
   vectors: { fx: number; fy: number; magnitude: number; angleDeg: number }[];
 
@@ -20,7 +34,7 @@ class ForceSystem2D {
     this.vectors.push({ fx, fy, magnitude, angleDeg });
   }
 
-  stepByStepSolution() {
+  stepByStepSolution(): StepByStepResult {
     let steps: string[] = [];
     steps.push("Step 1: Resolve each force into components:");
 
@@ -56,15 +70,19 @@ class ForceSystem2D {
 
 // ------------------ React Component ------------------
 export default function Solver2D() {
-  const [forces, setForces] = useState([
+  const [forces, setForces] = useState<ForceInput[]>([
     { magnitude: "", angle: "" },
     { magnitude: "", angle: "" },
     { magnitude: "", angle: "" },
   ]);
 
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<StepByStepResult | null>(null);
 
-  const handleInputChange = (index, field, value) => {
+  const handleInputChange = (
+    index: number,
+    field: keyof ForceInput,
+    value: string
+  ) => {
     const newForces = [...forces];
     newForces[index][field] = value;
     setForces(newForces);
