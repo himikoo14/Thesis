@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import "katex/dist/katex.min.css";
+import { BlockMath } from "react-katex";
 
 // ------------------ ForceSystem2D Logic in TS ------------------
 class ForceSystem2D {
@@ -27,27 +29,33 @@ class ForceSystem2D {
     let sumFy = 0;
 
     this.vectors.forEach((v, i) => {
-      steps.push(`  F${i + 1}: magnitude = ${v.magnitude} N, angle = ${v.angleDeg}°`);
+      steps.push(`F_{${i + 1}}: \\; |F|=${v.magnitude}\\,\\text{N},\\; \\theta=${v.angleDeg}^\\circ`);
       steps.push(
-        `      Fx${i + 1} = ${v.magnitude} cos(${v.angleDeg}°) = ${v.fx.toFixed(3)} N`
+        `F_{x${i + 1}} = ${v.magnitude}\\cos(${v.angleDeg}^\\circ) = ${v.fx.toFixed(3)}\\,\\text{N}`
       );
       steps.push(
-        `      Fy${i + 1} = ${v.magnitude} sin(${v.angleDeg}°) = ${v.fy.toFixed(3)} N`
+        `F_{y${i + 1}} = ${v.magnitude}\\sin(${v.angleDeg}^\\circ) = ${v.fy.toFixed(3)}\\,\\text{N}`
       );
       sumFx += v.fx;
       sumFy += v.fy;
     });
 
-    steps.push("\nStep 2: Sum of components:");
-    steps.push(`  ΣFx = ${sumFx.toFixed(3)} N`);
-    steps.push(`  ΣFy = ${sumFy.toFixed(3)} N`);
+    steps.push("Step 2: Sum of components:");
+    steps.push(`\\Sigma F_x = ${sumFx.toFixed(3)}\\,\\text{N}`);
+    steps.push(`\\Sigma F_y = ${sumFy.toFixed(3)}\\,\\text{N}`);
 
     const R = Math.hypot(sumFx, sumFy);
     const theta = (Math.atan2(sumFy, sumFx) * 180) / Math.PI;
 
-    steps.push("\nStep 3: Resultant force:");
-    steps.push(`  R = sqrt((ΣFx)^2 + (ΣFy)^2) = ${R.toFixed(3)} N`);
-    steps.push(`  θ = atan2(ΣFy, ΣFx) = ${theta.toFixed(2)}° CCW from +x axis`);
+    steps.push("Step 3: Resultant force:");
+    steps.push(
+      `R = \\sqrt{(\\Sigma F_x)^2 + (\\Sigma F_y)^2} = ${R.toFixed(3)}\\,\\text{N}`
+    );
+    steps.push(
+      `\\theta = \\tan^{-1}\\left(\\tfrac{\\Sigma F_y}{\\Sigma F_x}\\right) = ${theta.toFixed(
+        2
+      )}^\\circ \\; \\text{CCW from +x axis}`
+    );
 
     return { steps, sumFx, sumFy, R, theta };
   }
@@ -206,9 +214,15 @@ export default function Solver2D() {
       {result && (
         <div className="max-w-xl mx-auto mt-6 bg-white rounded-2xl shadow p-6">
           <h2 className="text-lg font-semibold mb-2">Step-by-Step Solution</h2>
-          <pre className="bg-gray-100 p-3 rounded-lg text-sm whitespace-pre-wrap">
-            {result.steps.join("\n")}
-          </pre>
+          <div className="space-y-4">
+            {result.steps.map((line, i) =>
+              line.startsWith("Step") ? (
+                <p key={i} className="font-medium">{line}</p>
+              ) : (
+                <BlockMath key={i}>{line}</BlockMath>
+              )
+            )}
+          </div>
         </div>
       )}
 
