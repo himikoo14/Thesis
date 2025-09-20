@@ -1,25 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 
-// ------------------ Types ------------------
-type ForceInput = {
-  magnitude: string;
-  angle: string;
-};
-
-type StepByStepResult = {
-  steps: string[];
-  sumFx: number;
-  sumFy: number;
-  R: number;
-  theta: number;
-};
-
-// ------------------ ForceSystem2D Logic ------------------
+// ------------------ ForceSystem2D Logic in TS ------------------
 class ForceSystem2D {
   vectors: { fx: number; fy: number; magnitude: number; angleDeg: number }[];
 
@@ -34,8 +19,8 @@ class ForceSystem2D {
     this.vectors.push({ fx, fy, magnitude, angleDeg });
   }
 
-  stepByStepSolution(): StepByStepResult {
-    let steps: string[] = [];
+  stepByStepSolution() {
+    const steps: string[] = [];
     steps.push("Step 1: Resolve each force into components:");
 
     let sumFx = 0;
@@ -68,6 +53,20 @@ class ForceSystem2D {
   }
 }
 
+// ------------------ Types ------------------
+type ForceResult = {
+  steps: string[];
+  sumFx: number;
+  sumFy: number;
+  R: number;
+  theta: number;
+};
+
+type ForceInput = {
+  magnitude: string;
+  angle: string;
+};
+
 // ------------------ React Component ------------------
 export default function Solver2D() {
   const [forces, setForces] = useState<ForceInput[]>([
@@ -76,11 +75,11 @@ export default function Solver2D() {
     { magnitude: "", angle: "" },
   ]);
 
-  const [result, setResult] = useState<StepByStepResult | null>(null);
+  const [result, setResult] = useState<ForceResult | null>(null);
 
   const handleInputChange = (
     index: number,
-    field: keyof ForceInput,
+    field: "magnitude" | "angle",
     value: string
   ) => {
     const newForces = [...forces];
