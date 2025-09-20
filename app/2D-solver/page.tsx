@@ -7,11 +7,13 @@ import Footer from "../../components/Footer";
 
 // ------------------ ForceSystem2D Logic in JS ------------------
 class ForceSystem2D {
+  vectors: { fx: number; fy: number; magnitude: number; angleDeg: number }[];
+
   constructor() {
     this.vectors = [];
   }
 
-  addForce(magnitude, angleDeg) {
+  addForce(magnitude: number, angleDeg: number) {
     const angleRad = (angleDeg * Math.PI) / 180;
     const fx = magnitude * Math.cos(angleRad);
     const fy = magnitude * Math.sin(angleRad);
@@ -19,7 +21,7 @@ class ForceSystem2D {
   }
 
   stepByStepSolution() {
-    let steps = [];
+    let steps: string[] = [];
     steps.push("Step 1: Resolve each force into components:");
 
     let sumFx = 0;
@@ -45,12 +47,8 @@ class ForceSystem2D {
     const theta = (Math.atan2(sumFy, sumFx) * 180) / Math.PI;
 
     steps.push("\nStep 3: Resultant force:");
-    steps.push(
-      `  R = sqrt((ΣFx)^2 + (ΣFy)^2) = ${R.toFixed(3)} N`
-    );
-    steps.push(
-      `  θ = atan2(ΣFy, ΣFx) = ${theta.toFixed(2)}° CCW from +x axis`
-    );
+    steps.push(`  R = sqrt((ΣFx)^2 + (ΣFy)^2) = ${R.toFixed(3)} N`);
+    steps.push(`  θ = atan2(ΣFy, ΣFx) = ${theta.toFixed(2)}° CCW from +x axis`);
 
     return { steps, sumFx, sumFy, R, theta };
   }
