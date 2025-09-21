@@ -4,46 +4,87 @@ import Footer from "../components/Footer";
 
 export default function HomePage() {
   return (
-    <main className="bg-gray-100 min-h-screen flex flex-col">
-      < Header />
+    <main className="bg-gray-50 min-h-screen flex flex-col">
+      <Header />
+
       {/* Hero Section */}
-      <section className="flex flex-col items-center text-center py-16 bg-gray-100 flex-grow">
-        <h1 className="text-3xl md:text-4xl font-bold mb-4 text-black">
-          Statics of Rigid Bodies Calculator
+      <section className="flex flex-col items-center text-center py-12 bg-gray-50 flex-grow">
+        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-black">
+          StatiCalcs
         </h1>
-        <p className="text-gray-600 mb-10">
-          Solve resultants of concurrent force systems in 2D and 3D with ease
+        <p className="text-gray-600 mb-12">
+          Interactive calculators for learning and solving Statics of Rigid Bodies.
         </p>
 
-        {/* Solver Buttons */}
-        <div className="flex flex-col gap-4">
-          <Link
-            href="/2D-solver"
-            className="bg-blue-700 text-white px-6 py-3 rounded-md shadow-lg hover:translate-y-1 transition font-semibold"
-          >
-            2D Resultant Solver
-          </Link>
-          <Link
-            href="/3D-solver"
-            className="bg-blue-700 text-white px-6 py-3 rounded-md shadow-lg hover:translate-y-1 transition font-semibold"
-          >
-            3D Resultant Solver
-          </Link>
+        {/* Chapter List */}
+        <div className="w-full max-w-2xl">
+          <div className="grid grid-cols-2 gap-4 items-center">
+            {/* Chapter 1 */}
+            <p className="text-left text-black">
+              Chapter 1: Introduction to Statics
+            </p>
+            <button className="border-2 border-blue-700 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-700 hover:text-white transition">
+              Coming Soon
+            </button>
+
+            {/* Chapter 2 */}
+            <p className="text-left text-black">
+              Chapter 2: Force Systems
+            </p>
+            <Link
+              href="/2D-solver"
+              className="bg-blue-700 text-white px-4 py-2 rounded-md shadow hover:opacity-90 transition"
+            >
+              2D Resultant Solver
+            </Link>
+
+            {/* Chapter 3 */}
+            <p className="text-left text-black">
+              Chapter 3: Equilibrium
+            </p>
+            <button className="border-2 border-blue-700 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-700 hover:text-white transition">
+              Coming Soon
+            </button>
+
+            {/* Chapter 4 */}
+            <p className="text-left text-black">
+              Chapter 4: Structures
+            </p>
+            <Link
+              href="/truss"
+              className="bg-blue-700 text-white px-4 py-2 rounded-md shadow hover:opacity-90 transition"
+            >
+              Truss Calculator
+            </Link>
+
+            {/* Chapter 5 */}
+            <p className="text-left text-black">
+              Chapter 5: Distributed Loads
+            </p>
+            <button className="border-2 border-blue-700 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-700 hover:text-white transition">
+              Coming Soon
+            </button>
+
+            {/* Chapter 6 */}
+            <p className="text-left text-black">
+              Chapter 6: Friction
+            </p>
+            <button className="border-2 border-blue-700 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-700 hover:text-white transition">
+              Coming Soon
+            </button>
+
+            {/* Chapter 7 */}
+            <p className="text-left text-black">
+              Chapter 7: Virtual Work
+            </p>
+            <button className="border-2 border-blue-700 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-700 hover:text-white transition">
+              Coming Soon
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* About Section */}
-      <section className="max-w-3xl mx-auto px-6 py-12 text-center">
-        <h2 className="text-xl font-semibold mb-4 text-black">About the calculator</h2>
-        <p className="text-gray-700">
-          This website is an academic tool designed to assist engineering students in
-          solving statics problems. It provides calculators for both 2D and 3D concurrent
-          force systems, allowing users to input forces and instantly compute the resultant
-          magnitude, direction, and components. With this tool, learning becomes more
-          interactive and efficient.
-        </p>
-      </section>
-      < Footer />
+      <Footer />
     </main>
   );
-} 
+}

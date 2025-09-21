@@ -29,33 +29,46 @@ class ForceSystem2D {
     let sumFy = 0;
 
     this.vectors.forEach((v, i) => {
-      steps.push(`F_{${i + 1}}: \\; |F|=${v.magnitude}\\,\\text{N},\\; \\theta=${v.angleDeg}^\\circ`);
       steps.push(
-        `F_{x${i + 1}} = ${v.magnitude}\\cos(${v.angleDeg}^\\circ) = ${v.fx.toFixed(3)}\\,\\text{N}`
+        `\\text{Force ${i + 1}: } |F|=${v.magnitude}\\,\\text{N},\\; \\theta=${v.angleDeg}^\\circ`
       );
-      steps.push(
-        `F_{y${i + 1}} = ${v.magnitude}\\sin(${v.angleDeg}^\\circ) = ${v.fy.toFixed(3)}\\,\\text{N}`
-      );
+
+      steps.push(`
+        \\begin{align*}
+        F_{x${i + 1}} &= ${v.magnitude}\\cos(${v.angleDeg}^\\circ) \\\\
+                      &= ${v.fx.toFixed(3)}\\,\\text{N} \\\\
+        F_{y${i + 1}} &= ${v.magnitude}\\sin(${v.angleDeg}^\\circ) \\\\
+                      &= ${v.fy.toFixed(3)}\\,\\text{N}
+        \\end{align*}
+      `);
+
       sumFx += v.fx;
       sumFy += v.fy;
     });
 
     steps.push("Step 2: Sum of components:");
-    steps.push(`\\Sigma F_x = ${sumFx.toFixed(3)}\\,\\text{N}`);
-    steps.push(`\\Sigma F_y = ${sumFy.toFixed(3)}\\,\\text{N}`);
+    steps.push(`
+      \\begin{align*}
+      \\Sigma F_x &= ${sumFx.toFixed(3)}\\,\\text{N} \\\\
+      \\Sigma F_y &= ${sumFy.toFixed(3)}\\,\\text{N}
+      \\end{align*}
+    `);
 
     const R = Math.hypot(sumFx, sumFy);
     const theta = (Math.atan2(sumFy, sumFx) * 180) / Math.PI;
 
+    // Pick arrow: ↺ (CCW) or ↻ (CW)
+    const arrow = theta >= 0 ? "↺" : "↻";
+
     steps.push("Step 3: Resultant force:");
-    steps.push(
-      `R = \\sqrt{(\\Sigma F_x)^2 + (\\Sigma F_y)^2} = ${R.toFixed(3)}\\,\\text{N}`
-    );
-    steps.push(
-      `\\theta = \\tan^{-1}\\left(\\tfrac{\\Sigma F_y}{\\Sigma F_x}\\right) = ${theta.toFixed(
-        2
-      )}^\\circ \\; \\text{CCW from +x axis}`
-    );
+    steps.push(`
+      \\begin{align*}
+      R &= \\sqrt{(\\Sigma F_x)^2 + (\\Sigma F_y)^2} \\\\
+        &= ${R.toFixed(3)}\\,\\text{N} \\\\
+      \\theta &= \\tan^{-1}\\left(\\tfrac{\\Sigma F_y}{\\Sigma F_x}\\right) \\\\
+              &= ${theta.toFixed(2)}^\\circ ${arrow}\\,\\text{from +x axis}
+      \\end{align*}
+    `);
 
     return { steps, sumFx, sumFy, R, theta };
   }
@@ -78,8 +91,6 @@ type ForceInput = {
 // ------------------ React Component ------------------
 export default function Solver2D() {
   const [forces, setForces] = useState<ForceInput[]>([
-    { magnitude: "", angle: "" },
-    { magnitude: "", angle: "" },
     { magnitude: "", angle: "" },
   ]);
 
@@ -124,36 +135,64 @@ export default function Solver2D() {
       <div className="max-w-xl mx-auto bg-white rounded-2xl shadow p-6 space-y-6">
         <h2 className="text-lg font-semibold">Force setup</h2>
         <p className="text-sm text-gray-600">
-          Enter the forces, their magnitudes, and directions. Angles are measured from the positive x-axis.
+          Enter the forces, their magnitudes, and directions. Angles are
+          measured from the positive x-axis.
         </p>
 
         {/* Force inputs */}
         <div className="grid grid-cols-2 gap-4">
           {forces.map((f, i) => (
-            <div key={i} className="col-span-2 flex gap-4">
+            <div key={i} className="col-span-2 flex gap-4 items-end">
               <div className="flex-1">
-                <label className="block text-sm font-medium">Force {i + 1}</label>
+                <label className="block text-sm font-medium">
+                  Force {i + 1}
+                </label>
                 <input
                   type="number"
                   value={f.magnitude}
-                  onChange={(e) => handleInputChange(i, "magnitude", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(i, "magnitude", e.target.value)
+                  }
                   placeholder="Magnitude (N)"
                   className="w-full mt-1 rounded-lg border-gray-300"
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-sm font-medium">Angle {i + 1}</label>
+                <label className="block text-sm font-medium">
+                  Angle {i + 1}
+                </label>
                 <input
                   type="number"
                   value={f.angle}
-                  onChange={(e) => handleInputChange(i, "angle", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(i, "angle", e.target.value)
+                  }
                   placeholder="Angle (deg)"
                   className="w-full mt-1 rounded-lg border-gray-300"
                 />
               </div>
+              {/* Remove button for each force */}
+              {forces.length > 1 && (
+                <button
+                  onClick={() =>
+                    setForces(forces.filter((_, idx) => idx !== i))
+                  }
+                  className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                >
+                  –
+                </button>
+              )}
             </div>
           ))}
         </div>
+
+        {/* Add force button */}
+        <button
+          onClick={() => setForces([...forces, { magnitude: "", angle: "" }])}
+          className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition"
+        >
+          + Add Force
+        </button>
 
         <button
           onClick={calculateResultant}
@@ -169,7 +208,9 @@ export default function Solver2D() {
           <h2 className="text-lg font-semibold">Resultant Force</h2>
 
           <div>
-            <label className="block text-sm font-medium">Horizontal component</label>
+            <label className="block text-sm font-medium">
+              Horizontal component
+            </label>
             <input
               type="text"
               value={`${result.sumFx.toFixed(3)} N`}
@@ -179,7 +220,9 @@ export default function Solver2D() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Vertical component</label>
+            <label className="block text-sm font-medium">
+              Vertical component
+            </label>
             <input
               type="text"
               value={`${result.sumFy.toFixed(3)} N`}
@@ -189,7 +232,9 @@ export default function Solver2D() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Magnitude of resultant force</label>
+            <label className="block text-sm font-medium">
+              Magnitude of resultant force
+            </label>
             <input
               type="text"
               value={`${result.R.toFixed(3)} N`}
@@ -199,7 +244,9 @@ export default function Solver2D() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Direction of resultant force</label>
+            <label className="block text-sm font-medium">
+              Direction of resultant force
+            </label>
             <input
               type="text"
               value={`${result.theta.toFixed(2)}°`}
@@ -217,7 +264,9 @@ export default function Solver2D() {
           <div className="space-y-4">
             {result.steps.map((line, i) =>
               line.startsWith("Step") ? (
-                <p key={i} className="font-medium">{line}</p>
+                <p key={i} className="font-medium">
+                  {line}
+                </p>
               ) : (
                 <BlockMath key={i}>{line}</BlockMath>
               )
