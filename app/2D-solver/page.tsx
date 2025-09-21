@@ -153,7 +153,7 @@ export default function Solver2D() {
                   onChange={(e) =>
                     handleInputChange(i, "magnitude", e.target.value)
                   }
-                  placeholder="Magnitude (N)"
+                  placeholder="Magnitude (KN)"
                   className="w-full mt-1 rounded-lg border-gray-300"
                 />
               </div>
