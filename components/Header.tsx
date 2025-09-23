@@ -27,25 +27,25 @@ export default function Header() {
             <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-56 bg-white border rounded-lg shadow-lg 
                 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition">
               <div className="flex flex-col p-2 text-sm text-gray-700">
-                <Link href="/topics/ch1" className="hover:text-blue-600 p-2">
+                <Link href="/Introduction" className="hover:text-blue-600 p-2">
                   Chapter 1: Introduction to Statics
                 </Link>
-                <Link href="/topics/ch2" className="hover:text-blue-600 p-2">
+                <Link href="/2D-solver" className="hover:text-blue-600 p-2">
                   Chapter 2: Force Systems
                 </Link>
-                <Link href="/topics/ch3" className="hover:text-blue-600 p-2">
+                <Link href="/Equilibrium" className="hover:text-blue-600 p-2">
                   Chapter 3: Equilibrium
                 </Link>
-                <Link href="/topics/ch4" className="hover:text-blue-600 p-2">
+                <Link href="/Structures" className="hover:text-blue-600 p-2">
                   Chapter 4: Structures
                 </Link>
-                <Link href="/topics/ch5" className="hover:text-blue-600 p-2">
+                <Link href="/Distributed-Loads" className="hover:text-blue-600 p-2">
                   Chapter 5: Distributed Loads
                 </Link>
-                <Link href="/topics/ch6" className="hover:text-blue-600 p-2">
+                <Link href="/Comming-soon" className="hover:text-blue-600 p-2">
                   Chapter 6: Friction
-                </Link>
-                <Link href="/topics/ch7" className="hover:text-blue-600 p-2">
+                </Link> 
+                <Link href="/Comming-soon" className="hover:text-blue-600 p-2">
                   Chapter 7: Virtual Work
                 </Link>
               </div>

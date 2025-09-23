@@ -59,7 +59,7 @@ export default function HomePage() {
               Chapter 4: Structures
             </p>
             <Link
-              href="/truss"
+              href="/Structures"
               className="bg-blue-700 text-white px-4 py-2 rounded-md shadow hover:opacity-90 transition"
             >
               Truss Calculator
@@ -70,7 +70,7 @@ export default function HomePage() {
               Chapter 5: Distributed Loads
             </p>
             <Link
-              href="/Structures"
+              href="/Distributed-Loads"
               className="bg-blue-700 text-white px-4 py-2 rounded-md shadow hover:opacity-90 transition"
             >
               Structures Solver
