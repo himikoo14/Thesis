@@ -9,7 +9,7 @@ export default function Solver3D() {
             {/* Page Content */}
             <section className="flex flex-col items-center text-center py-12 flex-grow">
                 <h1 className="text-3xl md:text-4xl font-bold mb-10 text-black">
-                    Equilibroom Calculator
+                    Equilibrium Calculator
                 </h1>
 
                 <div className="max-w-3xl w-full space-y-6 text-left">
