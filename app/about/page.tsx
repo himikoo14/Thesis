@@ -24,7 +24,7 @@ export default function AboutPage() {
             users practice problem-solving more effectively.
           </p>
 
-<p className="text-[18px] text-gray-700 leading-relaxed">
+         <p className="text-[18px] text-gray-700 leading-relaxed">
   Designed specifically for engineering students of MSU-Gensan,{" "}
   <span className="font-bold">
     Stati<span className="text-[#1848a0]">Calcs</span>
@@ -33,6 +33,7 @@ export default function AboutPage() {
   encourages independent study, and fosters a deeper understanding of
   statics principles.
 </p>
+
         </div>
       </main>
 
