@@ -1,12 +1,6 @@
-import Header from "<Ian>/components/Header";
-import Footer from "<Ian>/components/Footer";
-
 export default function AboutPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header */}
-      <Header />
-
       {/* Main Content */}
       <main className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="max-w-3xl text-center">
@@ -29,8 +23,7 @@ export default function AboutPage() {
         </div>
       </main>
 
-      {/* Footer */}
-      <Footer />
+
     </div>
   );
 }

@@ -1,11 +1,8 @@
-import Header from "<Ian>/components/Header";
-import Footer from "<Ian>/components/Footer";
 
 export default function ReferencesPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header */}
-      <Header />
+
 
       {/* Main Content */}
       <main className="flex flex-1 items-center justify-center px-6 py-12">
@@ -37,9 +34,7 @@ export default function ReferencesPage() {
           </ul>
         </div>
       </main>
-
-      {/* Footer */}
-      <Footer />
+    
     </div>
   );
 }
