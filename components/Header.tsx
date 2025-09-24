@@ -44,7 +44,7 @@ export default function Header() {
                 </Link>
                 <Link href="/Comming-soon" className="hover:text-blue-600 p-2">
                   Chapter 6: Friction
-                </Link> 
+                </Link>
                 <Link href="/Comming-soon" className="hover:text-blue-600 p-2">
                   Chapter 7: Virtual Work
                 </Link>
@@ -73,22 +73,22 @@ export default function Header() {
               <Link href="/topics/ch1" className="hover:text-blue-600">
                 Chapter 1: Introduction to Statics
               </Link>
-              <Link href="/topics/ch2" className="hover:text-blue-600">
+              <Link href="/2D-solver" className="hover:text-blue-600 p-2">
                 Chapter 2: Force Systems
               </Link>
-              <Link href="/topics/ch3" className="hover:text-blue-600">
+              <Link href="/Equilibrium" className="hover:text-blue-600 p-2">
                 Chapter 3: Equilibrium
               </Link>
-              <Link href="/topics/ch4" className="hover:text-blue-600">
+              <Link href="/Structures" className="hover:text-blue-600 p-2">
                 Chapter 4: Structures
               </Link>
-              <Link href="/topics/ch5" className="hover:text-blue-600">
+              <Link href="/Distributed-Loads" className="hover:text-blue-600 p-2">
                 Chapter 5: Distributed Loads
               </Link>
-              <Link href="/topics/ch6" className="hover:text-blue-600">
+              <Link href="/Comming-soon" className="hover:text-blue-600 p-2">
                 Chapter 6: Friction
               </Link>
-              <Link href="/topics/ch7" className="hover:text-blue-600">
+              <Link href="/Comming-soon" className="hover:text-blue-600 p-2">
                 Chapter 7: Virtual Work
               </Link>
             </div>
