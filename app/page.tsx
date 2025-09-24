@@ -9,8 +9,11 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <section className="flex flex-col items-center text-center py-12 bg-gray-50 flex-grow">
-        <h1 className="text-[24px] md:text-[32px] font-bold mb-2 text-black">
-          StatiCalcs
+        <h1 className="text-[20px] md:text-[50px] font-bold mb-2 text-black">
+          Stati
+          <span className="text-[#1848a0]">
+            Calcs
+          </span>
         </h1>
         <p className="text-gray-600 mb-12 text-[18px]">
           Interactive calculators for learning and solving Statics of Rigid Bodies.
@@ -67,13 +70,13 @@ export default function HomePage() {
 
             {/* Chapter 6 */}
             <p className="text-left text-black text-[18px]">Chapter 6: Friction</p>
-            <button className="border-2 border-[#1848a0] text-[#1848a0] px-6 py-3 rounded-md hover:bg-[#1848a0] hover:text-white transition text-[18px]">
+            <button className="border-2 border-[#1848a0] text-[#1848a0] px-6 py-3 rounded-md hover:bg-[#163d8a] hover:text-white transition text-[18px]">
               Coming Soon
             </button>
 
             {/* Chapter 7 */}
             <p className="text-left text-black text-[18px]">Chapter 7: Virtual Work</p>
-            <button className="border-2 border-[#1848a0] text-[#1848a0] px-6 py-3 rounded-md hover:bg-[#1848a0] hover:text-white transition text-[18px]">
+            <button className="border-2 border-[#1848a0] text-[#1848a0] px-6 py-3 rounded-md hover:bg-[#163d8a] hover:text-white transition text-[18px]">
               Coming Soon
             </button>
 
