@@ -11,9 +11,9 @@ interface FooterProps {
 export default function Footer({
   links = [
     { label: "About", href: "/about" },
-    { label: "References", href: "/References" },
-    { label: "Contact", href: "/Contacts" },
-    { label: "Developer", href: "/Developer" },
+    { label: "References", href: "/reference" },
+    { label: "Contact", href: "/contact" },
+    { label: "Developer", href: "/developer" },
   ],
 }: FooterProps) {
   return (

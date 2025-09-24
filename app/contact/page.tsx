@@ -1,10 +1,9 @@
 import Header from "<Ian>/components/Header";
-import Footer from "<Ian>/components/Footer";   
+import Footer from "<Ian>/components/Footer";
 
 export default function ContactPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header */}
       <Header />
 
       {/* Main Content */}
@@ -53,7 +52,6 @@ export default function ContactPage() {
         </div>
       </main>
 
-      {/* Footer */}
       <Footer />
     </div>
   );
