@@ -57,7 +57,6 @@ class ForceSystem2D {
     const R = Math.hypot(sumFx, sumFy);
     const theta = (Math.atan2(sumFy, sumFx) * 180) / Math.PI;
 
-    // Pick arrow: ↺ (CCW) or ↻ (CW)
     const arrow = theta >= 0 ? "↺" : "↻";
 
     steps.push("Step 3: Resultant force:");
@@ -122,29 +121,28 @@ export default function Solver2D() {
   };
 
   return (
-    <div className="bg-gray-50 text-gray-900 min-h-screen">
-      {/* Navbar */}
+    <div className="bg-gray-50 text-gray-900 min-h-screen text-[18px]">
       <Header />
 
       {/* Title */}
       <div className="text-center my-10">
-        <h1 className="text-3xl font-bold">2D Resultant Force Calculator</h1>
+        <h1 className="text-[24px] md:text-[32px] font-bold">2D Resultant Force Calculator</h1>
       </div>
 
       {/* Force Setup */}
       <div className="max-w-xl mx-auto bg-white rounded-2xl shadow p-6 space-y-6">
-        <h2 className="text-lg font-semibold">Force setup</h2>
-        <p className="text-sm text-gray-600">
+        <h2 className="text-[20px] font-semibold">Force setup</h2>
+        <p className="text-[18px] text-gray-600">
           Enter the forces, their magnitudes (in kN), and directions. Angles are
           measured from the positive x-axis.
         </p>
 
-        {/* Force inputs */}
+        {/* Force Inputs */}
         <div className="grid grid-cols-2 gap-4">
           {forces.map((f, i) => (
             <div key={i} className="col-span-2 flex gap-4 items-end">
               <div className="flex-1">
-                <label className="block text-sm font-medium">
+                <label className="block font-medium text-[18px]">
                   Force {i + 1} (kN)
                 </label>
                 <input
@@ -154,11 +152,11 @@ export default function Solver2D() {
                     handleInputChange(i, "magnitude", e.target.value)
                   }
                   placeholder="Magnitude (kN)"
-                  className="w-full mt-1 rounded-lg border-gray-300"
+                  className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2"
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-sm font-medium">
+                <label className="block font-medium text-[18px]">
                   Angle {i + 1} (°)
                 </label>
                 <input
@@ -168,16 +166,15 @@ export default function Solver2D() {
                     handleInputChange(i, "angle", e.target.value)
                   }
                   placeholder="Angle (deg)"
-                  className="w-full mt-1 rounded-lg border-gray-300"
+                  className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2"
                 />
               </div>
-              {/* Remove button for each force */}
               {forces.length > 1 && (
                 <button
                   onClick={() =>
                     setForces(forces.filter((_, idx) => idx !== i))
                   }
-                  className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                  className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-[18px]"
                 >
                   –
                 </button>
@@ -186,17 +183,17 @@ export default function Solver2D() {
           ))}
         </div>
 
-        {/* Add force button */}
+        {/* Add Force Button */}
         <button
           onClick={() => setForces([...forces, { magnitude: "", angle: "" }])}
-          className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition"
+          className="w-full bg-[#008409] text-white py-3 rounded-lg hover:bg-[#15711b] transition text-[18px]"
         >
           + Add Force
         </button>
 
         <button
           onClick={calculateResultant}
-          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+          className="w-full bg-[#1848a0] text-white py-3 rounded-lg hover:bg-[#163d8a] transition text-[18px]"
         >
           Calculate
         </button>
@@ -205,70 +202,70 @@ export default function Solver2D() {
       {/* Resultant Force */}
       {result && (
         <div className="max-w-xl mx-auto mt-6 bg-white rounded-2xl shadow p-6 space-y-4">
-          <h2 className="text-lg font-semibold">Resultant Force (kN)</h2>
+          <h2 className="text-[20px] font-semibold">Resultant Force (kN)</h2>
 
           <div>
-            <label className="block text-sm font-medium">
+            <label className="block font-medium text-[18px]">
               Horizontal component (Fx)
             </label>
             <input
               type="text"
               value={`${result.sumFx.toFixed(3)} kN`}
               readOnly
-              className="w-full mt-1 rounded-lg border-gray-300"
+              className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium">
+            <label className="block font-medium text-[18px]">
               Vertical component (Fy)
             </label>
             <input
               type="text"
               value={`${result.sumFy.toFixed(3)} kN`}
               readOnly
-              className="w-full mt-1 rounded-lg border-gray-300"
+              className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium">
+            <label className="block font-medium text-[18px]">
               Magnitude of resultant force (R)
             </label>
             <input
               type="text"
               value={`${result.R.toFixed(3)} kN`}
               readOnly
-              className="w-full mt-1 rounded-lg border-gray-300"
+              className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium">
+            <label className="block font-medium text-[18px]">
               Direction of resultant force (θ)
             </label>
             <input
               type="text"
               value={`${result.theta.toFixed(2)}°`}
               readOnly
-              className="w-full mt-1 rounded-lg border-gray-300"
+              className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2"
             />
           </div>
         </div>
       )}
 
-      {/* Solution Section */}
+      {/* Step-by-Step Solution */}
       {result && (
         <div className="max-w-xl mx-auto mt-6 bg-white rounded-2xl shadow p-6">
-          <h2 className="text-lg font-semibold mb-2">Step-by-Step Solution</h2>
+          <h2 className="text-[20px] font-semibold mb-2">Step-by-Step Solution</h2>
           <div className="space-y-4">
             {result.steps.map((line, i) =>
               line.startsWith("Step") ? (
-                <p key={i} className="font-medium">
-                  {line}
-                </p>
+                <p key={i} className="font-medium text-[18px]">{line}</p>
               ) : (
-                <BlockMath key={i}>{line}</BlockMath>
+                <div key={i} className="text-[18px]">
+                  <BlockMath>{line}</BlockMath>
+                </div>
               )
             )}
           </div>
@@ -279,3 +276,4 @@ export default function Solver2D() {
     </div>
   );
 }
+1

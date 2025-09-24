@@ -18,11 +18,11 @@ export default function Footer({
 }: FooterProps) {
   return (
     <footer className="bg-white border-t mt-auto">
-      <div className="max-w-7xl mx-auto px-6 py-4 text-center text-gray-700">
+      <div className="max-w-7xl mx-auto px-6 py-4 text-center text-gray-700 text-[18px]">
         {/* Desktop: horizontal links with | separator */}
         <div className="hidden sm:flex justify-center flex-wrap gap-4">
           {links.map((link, idx) => (
-            <span key={link.href} className="flex items-center">
+            <span key={link.href} className="flex items-center text-[18px]">
               <Link href={link.href} className="hover:text-blue-600">
                 {link.label}
               </Link>
@@ -39,7 +39,7 @@ export default function Footer({
             <Link
               key={link.href}
               href={link.href}
-              className="hover:text-blue-600"
+              className="hover:text-blue-600 text-[18px]"
             >
               {link.label}
             </Link>
