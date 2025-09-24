@@ -13,11 +13,11 @@ export default function Header() {
           className="flex items-center gap-3 justify-center sm:justify-start hover:text-[#1848a0] transition"
         >
           <div className="w-10 h-10 border-2 border-black rounded-full" />
-          <span className="font-bold text-[20px] text-black">Statics Calculator</span>
+          <span className="font-bold text-[30px] text-black">Statics Calculator</span>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden sm:flex items-center space-x-6 text-gray-700 relative text-[15px]">
+        <nav className="hidden sm:flex items-center space-x-6 text-gray-700 relative text-[18px]">
           <Link href="/" className="hover:text-[#1848a0]">Home</Link>
           <span>|</span>
 
@@ -26,7 +26,7 @@ export default function Header() {
             <button className="hover:text-[#1848a0]">Topics ▾</button>
             <div
               className="absolute left-1/2 -translate-x-1/2 mt-2 w-56 bg-white border rounded-lg shadow-lg 
-                opacity-0 group-hover:opacity-100 invisible group-hover:visible transition text-[15px]"
+                opacity-0 group-hover:opacity-100 invisible group-hover:visible transition text-[18px]"
             >
               <div className="flex flex-col p-2 text-gray-700">
                 <Link href="/Introduction" className="hover:text-[#1848a0] p-2">
@@ -44,7 +44,6 @@ export default function Header() {
                 <Link href="/Distributed-Loads" className="hover:text-[#1848a0] p-2">
                   Chapter 5: Distributed Loads
                 </Link>
-
               </div>
             </div>
           </div>
@@ -54,7 +53,7 @@ export default function Header() {
         </nav>
 
         {/* Mobile Navigation */}
-        <nav className="flex flex-col sm:hidden items-center gap-2 text-gray-700 text-[15px]">
+        <nav className="flex flex-col sm:hidden items-center gap-2 text-gray-700 text-[18px]">
           <Link href="/" className="hover:text-[#1848a0]">Home</Link>
 
           <details className="w-full">
@@ -75,8 +74,6 @@ export default function Header() {
               <Link href="/Distributed-Loads" className="hover:text-[#1848a0] p-2">
                 Chapter 5: Distributed Loads
               </Link>
-
-
             </div>
           </details>
 
