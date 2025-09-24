@@ -13,7 +13,7 @@ export default function Footer({
     { label: "About", href: "/about" },
     { label: "References", href: "/reference" },
     { label: "Contact", href: "/contact" },
-    { label: "Developer", href: "/developer" },
+    { label: "Developer", href: "/developers" },
   ],
 }: FooterProps) {
   return (
