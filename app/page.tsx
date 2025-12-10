@@ -7,7 +7,7 @@ export default function HomePage() {
     <main className="bg-gray-50 min-h-screen flex flex-col">
       <Header />
 
-      {/* Hero Section */}
+      {/* Landing Page*/}
       <section className="flex flex-col items-center text-center py-12 bg-gray-50 flex-grow">
         <h1 className="text-[20px] md:text-[80px] font-bold mb-2 text-black">
           Stati
