@@ -87,14 +87,125 @@ type ForceResult = {
   theta: number;
 };
 
-/* ===================== SVG FBD Component (draggable + resultant) ===================== */
-function FBD({
+/* ⭐⭐⭐⭐⭐ ADDED — FULL FBD FOR STEP 4 (all forces + resultant) ⭐⭐⭐⭐⭐ */
+function ResultantFBD({
   forces,
-  setForces,
+  result,
 }: {
   forces: ForceInput[];
-  setForces: (f: ForceInput[]) => void;
+  result: ForceResult;
 }) {
+  const vectors = forces
+    .map((f) => {
+      const m = parseFloat(f.magnitude);
+      const a = parseFloat(f.angle);
+      if (isNaN(m) || isNaN(a)) return null;
+      const rad = (a * Math.PI) / 180;
+      return { x: m * Math.cos(rad), y: m * Math.sin(rad) };
+    })
+    .filter(Boolean) as { x: number; y: number }[];
+
+  const R = { x: result.sumFx, y: result.sumFy };
+
+  const magnitudes = [
+    ...vectors.map((v) => Math.hypot(v.x, v.y)),
+    Math.hypot(R.x, R.y),
+  ];
+  const maxMag = Math.max(1, ...magnitudes);
+
+  const scale = 90 / maxMag;
+
+  return (
+    <svg
+      width="300"
+      height="300"
+      className="border rounded-lg bg-white shadow mx-auto"
+    >
+      <g transform="translate(150,150)">
+        {/* Axes */}
+        <line x1={-140} y1={0} x2={140} y2={0} stroke="gray" strokeWidth="1" />
+        <line x1={0} y1={-140} x2={0} y2={140} stroke="gray" strokeWidth="1" />
+
+        {/* Draw each force */}
+        {vectors.map((v, i) => {
+          const x = v.x * scale;
+          const y = -v.y * scale;
+
+          return (
+            <g key={i}>
+              <line
+                x1={0}
+                y1={0}
+                x2={x}
+                y2={y}
+                stroke="#1848a0"
+                strokeWidth="3"
+                markerEnd="url(#arrowF)"
+              />
+              <text
+                x={x * 0.55}
+                y={y * 0.55}
+                fontSize="14"
+                fill="#1848a0"
+                fontWeight="bold"
+              >
+                F{i + 1}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Draw resultant */}
+        <line
+          x1={0}
+          y1={0}
+          x2={R.x * scale}
+          y2={-R.y * scale}
+          stroke="#009900"
+          strokeWidth="4"
+          markerEnd="url(#arrowR)"
+        />
+        <text
+          x={(R.x * scale) * 0.55}
+          y={(-R.y * scale) * 0.55}
+          fontSize="16"
+          fill="#009900"
+          fontWeight="bold"
+        >
+          R
+        </text>
+
+        {/* Arrow definitions */}
+        <defs>
+          <marker
+            id="arrowF"
+            markerWidth="10"
+            markerHeight="10"
+            refX="5"
+            refY="3"
+            orient="auto"
+          >
+            <polygon points="0 0, 6 3, 0 6" fill="#1848a0" />
+          </marker>
+
+          <marker
+            id="arrowR"
+            markerWidth="12"
+            markerHeight="12"
+            refX="6"
+            refY="3"
+            orient="auto"
+          >
+            <polygon points="0 0, 7 3, 0 6" fill="#009900" />
+          </marker>
+        </defs>
+      </g>
+    </svg>
+  );
+}
+
+/* ===================== SVG FBD Component (draggable + resultant) ===================== */
+function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: ForceInput[]) => void }) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
 
@@ -319,7 +430,6 @@ export default function Solver2D() {
         {result && (
           <div className="w-full max-w-xl mt-6 bg-white rounded-2xl shadow p-6 space-y-4">
             <h2 className="text-[20px] font-semibold">Resultant Force (kN)</h2>
-
             <div>
               <label className="block font-medium text-[18px]">Horizontal component (Fx)</label>
               <input type="text" value={`${result.sumFx.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2" />
@@ -346,6 +456,8 @@ export default function Solver2D() {
         {result && (
           <div className="w-full max-w-xl mt-6 bg-white rounded-2xl shadow p-6">
             <h2 className="text-[20px] font-semibold mb-2">Step-by-Step Solution</h2>
+            
+            
             <div className="space-y-4">
               {result.steps.map((line, i) =>
                 line.startsWith("Step") ? (
@@ -358,6 +470,14 @@ export default function Solver2D() {
                   </div>
                 )
               )}
+            </div>
+
+            {/* ⭐⭐⭐⭐⭐ ADDED — Step 4 Resultant FBD with all forces ⭐⭐⭐⭐⭐ */}
+            <div className="mt-8">
+              <p className="font-medium text-[18px] mb-2">
+                Step 4: Final Free Body Diagram (All Forces + Resultant)
+              </p>
+              <ResultantFBD forces={forces} result={result} />
             </div>
           </div>
         )}
