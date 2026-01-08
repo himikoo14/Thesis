@@ -13,7 +13,7 @@ export default function TrussSolverUI() {
   const [nodes, setNodes] = useState([{ x: "", y: "" }]);
   const [forces, setForces] = useState([{ node: "", magnitude: "", angle: "" }]);
 
-  // Common input class
+  // Common classes
   const inputClass =
     "w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 outline-none focus:outline-none focus:ring-0";
   const redButtonClass =
@@ -27,7 +27,6 @@ export default function TrussSolverUI() {
     newArr[index][field] = value;
     setArr(newArr);
   };
-
   const addItem = (arr, setArr, template) => setArr([...arr, template]);
   const removeItem = (arr, setArr, index) => setArr(arr.filter((_, i) => i !== index));
 
@@ -59,16 +58,15 @@ export default function TrussSolverUI() {
           {/* Supports */}
           <div className="bg-white rounded-xl shadow p-4">
             <h3 className="text-xl font-semibold mb-2">Supports</h3>
-
             {supports.map((s, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
-                {/* Node label */}
-                <div className="flex-1">
+                {/* Node Label */}
+                <div className="w-24">
                   <label className="block font-medium text-[18px]">Node {i + 1}</label>
                 </div>
 
                 {/* X input */}
-                <div className="flex-1">
+                <div className="w-20">
                   <input
                     type="number"
                     placeholder="x"
@@ -79,7 +77,7 @@ export default function TrussSolverUI() {
                 </div>
 
                 {/* Y input */}
-                <div className="flex-1">
+                <div className="w-20">
                   <input
                     type="number"
                     placeholder="y"
@@ -90,7 +88,7 @@ export default function TrussSolverUI() {
                 </div>
 
                 {/* Type select */}
-                <div className="flex-1">
+                <div className="w-28">
                   <select
                     value={s.type}
                     onChange={(e) => handleChange(supports, setSupports, i, "type", e.target.value)}
@@ -113,7 +111,6 @@ export default function TrussSolverUI() {
               </div>
             ))}
 
-            {/* Add Support button */}
             <button
               onClick={() => addItem(supports, setSupports, { x: "", y: "", type: "Pinned" })}
               className={greenButtonClass}
@@ -123,17 +120,17 @@ export default function TrussSolverUI() {
           </div>
 
           {/* Nodes */}
-          <div className="bg-white rounded-xl shadow p-5"> {/* reduced padding from p-4 → p-2 */}
+          <div className="bg-white rounded-xl shadow p-4">
             <h3 className="text-xl font-semibold mb-2">Nodes</h3>
             {nodes.map((n, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
-                {/* Node label */}
-                <div className="flex-1">
+                {/* Node Label */}
+                <div className="w-24">
                   <label className="block font-medium text-[18px]">Node {i + 1}</label>
                 </div>
 
                 {/* X input */}
-                <div className="flex-1">
+                <div className="w-20">
                   <input
                     type="number"
                     placeholder="x"
@@ -144,7 +141,7 @@ export default function TrussSolverUI() {
                 </div>
 
                 {/* Y input */}
-                <div className="flex-1">
+                <div className="w-20">
                   <input
                     type="number"
                     placeholder="y"
@@ -166,7 +163,6 @@ export default function TrussSolverUI() {
               </div>
             ))}
 
-            {/* Add Node button */}
             <button
               onClick={() => addItem(nodes, setNodes, { x: "", y: "" })}
               className={greenButtonClass}
@@ -175,33 +171,63 @@ export default function TrussSolverUI() {
             </button>
           </div>
 
-
           {/* Forces */}
           <div className="bg-white rounded-xl shadow p-4">
             <h3 className="text-xl font-semibold mb-2">Forces</h3>
             {forces.map((f, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
-                {["node", "kN", "angle"].map((field) => (
-                  <div className="flex-1" key={field}>
-                    <label className="block font-medium text-[18px]">
-                      {field.charAt(0).toUpperCase() + field.slice(1)} {i + 1}
-                      {field === "angle" ? " (°)" : field === "Magnitude" ? " " : ""}
-                    </label>
-                    <input
-                      type="number"
-                      value={f[field]}
-                      onChange={(e) => handleChange(forces, setForces, i, field, e.target.value)}
-                      placeholder={field}
-                      className={inputClass}
-                    />
-                  </div>
-                ))}
+                {/* Node */}
+                <div className="w-24">
+                  <label className="block font-medium text-[18px]">Node {i + 1}</label>
+                  <input
+                    type="number"
+                    placeholder="Node"
+                    value={f.node}
+                    onChange={(e) => handleChange(forces, setForces, i, "node", e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+
+                {/* Magnitude */}
+                <div className="w-28">
+                  <label className="block font-medium text-[18px]">Magnitude {i + 1} (kN)</label>
+                  <input
+                    type="number"
+                    placeholder="kN"
+                    value={f.magnitude}
+                    onChange={(e) => handleChange(forces, setForces, i, "magnitude", e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+
+                {/* Angle */}
+                <div className="w-28">
+                  <label className="block font-medium text-[18px]">Angle {i + 1} (°)</label>
+                  <input
+                    type="number"
+                    placeholder="Angle"
+                    value={f.angle}
+                    onChange={(e) => handleChange(forces, setForces, i, "angle", e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+
+                {/* Remove button */}
                 {forces.length > 1 && (
-                  <button onClick={() => removeItem(forces, setForces, i)} className={redButtonClass}>–</button>
+                  <button
+                    onClick={() => removeItem(forces, setForces, i)}
+                    className={redButtonClass}
+                  >
+                    –
+                  </button>
                 )}
               </div>
             ))}
-            <button onClick={() => addItem(forces, setForces, { node: "", magnitude: "", angle: "" })} className={greenButtonClass}>
+
+            <button
+              onClick={() => addItem(forces, setForces, { node: "", magnitude: "", angle: "" })}
+              className={greenButtonClass}
+            >
               + Add Force
             </button>
           </div>
