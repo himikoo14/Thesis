@@ -4,14 +4,21 @@ import { useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 
+type Support = { x: string; y: string; type: "Pinned" | "Roller" };
+type Node = { x: string; y: string };
+type Force = { node: string; magnitude: string; angle: string };
+
+// Generic object type for handleChange
+type GenericObject = Record<string, any>;
+
 export default function TrussSolverUI() {
   // State
-  const [supports, setSupports] = useState([
+  const [supports, setSupports] = useState<Support[]>([
     { x: "", y: "", type: "Pinned" },
-    { x: "", y: "", type: "Roller" }
+    { x: "", y: "", type: "Roller" },
   ]);
-  const [nodes, setNodes] = useState([{ x: "", y: "" }]);
-  const [forces, setForces] = useState([{ node: "", magnitude: "", angle: "" }]);
+  const [nodes, setNodes] = useState<Node[]>([{ x: "", y: "" }]);
+  const [forces, setForces] = useState<Force[]>([{ node: "", magnitude: "", angle: "" }]);
 
   // Common input class
   const inputClass =
@@ -21,27 +28,32 @@ export default function TrussSolverUI() {
   const greenButtonClass =
     "px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 text-[18px]";
 
-  // Generic handlers
-  const handleChange = (arr, setArr, index, field, value) => {
+  // ===== Generic handlers (typed) =====
+  const handleChange = <T extends GenericObject>(
+    arr: T[],
+    setArr: React.Dispatch<React.SetStateAction<T[]>>,
+    index: number,
+    field: keyof T,
+    value: T[keyof T]
+  ) => {
     const newArr = [...arr];
     newArr[index][field] = value;
     setArr(newArr);
   };
 
-  const addItem = (arr, setArr, template) => setArr([...arr, template]);
-  const removeItem = (arr, setArr, index) => setArr(arr.filter((_, i) => i !== index));
+  const addItem = <T,>(arr: T[], setArr: React.Dispatch<React.SetStateAction<T[]>>, template: T) =>
+    setArr([...arr, template]);
 
+  const removeItem = <T,>(arr: T[], setArr: React.Dispatch<React.SetStateAction<T[]>>, index: number) =>
+    setArr(arr.filter((_, i) => i !== index));
+
+  // ===== JSX (unchanged except handler calls remain the same) =====
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900">
       <Header />
-
       <main className="flex-grow px-6 py-10 max-w-6xl mx-auto w-full">
-        <h1 className="text-3xl font-bold text-center mb-2">
-          Truss Solver (Matrix Method)
-        </h1>
-        <h2 className="text-xl font-semibold text-center mb-6">
-          Real-Time Free Body Diagram
-        </h2>
+        <h1 className="text-3xl font-bold text-center mb-2">Truss Solver (Matrix Method)</h1>
+        <h2 className="text-xl font-semibold text-center mb-6">Real-Time Free Body Diagram</h2>
 
         {/* FBD Placeholder */}
         <div className="bg-white border rounded-xl shadow h-[420px] flex items-center justify-center mb-8">
@@ -55,19 +67,14 @@ export default function TrussSolverUI() {
 
         {/* Input Panels */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-
           {/* Supports */}
           <div className="bg-white rounded-xl shadow p-4">
             <h3 className="text-xl font-semibold mb-2">Supports</h3>
-
             {supports.map((s, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
-                {/* Node label */}
                 <div className="flex-1">
                   <label className="block font-medium text-[18px]">Node {i + 1}</label>
                 </div>
-
-                {/* X input */}
                 <div className="flex-1">
                   <input
                     type="number"
@@ -77,8 +84,6 @@ export default function TrussSolverUI() {
                     className={inputClass}
                   />
                 </div>
-
-                {/* Y input */}
                 <div className="flex-1">
                   <input
                     type="number"
@@ -88,8 +93,6 @@ export default function TrussSolverUI() {
                     className={inputClass}
                   />
                 </div>
-
-                {/* Type select */}
                 <div className="flex-1">
                   <select
                     value={s.type}
@@ -100,20 +103,11 @@ export default function TrussSolverUI() {
                     <option>Roller</option>
                   </select>
                 </div>
-
-                {/* Remove button */}
                 {supports.length > 1 && (
-                  <button
-                    onClick={() => removeItem(supports, setSupports, i)}
-                    className={redButtonClass}
-                  >
-                    –
-                  </button>
+                  <button onClick={() => removeItem(supports, setSupports, i)} className={redButtonClass}>–</button>
                 )}
               </div>
             ))}
-
-            {/* Add Support button */}
             <button
               onClick={() => addItem(supports, setSupports, { x: "", y: "", type: "Pinned" })}
               className={greenButtonClass}
@@ -123,16 +117,13 @@ export default function TrussSolverUI() {
           </div>
 
           {/* Nodes */}
-          <div className="bg-white rounded-xl shadow p-5"> {/* reduced padding from p-4 → p-2 */}
+          <div className="bg-white rounded-xl shadow p-5">
             <h3 className="text-xl font-semibold mb-2">Nodes</h3>
             {nodes.map((n, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
-                {/* Node label */}
                 <div className="flex-1">
                   <label className="block font-medium text-[18px]">Node {i + 1}</label>
                 </div>
-
-                {/* X input */}
                 <div className="flex-1">
                   <input
                     type="number"
@@ -142,8 +133,6 @@ export default function TrussSolverUI() {
                     className={inputClass}
                   />
                 </div>
-
-                {/* Y input */}
                 <div className="flex-1">
                   <input
                     type="number"
@@ -153,44 +142,31 @@ export default function TrussSolverUI() {
                     className={inputClass}
                   />
                 </div>
-
-                {/* Remove button */}
                 {nodes.length > 1 && (
-                  <button
-                    onClick={() => removeItem(nodes, setNodes, i)}
-                    className={redButtonClass}
-                  >
-                    –
-                  </button>
+                  <button onClick={() => removeItem(nodes, setNodes, i)} className={redButtonClass}>–</button>
                 )}
               </div>
             ))}
-
-            {/* Add Node button */}
-            <button
-              onClick={() => addItem(nodes, setNodes, { x: "", y: "" })}
-              className={greenButtonClass}
-            >
+            <button onClick={() => addItem(nodes, setNodes, { x: "", y: "" })} className={greenButtonClass}>
               + Add Node
             </button>
           </div>
-
 
           {/* Forces */}
           <div className="bg-white rounded-xl shadow p-4">
             <h3 className="text-xl font-semibold mb-2">Forces</h3>
             {forces.map((f, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
-                {["node", "kN", "angle"].map((field) => (
+                {["node", "magnitude", "angle"].map((field) => (
                   <div className="flex-1" key={field}>
                     <label className="block font-medium text-[18px]">
                       {field.charAt(0).toUpperCase() + field.slice(1)} {i + 1}
-                      {field === "angle" ? " (°)" : field === "Magnitude" ? " " : ""}
+                      {field === "angle" ? " (°)" : ""}
                     </label>
                     <input
                       type="number"
-                      value={f[field]}
-                      onChange={(e) => handleChange(forces, setForces, i, field, e.target.value)}
+                      value={f[field as keyof Force]}
+                      onChange={(e) => handleChange(forces, setForces, i, field as keyof Force, e.target.value)}
                       placeholder={field}
                       className={inputClass}
                     />
@@ -201,11 +177,13 @@ export default function TrussSolverUI() {
                 )}
               </div>
             ))}
-            <button onClick={() => addItem(forces, setForces, { node: "", magnitude: "", angle: "" })} className={greenButtonClass}>
+            <button
+              onClick={() => addItem(forces, setForces, { node: "", magnitude: "", angle: "" })}
+              className={greenButtonClass}
+            >
               + Add Force
             </button>
           </div>
-
         </div>
 
         {/* Calculate */}
@@ -218,7 +196,6 @@ export default function TrussSolverUI() {
           <h3 className="text-xl font-semibold">Solution</h3>
         </div>
       </main>
-
       <Footer />
     </div>
   );
