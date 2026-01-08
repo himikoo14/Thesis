@@ -157,7 +157,7 @@ export default function TrussSolverUI() {
             <h3 className="text-xl font-semibold mb-2">Forces</h3>
             {forces.map((f, i) => (
               <div key={i} className="flex items-center gap-2 mb-2">
-                {["node", "magnitude", "angle"].map((field) => (
+                {["node", "kN", "angle"].map((field) => (
                   <div className="flex-1" key={field}>
                     <label className="block font-medium text-[18px]">
                       {field.charAt(0).toUpperCase() + field.slice(1)} {i + 1}
