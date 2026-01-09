@@ -11,7 +11,7 @@ type Force = { node: string; magnitude: string; angle: string };
 // Generic object type for handleChange
 type GenericObject = Record<string, any>;
 
-export default function TrussSolverUI() {
+export default function BeamSolverUI() {
   // State
   const [supports, setSupports] = useState<Support[]>([
     { x: "", y: "", type: "Pinned" },
