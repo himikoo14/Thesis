@@ -11,7 +11,7 @@ type Force = { node: string; magnitude: string; angle: string };
 
 type GenericObject = Record<string, any>;
 
-export default function BeamSolverUI() {
+export default function TrussSolverUI() {
   const [supports, setSupports] = useState<Support[]>([
     { x: "", y: "", type: "Pinned" },
     { x: "", y: "", type: "Roller" },
@@ -30,9 +30,8 @@ export default function BeamSolverUI() {
   const inputClass =
     "w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 outline-none focus:outline-none focus:ring-0";
 
-
   const redButtonClass =
-    "w-10 px-2 py-0.5 bg-red-500 text-white rounded-md hover:bg-red-600 text-[20px]";
+    "px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-[18px]";
 
   const greenButtonClass =
     "px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 text-[18px]";
@@ -67,7 +66,7 @@ export default function BeamSolverUI() {
 
       <main className="flex-grow px-6 py-10 max-w-6xl mx-auto w-full">
         <h1 className="text-3xl font-bold text-center mb-2">
-          Beam Calculator
+          Truss Calculator
         </h1>
         <h2 className="text-xl font-semibold text-center mb-6">
           Real-Time Free Body Diagram
@@ -149,7 +148,7 @@ export default function BeamSolverUI() {
             <h3 className="text-xl font-semibold mb-2">Nodes</h3>
             {nodes.map((n, i) => (
               <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
-                <span className="font-medium text-[18px]">Node {i + 3}</span>
+                <span className="font-medium text-[18px]">Node {i + 1}</span>
                 <input
                   type="number"
                   placeholder="x"
