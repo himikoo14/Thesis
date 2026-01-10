@@ -177,7 +177,8 @@ export default function TrussSolverUI() {
     }
     return x;
   };
-
+  /* ---------- NODE LABEL HELPER ---------- */
+  const nodeLabel = (index: number) => String.fromCharCode(65 + index); // 0 -> A, 1 -> B, etc.
   /* ===================== JSX ===================== */
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900">
@@ -203,7 +204,7 @@ export default function TrussSolverUI() {
             <h3 className="text-xl font-semibold mb-2">Supports</h3>
             {supports.map((s, i) => (
               <div key={i} className="grid grid-cols-5 gap-2 items-end mb-2">
-                <span className="font-medium text-[18px]">Node {i + 1}</span>
+                <span className="font-medium text-[18px]">Node {nodeLabel(i)}</span>
                 <input type="number" placeholder="x" value={s.x} onChange={(e) => handleChange(supports, setSupports, i, "x", e.target.value)} className={inputClass} />
                 <input type="number" placeholder="y" value={s.y} onChange={(e) => handleChange(supports, setSupports, i, "y", e.target.value)} className={inputClass} />
                 <select value={s.type} onChange={(e) => handleChange(supports, setSupports, i, "type", e.target.value)} className={inputClass}>
@@ -221,7 +222,7 @@ export default function TrussSolverUI() {
             <h3 className="text-xl font-semibold mb-2">Nodes</h3>
             {nodes.map((n, i) => (
               <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
-                <span className="font-medium text-[18px]">Node {supports.length + i + 1}</span>
+                <span className="font-medium text-[18px]">Node {nodeLabel(supports.length + i)}</span>
                 <input type="number" placeholder="x" value={n.x} onChange={(e) => handleChange(nodes, setNodes, i, "x", e.target.value)} className={inputClass} />
                 <input type="number" placeholder="y" value={n.y} onChange={(e) => handleChange(nodes, setNodes, i, "y", e.target.value)} className={inputClass} />
                 {nodes.length > 1 && <button onClick={() => removeItem(nodes, setNodes, i)} className={redButtonClass}>–</button>}
@@ -233,26 +234,57 @@ export default function TrussSolverUI() {
           {/* Members */}
           <div className="bg-white rounded-xl shadow p-4">
             <h3 className="text-xl font-semibold mb-2">Members</h3>
+
+            {/* Label Row */}
             <div className="grid grid-cols-4 gap-2 items-end mb-2">
               <span className="text-[16px] font-medium text-gray-700"> </span>
               <span className="text-[16px] font-medium text-gray-700">Start Node</span>
               <span className="text-[16px] font-medium text-gray-700">End Node</span>
               <span className="text-[16px] font-medium text-gray-700"> </span>
             </div>
+
             {members.map((m, i) => (
               <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
-                <span className="font-medium text-[18px]">Member {i + 1}</span>
-                <select value={m.start} onChange={(e) => handleChange(members, setMembers, i, "start", Number(e.target.value))} className={inputClass}>
-                  {allNodes.map((_, idx) => <option key={idx} value={idx}>Node {idx + 1}</option>)}
+                <span className="font-medium text-[18px]">
+                  Member {nodeLabel(m.start)}{nodeLabel(m.end)}
+                </span>
+
+                <select
+                  value={m.start}
+                  onChange={(e) => handleChange(members, setMembers, i, "start", Number(e.target.value))}
+                  className={inputClass}
+                >
+                  {allNodes.map((_, idx) => (
+                    <option key={idx} value={idx}>Node {nodeLabel(idx)}</option>
+                  ))}
                 </select>
-                <select value={m.end} onChange={(e) => handleChange(members, setMembers, i, "end", Number(e.target.value))} className={inputClass}>
-                  {allNodes.map((_, idx) => <option key={idx} value={idx}>Node {idx + 1}</option>)}
+
+                <select
+                  value={m.end}
+                  onChange={(e) => handleChange(members, setMembers, i, "end", Number(e.target.value))}
+                  className={inputClass}
+                >
+                  {allNodes.map((_, idx) => (
+                    <option key={idx} value={idx}>Node {nodeLabel(idx)}</option>
+                  ))}
                 </select>
-                {members.length > 1 ? <button onClick={() => removeItem(members, setMembers, i)} className={redButtonClass}>–</button> : <div />}
+
+                {members.length > 1 ? (
+                  <button onClick={() => removeItem(members, setMembers, i)} className={redButtonClass}>–</button>
+                ) : (
+                  <div /> // empty placeholder to keep grid alignment
+                )}
               </div>
             ))}
-            <button onClick={() => addItem(members, setMembers, { start: 0, end: 0 })} className={greenButtonClass}>+ Add Member</button>
+
+            <button
+              onClick={() => addItem(members, setMembers, { start: 0, end: 0 })}
+              className={greenButtonClass}
+            >
+              + Add Member
+            </button>
           </div>
+
 
           {/* Forces */}
           <div className="bg-white rounded-xl shadow p-4">
@@ -260,10 +292,10 @@ export default function TrussSolverUI() {
             {forces.map((f, i) => (
               <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
                 <select value={f.node} onChange={(e) => handleChange(forces, setForces, i, "node", Number(e.target.value))} className={inputClass}>
-                  {allNodes.map((_, idx) => <option key={idx} value={idx}>Node {idx + 1}</option>)}
+                  {allNodes.map((_, idx) => <option key={idx} value={idx}>Node {String.fromCharCode(65 + idx)}</option>)}
                 </select>
-                <input placeholder="kN" value={f.magnitude} onChange={(e) => handleChange(forces, setForces, i, "magnitude", e.target.value)} className={inputClass} />
-                <input placeholder="deg" value={f.angle} onChange={(e) => handleChange(forces, setForces, i, "angle", e.target.value)} className={inputClass} />
+                <input type="number" placeholder="kN" value={f.magnitude} onChange={(e) => handleChange(forces, setForces, i, "magnitude", e.target.value)} className={inputClass} />
+                <input type="number" placeholder="deg" value={f.angle} onChange={(e) => handleChange(forces, setForces, i, "angle", e.target.value)} className={inputClass} />
                 {forces.length > 1 && <button onClick={() => removeItem(forces, setForces, i)} className={redButtonClass}>–</button>}
               </div>
             ))}
@@ -277,24 +309,33 @@ export default function TrussSolverUI() {
           <div className="bg-white rounded-xl shadow p-4">
             <h3 className="text-xl font-semibold mb-2">Solution</h3>
 
+            {/* Node Displacements */}
             <div>
               <h4 className="font-medium">Node Displacements (m):</h4>
               <pre>
-                {solution.displacements.map((d, i) => `DOF ${i + 1}: ${d.toFixed(5)}`).join("\n")}
+                {solution.displacements.map((d, i) => {
+                  const nodeLetter = String.fromCharCode(65 + Math.floor(i / 2)); // A, B, C... assuming 2 DOFs per node
+                  const dofType = i % 2 === 0 ? "X" : "Y"; // X or Y displacement
+                  return `Node ${nodeLetter} ${dofType}: ${d.toFixed(5)}`;
+                }).join("\n")}
               </pre>
             </div>
 
+            {/* Member Forces */}
             <div className="mt-2">
               <h4 className="font-medium">Member Forces:</h4>
               <pre>
                 {solution.memberForces.map((f, i) => {
                   const type = f >= 0 ? "Tension" : "Compression";
-                  return `Member ${i + 1}: ${Math.abs(f).toFixed(5)} ${type}`;
+                  const letterStart = String.fromCharCode(65 + members[i].start); // A, B, C...
+                  const letterEnd = String.fromCharCode(65 + members[i].end);
+                  return `Member ${letterStart}${letterEnd}: ${Math.abs(f).toFixed(5)} ${type}`;
                 }).join("\n")}
               </pre>
             </div>
           </div>
         )}
+
 
       </main>
       <Footer />
