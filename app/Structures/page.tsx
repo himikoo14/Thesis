@@ -4,14 +4,36 @@ import { useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 
-type Support = { x: string; y: string; type: "Pinned" | "Roller" };
-type Node = { x: string; y: string };
-type Member = { start: string; end: string };
-type Force = { node: string; magnitude: string; angle: string };
+/* ===================== TYPES ===================== */
+
+type Support = {
+  x: string;
+  y: string;
+  type: "Pinned" | "Roller";
+};
+
+type Node = {
+  x: string;
+  y: string;
+};
+
+type Member = {
+  start: number; // index in allNodes
+  end: number;   // index in allNodes
+};
+
+type Force = {
+  node: number;  // index in allNodes
+  magnitude: string;
+  angle: string;
+};
 
 type GenericObject = Record<string, any>;
 
+/* ===================== COMPONENT ===================== */
+
 export default function TrussSolverUI() {
+  /* ---------- STATE ---------- */
   const [supports, setSupports] = useState<Support[]>([
     { x: "", y: "", type: "Pinned" },
     { x: "", y: "", type: "Roller" },
@@ -20,16 +42,19 @@ export default function TrussSolverUI() {
   const [nodes, setNodes] = useState<Node[]>([{ x: "", y: "" }]);
 
   const [members, setMembers] = useState<Member[]>([
-    { start: "", end: "" },
+    { start: 0, end: 1 },
   ]);
 
   const [forces, setForces] = useState<Force[]>([
-    { node: "", magnitude: "", angle: "" },
+    { node: 0, magnitude: "", angle: "" },
   ]);
 
-  const inputClass =
-    "w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 outline-none focus:outline-none focus:ring-0";
+  /* ---------- DERIVED NODES ---------- */
+  const allNodes: Node[] = [...supports.map((s) => ({ x: s.x, y: s.y })), ...nodes];
 
+  /* ---------- STYLES ---------- */
+  const inputClass =
+    "w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 outline-none focus:ring-0";
 
   const redButtonClass =
     "w-10 px-2 py-0.5 bg-red-500 text-white rounded-md hover:bg-red-600 text-[20px]";
@@ -37,6 +62,7 @@ export default function TrussSolverUI() {
   const greenButtonClass =
     "px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 text-[18px]";
 
+  /* ---------- GENERIC HANDLERS ---------- */
   const handleChange = <T extends GenericObject>(
     arr: T[],
     setArr: React.Dispatch<React.SetStateAction<T[]>>,
@@ -61,14 +87,13 @@ export default function TrussSolverUI() {
     index: number
   ) => setArr(arr.filter((_, i) => i !== index));
 
+  /* ===================== JSX ===================== */
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900">
       <Header />
 
       <main className="flex-grow px-6 py-10 max-w-6xl mx-auto w-full">
-        <h1 className="text-3xl font-bold text-center mb-2">
-          Truss Calculator
-        </h1>
+        <h1 className="text-3xl font-bold text-center mb-2">Truss Calculator</h1>
         <h2 className="text-xl font-semibold text-center mb-6">
           Real-Time Free Body Diagram
         </h2>
@@ -83,15 +108,17 @@ export default function TrussSolverUI() {
           </svg>
         </div>
 
-        {/* Input Panels */}
+        {/* INPUT PANELS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
-          {/* Supports */}
+          {/* SUPPORTS */}
           <div className="bg-white rounded-xl shadow p-4">
             <h3 className="text-xl font-semibold mb-2">Supports</h3>
+
             {supports.map((s, i) => (
               <div key={i} className="grid grid-cols-5 gap-2 items-end mb-2">
                 <span className="font-medium text-[18px]">Node {i + 1}</span>
+
                 <input
                   type="number"
                   placeholder="x"
@@ -101,6 +128,7 @@ export default function TrussSolverUI() {
                   }
                   className={inputClass}
                 />
+
                 <input
                   type="number"
                   placeholder="y"
@@ -110,6 +138,7 @@ export default function TrussSolverUI() {
                   }
                   className={inputClass}
                 />
+
                 <select
                   value={s.type}
                   onChange={(e) =>
@@ -120,6 +149,7 @@ export default function TrussSolverUI() {
                   <option>Pinned</option>
                   <option>Roller</option>
                 </select>
+
                 {supports.length > 1 && (
                   <button
                     onClick={() => removeItem(supports, setSupports, i)}
@@ -130,13 +160,10 @@ export default function TrussSolverUI() {
                 )}
               </div>
             ))}
+
             <button
               onClick={() =>
-                addItem(supports, setSupports, {
-                  x: "",
-                  y: "",
-                  type: "Pinned",
-                })
+                addItem(supports, setSupports, { x: "", y: "", type: "Pinned" })
               }
               className={greenButtonClass}
             >
@@ -144,12 +171,16 @@ export default function TrussSolverUI() {
             </button>
           </div>
 
-          {/* Nodes */}
+          {/* NODES SECTION (Nodes + Supports combined) */}
           <div className="bg-white rounded-xl shadow p-4">
             <h3 className="text-xl font-semibold mb-2">Nodes</h3>
+
             {nodes.map((n, i) => (
               <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
-                <span className="font-medium text-[18px]">Node {i + 3}</span>
+                <span className="font-medium text-[18px]">
+                  Node {supports.length + i + 1}
+                </span>
+
                 <input
                   type="number"
                   placeholder="x"
@@ -159,6 +190,7 @@ export default function TrussSolverUI() {
                   }
                   className={inputClass}
                 />
+
                 <input
                   type="number"
                   placeholder="y"
@@ -168,6 +200,7 @@ export default function TrussSolverUI() {
                   }
                   className={inputClass}
                 />
+
                 {nodes.length > 1 && (
                   <button
                     onClick={() => removeItem(nodes, setNodes, i)}
@@ -178,6 +211,7 @@ export default function TrussSolverUI() {
                 )}
               </div>
             ))}
+
             <button
               onClick={() => addItem(nodes, setNodes, { x: "", y: "" })}
               className={greenButtonClass}
@@ -186,75 +220,101 @@ export default function TrussSolverUI() {
             </button>
           </div>
 
-          {/* Members */}
+          {/* MEMBERS */}
           <div className="bg-white rounded-xl shadow p-4">
             <h3 className="text-xl font-semibold mb-2">Members</h3>
+
+            {/* Label Row */}
+            <div className="grid grid-cols-4 gap-2 items-end mb-2">
+              <span className="text-[16px] font-medium text-gray-700"> </span>
+              <span className="text-[16px] font-medium text-gray-700">Start Node</span>
+              <span className="text-[16px] font-medium text-gray-700">End Node</span>
+              <span className="text-[16px] font-medium text-gray-700"> </span>
+            </div>
+
             {members.map((m, i) => (
               <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
                 <span className="font-medium text-[18px]">Member {i + 1}</span>
-                <input
-                  placeholder="Start Node"
+
+                <select
                   value={m.start}
                   onChange={(e) =>
-                    handleChange(members, setMembers, i, "start", e.target.value)
+                    handleChange(members, setMembers, i, "start", Number(e.target.value))
                   }
                   className={inputClass}
-                />
-                <input
-                  placeholder="End Node"
+                >
+                  {allNodes.map((_, idx) => (
+                    <option key={idx} value={idx}>
+                      Node {idx + 1}
+                    </option>
+                  ))}
+                </select>
+
+                <select
                   value={m.end}
                   onChange={(e) =>
-                    handleChange(members, setMembers, i, "end", e.target.value)
+                    handleChange(members, setMembers, i, "end", Number(e.target.value))
                   }
                   className={inputClass}
-                />
-                {members.length > 1 && (
+                >
+                  {allNodes.map((_, idx) => (
+                    <option key={idx} value={idx}>
+                      Node {idx + 1}
+                    </option>
+                  ))}
+                </select>
+
+                {members.length > 1 ? (
                   <button
                     onClick={() => removeItem(members, setMembers, i)}
                     className={redButtonClass}
                   >
                     –
                   </button>
+                ) : (
+                  <div /> // empty placeholder to keep grid alignment
                 )}
               </div>
             ))}
+
             <button
-              onClick={() =>
-                addItem(members, setMembers, { start: "", end: "" })
-              }
+              onClick={() => addItem(members, setMembers, { start: 0, end: 0 })}
               className={greenButtonClass}
             >
               + Add Member
             </button>
           </div>
 
-          {/* Forces */}
+
+          {/* FORCES */}
           <div className="bg-white rounded-xl shadow p-4">
             <h3 className="text-xl font-semibold mb-2">Forces</h3>
+
             {forces.map((f, i) => (
               <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
-                <input
-                  placeholder="Node"
+                <select
                   value={f.node}
                   onChange={(e) =>
-                    handleChange(forces, setForces, i, "node", e.target.value)
+                    handleChange(forces, setForces, i, "node", Number(e.target.value))
                   }
                   className={inputClass}
-                />
+                >
+                  {allNodes.map((_, idx) => (
+                    <option key={idx} value={idx}>
+                      Node {idx + 1}
+                    </option>
+                  ))}
+                </select>
+
                 <input
                   placeholder="kN"
                   value={f.magnitude}
                   onChange={(e) =>
-                    handleChange(
-                      forces,
-                      setForces,
-                      i,
-                      "magnitude",
-                      e.target.value
-                    )
+                    handleChange(forces, setForces, i, "magnitude", e.target.value)
                   }
                   className={inputClass}
                 />
+
                 <input
                   placeholder="deg"
                   value={f.angle}
@@ -263,6 +323,7 @@ export default function TrussSolverUI() {
                   }
                   className={inputClass}
                 />
+
                 {forces.length > 1 && (
                   <button
                     onClick={() => removeItem(forces, setForces, i)}
@@ -273,20 +334,16 @@ export default function TrussSolverUI() {
                 )}
               </div>
             ))}
+
             <button
               onClick={() =>
-                addItem(forces, setForces, {
-                  node: "",
-                  magnitude: "",
-                  angle: "",
-                })
+                addItem(forces, setForces, { node: 0, magnitude: "", angle: "" })
               }
               className={greenButtonClass}
             >
               + Add Force
             </button>
           </div>
-
         </div>
 
         <button className="w-full bg-blue-800 text-white py-3 rounded-lg font-semibold mb-6">
