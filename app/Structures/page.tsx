@@ -12,7 +12,7 @@ type Support = {
   type: "Pinned" | "Roller";
 };
 
-type Node = {
+type Joint = {
   x: string;
   y: string;
 };
@@ -23,7 +23,7 @@ type Member = {
 };
 
 type Force = {
-  node: number;  // index in allNodes
+  Joint: number;  // index in allNodes
   magnitude: string;
   angle: string;
 };
@@ -39,13 +39,13 @@ export default function TrussSolverUI() {
     { x: "", y: "", type: "Roller" },
   ]);
 
-  const [nodes, setNodes] = useState<Node[]>([{ x: "", y: "" }]);
+  const [nodes, setNodes] = useState<Joint[]>([{ x: "", y: "" }]);
   const [members, setMembers] = useState<Member[]>([{ start: 0, end: 1 }]);
-  const [forces, setForces] = useState<Force[]>([{ node: 0, magnitude: "", angle: "" }]);
+  const [forces, setForces] = useState<Force[]>([{ Joint: 0, magnitude: "", angle: "" }]);
   const [solution, setSolution] = useState<{ displacements: number[]; memberForces: number[] } | null>(null);
 
   /* ---------- DERIVED NODES ---------- */
-  const allNodes: Node[] = [...supports.map(s => ({ x: s.x, y: s.y })), ...nodes];
+  const allNodes: Joint[] = [...supports.map(s => ({ x: s.x, y: s.y })), ...nodes];
 
   /* ---------- STYLES ---------- */
   const inputClass = "w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 outline-none focus:ring-0";
@@ -77,7 +77,7 @@ export default function TrussSolverUI() {
     const nNodes = allNodes.length;
     const dof = 2 * nNodes;
 
-    // Node coordinates
+    // Joint coordinates
     const coords = allNodes.map(n => [parseFloat(n.x), parseFloat(n.y)]);
 
     // Initialize global stiffness matrix
@@ -113,8 +113,8 @@ export default function TrussSolverUI() {
     forces.forEach(f => {
       const angleRad = (parseFloat(f.angle) * Math.PI) / 180;
       const mag = parseFloat(f.magnitude);
-      F[2 * f.node] = mag * Math.cos(angleRad);
-      F[2 * f.node + 1] = mag * Math.sin(angleRad);
+      F[2 * f.Joint] = mag * Math.cos(angleRad);
+      F[2 * f.Joint + 1] = mag * Math.sin(angleRad);
     });
 
     // Fixed DOFs from supports
@@ -150,7 +150,7 @@ export default function TrussSolverUI() {
     });
 
     setSolution({ displacements: U, memberForces });
-    console.log("Node Displacements:", U);
+    console.log("Joint Displacements:", U);
     console.log("Member Forces:", memberForces);
   };
 
@@ -177,7 +177,7 @@ export default function TrussSolverUI() {
     }
     return x;
   };
-  /* ---------- NODE LABEL HELPER ---------- */
+  /* ---------- Joint LABEL HELPER ---------- */
   const nodeLabel = (index: number) => String.fromCharCode(65 + index); // 0 -> A, 1 -> B, etc.
   /* ===================== JSX ===================== */
   return (
@@ -204,7 +204,7 @@ export default function TrussSolverUI() {
             <h3 className="text-xl font-semibold mb-2">Supports</h3>
             {supports.map((s, i) => (
               <div key={i} className="grid grid-cols-5 gap-2 items-end mb-2">
-                <span className="font-medium text-[18px]">Node {nodeLabel(i)}</span>
+                <span className="font-medium text-[18px]">Joint {nodeLabel(i)}</span>
                 <input type="number" placeholder="x" value={s.x} onChange={(e) => handleChange(supports, setSupports, i, "x", e.target.value)} className={inputClass} />
                 <input type="number" placeholder="y" value={s.y} onChange={(e) => handleChange(supports, setSupports, i, "y", e.target.value)} className={inputClass} />
                 <select value={s.type} onChange={(e) => handleChange(supports, setSupports, i, "type", e.target.value)} className={inputClass}>
@@ -222,13 +222,13 @@ export default function TrussSolverUI() {
             <h3 className="text-xl font-semibold mb-2">Nodes</h3>
             {nodes.map((n, i) => (
               <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
-                <span className="font-medium text-[18px]">Node {nodeLabel(supports.length + i)}</span>
+                <span className="font-medium text-[18px]">Joint {nodeLabel(supports.length + i)}</span>
                 <input type="number" placeholder="x" value={n.x} onChange={(e) => handleChange(nodes, setNodes, i, "x", e.target.value)} className={inputClass} />
                 <input type="number" placeholder="y" value={n.y} onChange={(e) => handleChange(nodes, setNodes, i, "y", e.target.value)} className={inputClass} />
                 {nodes.length > 1 && <button onClick={() => removeItem(nodes, setNodes, i)} className={redButtonClass}>–</button>}
               </div>
             ))}
-            <button onClick={() => addItem(nodes, setNodes, { x: "", y: "" })} className={greenButtonClass}>+ Add Node</button>
+            <button onClick={() => addItem(nodes, setNodes, { x: "", y: "" })} className={greenButtonClass}>+ Add Joint</button>
           </div>
 
           {/* Members */}
@@ -238,8 +238,8 @@ export default function TrussSolverUI() {
             {/* Label Row */}
             <div className="grid grid-cols-4 gap-2 items-end mb-2">
               <span className="text-[16px] font-medium text-gray-700"> </span>
-              <span className="text-[16px] font-medium text-gray-700">Start Node</span>
-              <span className="text-[16px] font-medium text-gray-700">End Node</span>
+              <span className="text-[16px] font-medium text-gray-700">Start Joint</span>
+              <span className="text-[16px] font-medium text-gray-700">End Joint</span>
               <span className="text-[16px] font-medium text-gray-700"> </span>
             </div>
 
@@ -255,7 +255,7 @@ export default function TrussSolverUI() {
                   className={inputClass}
                 >
                   {allNodes.map((_, idx) => (
-                    <option key={idx} value={idx}>Node {nodeLabel(idx)}</option>
+                    <option key={idx} value={idx}>Joint {nodeLabel(idx)}</option>
                   ))}
                 </select>
 
@@ -265,7 +265,7 @@ export default function TrussSolverUI() {
                   className={inputClass}
                 >
                   {allNodes.map((_, idx) => (
-                    <option key={idx} value={idx}>Node {nodeLabel(idx)}</option>
+                    <option key={idx} value={idx}>Joint {nodeLabel(idx)}</option>
                   ))}
                 </select>
 
@@ -291,15 +291,15 @@ export default function TrussSolverUI() {
             <h3 className="text-xl font-semibold mb-2">Forces</h3>
             {forces.map((f, i) => (
               <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
-                <select value={f.node} onChange={(e) => handleChange(forces, setForces, i, "node", Number(e.target.value))} className={inputClass}>
-                  {allNodes.map((_, idx) => <option key={idx} value={idx}>Node {String.fromCharCode(65 + idx)}</option>)}
+                <select value={f.Joint} onChange={(e) => handleChange(forces, setForces, i, "Joint", Number(e.target.value))} className={inputClass}>
+                  {allNodes.map((_, idx) => <option key={idx} value={idx}>Joint {String.fromCharCode(65 + idx)}</option>)}
                 </select>
                 <input type="number" placeholder="kN" value={f.magnitude} onChange={(e) => handleChange(forces, setForces, i, "magnitude", e.target.value)} className={inputClass} />
                 <input type="number" placeholder="deg" value={f.angle} onChange={(e) => handleChange(forces, setForces, i, "angle", e.target.value)} className={inputClass} />
                 {forces.length > 1 && <button onClick={() => removeItem(forces, setForces, i)} className={redButtonClass}>–</button>}
               </div>
             ))}
-            <button onClick={() => addItem(forces, setForces, { node: 0, magnitude: "", angle: "" })} className={greenButtonClass}>+ Add Force</button>
+            <button onClick={() => addItem(forces, setForces, { Joint: 0, magnitude: "", angle: "" })} className={greenButtonClass}>+ Add Force</button>
           </div>
         </div>
 
@@ -309,14 +309,14 @@ export default function TrussSolverUI() {
           <div className="bg-white rounded-xl shadow p-4">
             <h3 className="text-xl font-semibold mb-2">Solution</h3>
 
-            {/* Node Displacements */}
+            {/* Joint Displacements */}
             <div>
-              <h4 className="font-medium">Node Displacements (m):</h4>
+              <h4 className="font-medium">Joint Displacements (m):</h4>
               <pre>
                 {solution.displacements.map((d, i) => {
-                  const nodeLetter = String.fromCharCode(65 + Math.floor(i / 2)); // A, B, C... assuming 2 DOFs per node
+                  const nodeLetter = String.fromCharCode(65 + Math.floor(i / 2)); // A, B, C... assuming 2 DOFs per Joint
                   const dofType = i % 2 === 0 ? "X" : "Y"; // X or Y displacement
-                  return `Node ${nodeLetter} ${dofType}: ${d.toFixed(5)}`;
+                  return `Joint ${nodeLetter} ${dofType}: ${d.toFixed(5)}`;
                 }).join("\n")}
               </pre>
             </div>
