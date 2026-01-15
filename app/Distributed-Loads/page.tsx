@@ -5,9 +5,9 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 
 type Support = { x: string; y: string; type: "Pinned" | "Roller" };
-type Node = { x: string; y: string };
+type Joint = { x: string; y: string };
 type Member = { start: string; end: string };
-type Force = { node: string; magnitude: string; angle: string };
+type Force = { Joint: string; magnitude: string; angle: string };
 
 type GenericObject = Record<string, any>;
 
@@ -17,14 +17,14 @@ export default function BeamSolverUI() {
     { x: "", y: "", type: "Roller" },
   ]);
 
-  const [nodes, setNodes] = useState<Node[]>([{ x: "", y: "" }]);
+  const [nodes, setNodes] = useState<Joint[]>([{ x: "", y: "" }]);
 
   const [members, setMembers] = useState<Member[]>([
     { start: "", end: "" },
   ]);
 
   const [forces, setForces] = useState<Force[]>([
-    { node: "", magnitude: "", angle: "" },
+    { Joint: "", magnitude: "", angle: "" },
   ]);
 
   const inputClass =
@@ -91,7 +91,7 @@ export default function BeamSolverUI() {
             <h3 className="text-xl font-semibold mb-2">Supports</h3>
             {supports.map((s, i) => (
               <div key={i} className="grid grid-cols-5 gap-2 items-end mb-2">
-                <span className="font-medium text-[18px]">Node {i + 1}</span>
+                <span className="font-medium text-[18px]">Joint {i + 1}</span>
                 <input
                   type="number"
                   placeholder="x"
@@ -149,7 +149,7 @@ export default function BeamSolverUI() {
             <h3 className="text-xl font-semibold mb-2">Nodes</h3>
             {nodes.map((n, i) => (
               <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
-                <span className="font-medium text-[18px]">Node {i + 3}</span>
+                <span className="font-medium text-[18px]">Joint {i + 3}</span>
                 <input
                   type="number"
                   placeholder="x"
@@ -182,7 +182,7 @@ export default function BeamSolverUI() {
               onClick={() => addItem(nodes, setNodes, { x: "", y: "" })}
               className={greenButtonClass}
             >
-              + Add Node
+              + Add Joint
             </button>
           </div>
 
@@ -193,7 +193,7 @@ export default function BeamSolverUI() {
               <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
                 <span className="font-medium text-[18px]">Member {i + 1}</span>
                 <input
-                  placeholder="Start Node"
+                  placeholder="Start Joint"
                   value={m.start}
                   onChange={(e) =>
                     handleChange(members, setMembers, i, "start", e.target.value)
@@ -201,7 +201,7 @@ export default function BeamSolverUI() {
                   className={inputClass}
                 />
                 <input
-                  placeholder="End Node"
+                  placeholder="End Joint"
                   value={m.end}
                   onChange={(e) =>
                     handleChange(members, setMembers, i, "end", e.target.value)
@@ -234,10 +234,10 @@ export default function BeamSolverUI() {
             {forces.map((f, i) => (
               <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
                 <input
-                  placeholder="Node"
-                  value={f.node}
+                  placeholder="Joint"
+                  value={f.Joint}
                   onChange={(e) =>
-                    handleChange(forces, setForces, i, "node", e.target.value)
+                    handleChange(forces, setForces, i, "Joint", e.target.value)
                   }
                   className={inputClass}
                 />
@@ -276,7 +276,7 @@ export default function BeamSolverUI() {
             <button
               onClick={() =>
                 addItem(forces, setForces, {
-                  node: "",
+                  Joint: "",
                   magnitude: "",
                   angle: "",
                 })
