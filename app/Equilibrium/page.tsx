@@ -64,9 +64,10 @@ export default function EquilibriumPage() {
       <Header />
 
       <main className="flex-grow max-w-7xl mx-auto px-6 py-10">
-        <h1 className="text-3xl font-bold mb-8">
+        <h1 className="text-3xl font-bold mb-8 text-center">
           Moment of Inertia for Composite Shapes Calculator
         </h1>
+
 
         <div className="bg-white border rounded-xl h-[280px] mb-6" />
 
