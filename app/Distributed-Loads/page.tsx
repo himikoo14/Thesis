@@ -8,7 +8,7 @@ type XY = { x: string; y: string };
 type Shape = { type: string; radius: string; x: string; y: string };
 type Support = { x: string; y: string; type: string };
 
-export default function EquilibriumPage() {
+export default function DistributedLoadPage() {
   /* ---------------- STATES ---------------- */
   const [nodes, setNodes] = useState<XY[]>([
     { x: "", y: "" },
