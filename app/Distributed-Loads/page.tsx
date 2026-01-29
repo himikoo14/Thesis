@@ -3,63 +3,74 @@
 import { useState } from "react";
 import Header from "<Ian>/components/Header";
 import Footer from "<Ian>/components/Footer";
+import CircularInputs from "<Ian>/components/CircularInputs";
 
 type XY = { x: string; y: string };
-type Shape = { type: string; radius: string; x: string; y: string };
-type Support = { x: string; y: string; type: string };
+
+type ShapeType =
+  | "Polygon"
+  | "Circle"
+  | "Semi-circle-1"
+  | "Semi-circle-2"
+  | "Quarter-circle-1"
+  | "Quarter-circle-2"
+  | "Quarter-circle-3"
+  | "Quarter-circle-4";
 
 export default function DistributedLoadPage() {
   /* ---------------- STATES ---------------- */
+  const [shapeType, setShapeType] = useState<ShapeType>("Polygon");
+  const [hollow, setHollow] = useState("Hollow");
+
+  // Polygon
   const [nodes, setNodes] = useState<XY[]>([
     { x: "", y: "" },
     { x: "", y: "" },
-    { x: "", y: "" },
   ]);
 
-  const [shapes, setShapes] = useState<Shape[]>([
-    { type: "circle", radius: "", x: "", y: "" },
+  const [sides, setSides] = useState<{ a: number; b: number }[]>([
+    { a: 0, b: 1 },
   ]);
 
-  const [sides, setSides] = useState<XY[]>([
-    { x: "", y: "" },
-    { x: "", y: "" },
-    { x: "", y: "" },
-  ]);
+  // Circular shapes
+  const [radius, setRadius] = useState("");
+  const [circleX, setCircleX] = useState("");
+  const [circleY, setCircleY] = useState("");
 
-  const [supports, setSupports] = useState<Support[]>([
-    { x: "", y: "", type: "Pinned" },
-    { x: "", y: "", type: "Roller" },
-  ]);
+  const [showShapeOptions, setShowShapeOptions] = useState(false);
 
-  const [x, setX] = useState("");
-  const [y, setY] = useState("");
-
-  /* ---------------- STYLES ---------------- */
-  const input =
-    "w-16 rounded-md border border-gray-300 p-1 text-center text-[16px]";
-  const redBtn =
-    "bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600";
-  const greenBtn =
-    "bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700";
+  const isCircularShape = shapeType !== "Polygon";
 
   /* ---------------- HELPERS ---------------- */
-  const update = <T,>(
-    arr: T[],
-    setArr: (v: T[]) => void,
-    i: number,
-    key: keyof T,
-    value: string
-  ) => {
-    const copy = [...arr];
-    copy[i][key] = value as any;
-    setArr(copy);
+  const updateNode = (i: number, key: "x" | "y", value: string) => {
+    const copy = [...nodes];
+    copy[i][key] = value;
+    setNodes(copy);
   };
 
-  const remove = <T,>(arr: T[], setArr: (v: T[]) => void, i: number) => {
-    if (arr.length > 1) {
-      setArr(arr.filter((_, idx) => idx !== i));
+  const addNode = () => setNodes([...nodes, { x: "", y: "" }]);
+
+  const removeNode = (i: number) => {
+    if (nodes.length > 2) {
+      setNodes(nodes.filter((_, idx) => idx !== i));
+      setSides(sides.filter(s => s.a !== i && s.b !== i));
     }
   };
+
+  const addSide = () => {
+    if (nodes.length >= 2) {
+      setSides([...sides, { a: 0, b: 1 }]);
+    }
+  };
+
+  const updateSide = (i: number, key: "a" | "b", value: number) => {
+    const copy = [...sides];
+    copy[i][key] = value;
+    setSides(copy);
+  };
+
+  const removeSide = (i: number) =>
+    setSides(sides.filter((_, idx) => idx !== i));
 
   /* ---------------- UI ---------------- */
   return (
@@ -71,294 +82,193 @@ export default function DistributedLoadPage() {
           Moment of Inertia for Composite Shapes Calculator
         </h1>
 
-        <div className="bg-white border rounded-xl h-[280px] mb-6" />
+        {/* Canvas */}
+        <div className="bg-white rounded-xl h-[280px] mb-6 shadow-sm" />
 
-        <p className="text-sm text-gray-700 mb-6">
-          Note: The most lower left point of the composite shape should be at (0,0).
+        {/* Note */}
+        <p className="text-sm text-gray-700 mb-4">
+          <span className="font-semibold">Note:</span> The most lower left point
+          of the composite shape should be at (0,0).
         </p>
 
-        {/* ======================================================= */}
-        {/*  TOP GRID — Nodes / Round Shapes / Sides               */}
-        {/* ======================================================= */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* -------- Nodes -------- */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h3 className="font-semibold mb-3">Nodes</h3>
+        {/* Shape Card */}
+        <div className="bg-white rounded-xl shadow px-6 py-4 w-[340px]">
+          <h3 className="font-semibold mb-3">Shape</h3>
 
-            {nodes.map((n, i) => (
-              <div key={i} className="flex items-center gap-2 mb-2">
-                <span className="w-16">
-                  Joint {String.fromCharCode(65 + i)}
-                </span>
-
-                <input
-                  placeholder="x"
-                  value={n.x}
-                  onChange={(e) =>
-                    update(nodes, setNodes, i, "x", e.target.value)
-                  }
-                  className={input}
-                />
-
-                <input
-                  placeholder="y"
-                  value={n.y}
-                  onChange={(e) =>
-                    update(nodes, setNodes, i, "y", e.target.value)
-                  }
-                  className={input}
-                />
-
-                {nodes.length > 1 && (
-                  <button
-                    onClick={() => remove(nodes, setNodes, i)}
-                    className={redBtn}
-                  >
-                    –
-                  </button>
-                )}
-              </div>
-            ))}
-
-            <button
-              onClick={() => setNodes([...nodes, { x: "", y: "" }])}
-              className={`${greenBtn} w-full mt-3`}
+          {/* Options Button */}
+          <button
+            onClick={() => setShowShapeOptions(p => !p)}
+            className="w-full flex items-center justify-between bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg"
+          >
+            Options
+            <span
+              className={`transition-transform ${
+                showShapeOptions ? "rotate-180" : ""
+              }`}
             >
-              + Add Joint
-            </button>
-          </div>
+              ▼
+            </span>
+          </button>
 
-          {/* -------- Round Shapes -------- */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h3 className="font-semibold mb-3">Round Shapes’ Joints</h3>
+          {/* OPTIONS PANEL */}
+          {showShapeOptions && (
+            <div className="mt-4 bg-white rounded-xl shadow px-6 py-4 space-y-4">
+              {/* Shape Type */}
+              <div>
+                <label className="block text-sm font-semibold mb-1">
+                  Shape
+                </label>
+                <select
+                  value={shapeType}
+                  onChange={e =>
+                    setShapeType(e.target.value as ShapeType)
+                  }
+                  className="w-full rounded px-3 py-1 bg-white shadow-sm appearance-none focus:outline-none"
+                >
+                  <option value="Polygon">Polygon</option>
+                  <option value="Circle">Circle</option>
+                  <option value="Semi-circle-1">Semi-circle-1</option>
+                  <option value="Semi-circle-2">Semi-circle-2</option>
+                  <option value="Quarter-circle-1">Quarter-circle-1</option>
+                  <option value="Quarter-circle-2">Quarter-circle-2</option>
+                  <option value="Quarter-circle-3">Quarter-circle-3</option>
+                  <option value="Quarter-circle-4">Quarter-circle-4</option>
+                </select>
+              </div>
 
-            <label className="flex items-center gap-2 mb-2">
-              <input type="checkbox" />
-              No Round Shape
-            </label>
+              {/* Hollow / Solid */}
+              <select
+                value={hollow}
+                onChange={e => setHollow(e.target.value)}
+                className="w-full rounded px-3 py-1 bg-white shadow-sm appearance-none focus:outline-none"
+              >
+                <option>Hollow</option>
+                <option>Solid</option>
+              </select>
 
-            <label className="flex items-center gap-2 mb-3">
-              <input type="checkbox" />
-              With Round Shape
-            </label>
+              {/* ===== CIRCLE / SEMI / QUARTER ===== */}
+              {isCircularShape && (
+                <CircularInputs
+                  radius={radius}
+                  x={circleX}
+                  y={circleY}
+                  onRadiusChange={setRadius}
+                  onXChange={setCircleX}
+                  onYChange={setCircleY}
+                />
+              )}
 
-            {shapes.map((s, i) => (
-              <div key={i} className="flex flex-col gap-3 mb-4">
-
-                {/* Radius + Shape */}
-                <div className="flex items-end gap-3">
+              {/* ================= POLYGON ================= */}
+              {shapeType === "Polygon" && (
+                <>
+                  {/* Joints */}
                   <div>
-                    <span className="block mb-1">Radius</span>
-                    <input
-                      placeholder="Radius"
-                      value={s.radius}
-                      onChange={(e) =>
-                        update(shapes, setShapes, i, "radius", e.target.value)
-                      }
-                      className={input}
-                    />
-                  </div>
+                    <h4 className="font-semibold mb-2">Joints</h4>
 
-                  <div>
-                    <span className="block mb-1">Shape</span>
-                    <select
-                      value={s.type}
-                      onChange={(e) =>
-                        update(shapes, setShapes, i, "type", e.target.value)
-                      }
-                      className="border rounded-md p-1"
-                    >
-                      <option>circle</option>
-                      <option>semi-circle</option>
-                      <option>quarter-circle</option>
-                    </select>
-                  </div>
+                    {nodes.map((n, i) => (
+                      <div key={i} className="flex items-center gap-2 mb-2">
+                        <span className="w-14 text-sm">
+                          Joint {String.fromCharCode(65 + i)}
+                        </span>
+                        <input
+                          value={n.x}
+                          onChange={e =>
+                            updateNode(i, "x", e.target.value)
+                          }
+                          placeholder="x"
+                          className="w-14 rounded px-2 py-1 bg-white shadow-sm focus:outline-none"
+                        />
+                        <input
+                          value={n.y}
+                          onChange={e =>
+                            updateNode(i, "y", e.target.value)
+                          }
+                          placeholder="y"
+                          className="w-14 rounded px-2 py-1 bg-white shadow-sm focus:outline-none"
+                        />
+                        <button
+                          onClick={() => removeNode(i)}
+                          className="bg-red-500 text-white px-2 rounded"
+                        >
+                          −
+                        </button>
+                      </div>
+                    ))}
 
-                  {shapes.length > 1 && (
                     <button
-                      onClick={() => remove(shapes, setShapes, i)}
-                      className={`${redBtn} w-8 h-8 p-0 self-end`}
+                      onClick={addNode}
+                      className="bg-green-600 text-white px-3 py-1 rounded text-sm"
                     >
-                      –
+                      + Add Joint
                     </button>
-                  )}
-                </div>
+                  </div>
 
+                  {/* Sides */}
+                  <div>
+                    <h4 className="font-semibold mb-2">Sides</h4>
 
-                {/* x */}
-                <div className="flex items-center gap-2">
-                  <span className="w-24">x-Axis</span>
-                  <input
-                    placeholder="x"
-                    value={s.x}
-                    onChange={(e) =>
-                      update(shapes, setShapes, i, "x", e.target.value)
-                    }
-                    className={input}
-                  />
-                </div>
+                    {sides.map((s, i) => (
+                      <div key={i} className="flex items-center gap-2 mb-2">
+                        <span className="w-14 text-sm">Side</span>
+                        <select
+                          value={s.a}
+                          onChange={e =>
+                            updateSide(
+                              i,
+                              "a",
+                              Number(e.target.value)
+                            )
+                          }
+                          className="rounded px-2 py-1 bg-white shadow-sm appearance-none focus:outline-none"
+                        >
+                          {nodes.map((_, j) => (
+                            <option key={j} value={j}>
+                              Joint {String.fromCharCode(65 + j)}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={s.b}
+                          onChange={e =>
+                            updateSide(
+                              i,
+                              "b",
+                              Number(e.target.value)
+                            )
+                          }
+                          className="rounded px-2 py-1 bg-white shadow-sm appearance-none focus:outline-none"
+                        >
+                          {nodes.map((_, j) => (
+                            <option key={j} value={j}>
+                              Joint {String.fromCharCode(65 + j)}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => removeSide(i)}
+                          className="bg-red-500 text-white px-2 rounded"
+                        >
+                          −
+                        </button>
+                      </div>
+                    ))}
 
-                {/* y */}
-                <div className="flex items-center gap-2">
-                  <span className="w-24">y-Axis</span>
-                  <input
-                    placeholder="y"
-                    value={s.y}
-                    onChange={(e) =>
-                      update(shapes, setShapes, i, "y", e.target.value)
-                    }
-                    className={input}
-                  />
-                </div>
+                    <button
+                      onClick={addSide}
+                      className="bg-green-600 text-white px-3 py-1 rounded text-sm"
+                    >
+                      + Add Side
+                    </button>
+                  </div>
+                </>
+              )}
 
-              </div>
-            ))}
-
-            <button
-              onClick={() =>
-                setShapes([
-                  ...shapes,
-                  { type: "circle", radius: "", x: "", y: "" },
-                ])
-              }
-              className={`${greenBtn} w-full`}
-            >
-              + Add Shape
-            </button>
-          </div>
-
-
-          {/* -------- Sides -------- */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h3 className="font-semibold mb-3">Sides</h3>
-
-            {sides.map((s, i) => (
-              <div key={i} className="flex items-center gap-2 mb-2">
-                <span className="w-24">
-                  Side {String.fromCharCode(65 + i)}
-                </span>
-
-                <input
-                  placeholder="x"
-                  value={s.x}
-                  onChange={(e) =>
-                    update(sides, setSides, i, "x", e.target.value)
-                  }
-                  className={input}
-                />
-
-                <input
-                  placeholder="y"
-                  value={s.y}
-                  onChange={(e) =>
-                    update(sides, setSides, i, "y", e.target.value)
-                  }
-                  className={input}
-                />
-
-                {sides.length > 1 && (
-                  <button
-                    onClick={() => remove(sides, setSides, i)}
-                    className={redBtn}
-                  >
-                    –
-                  </button>
-                )}
-              </div>
-            ))}
-
-            <button
-              onClick={() => setSides([...sides, { x: "", y: "" }])}
-              className={`${greenBtn} w-full mt-3`}
-            >
-              + Add Side
-            </button>
-          </div>
-        </div>
-
-        {/* ======================================================= */}
-        {/*   ORIENTATION FIX — 3 PANELS SIDE BY SIDE               */}
-        {/* ======================================================= */}
-        <p className="text-sm text-gray-700 my-6">For Analysis.</p>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-          {/* -------- Reference Axis -------- */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h3 className="font-semibold mb-3">Reference Axis</h3>
-
-            <label className="flex items-center gap-2 mb-2">
-              <input type="checkbox" />
-              Centroidal Axis
-            </label>
-
-            <label className="flex items-center gap-2 mb-3">
-              <input type="checkbox" />
-              Custom Axis
-            </label>
-
-            <div className="flex flex-col gap-3 mb-3">
-              <div className="flex items-center gap-2">
-                <span className="w-24">x-Axis</span>
-                <input placeholder="x" className={input} />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="w-24">y-Axis</span>
-                <input placeholder="y" className={input} />
-              </div>
+              {/* Add Shape */}
+              <button className="w-full bg-green-700 text-white py-2 rounded-lg font-semibold">
+                + Add Shape
+              </button>
             </div>
-          </div>
-
-          {/* -------- Shapes -------- */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h3 className="font-semibold mb-3">Shapes</h3>
-
-            {shapes.map((s, i) => (
-              <div key={i} className="mb-3">
-
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="w-14">Shape</span>
-                  <select
-                    value={s.type}
-                    onChange={(e) =>
-                      update(shapes, setShapes, i, "type", e.target.value)
-                    }
-                    className="border rounded-md p-1"
-                  >
-                    <option>Solid</option>
-                    <option>Hollow</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2 mb-3">
-                  <select className="border rounded-md p-1 w-28">
-                    <option>unit A</option>
-                  </select>
-
-                  <select className="border rounded-md p-1 w-28">
-                    <option>unit B</option>
-                  </select>
-                </div>
-
-              </div>
-            ))}
-
-            <button className={`${greenBtn} w-full mt-2`}>
-              + Add Shape
-            </button>
-          </div>
-
-          {/* -------- Calculate -------- */}
-          <div className="flex items-start justify-center md:justify-end w-full">
-            <button
-              className="w-full bg-blue-800 text-white py-3 rounded-lg font-semibold mb-6 hover:bg-blue-900 transition"
-            >
-              Calculate
-            </button>
-          </div>
-
-
+          )}
         </div>
       </main>
 
