@@ -22,6 +22,10 @@ export default function DistributedLoadPage() {
   const [shapeType, setShapeType] = useState<ShapeType>("Polygon");
   const [hollow, setHollow] = useState("Hollow");
 
+  // controls number of shape cards
+  const [shapeCards, setShapeCards] = useState<number[]>([0]);
+  const [openCardIndex, setOpenCardIndex] = useState<number | null>(null);
+
   // Polygon
   const [nodes, setNodes] = useState<XY[]>([
     { x: "", y: "" },
@@ -36,8 +40,6 @@ export default function DistributedLoadPage() {
   const [radius, setRadius] = useState("");
   const [circleX, setCircleX] = useState("");
   const [circleY, setCircleY] = useState("");
-
-  const [showShapeOptions, setShowShapeOptions] = useState(false);
 
   const isCircularShape = shapeType !== "Polygon";
 
@@ -72,6 +74,11 @@ export default function DistributedLoadPage() {
   const removeSide = (i: number) =>
     setSides(sides.filter((_, idx) => idx !== i));
 
+  // ✅ ONLY adds another Shape card
+  const handleAddShape = () => {
+    setShapeCards(prev => [...prev, prev.length]);
+  };
+
   /* ---------------- UI ---------------- */
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 text-gray-900">
@@ -91,39 +98,43 @@ export default function DistributedLoadPage() {
           of the composite shape should be at (0,0).
         </p>
 
-        {/* Shape Card */}
-        <div className="bg-white rounded-xl shadow px-6 py-4 w-[340px]">
-          <h3 className="font-semibold mb-3">Shape</h3>
-
-          {/* Options Button */}
-          <button
-            onClick={() => setShowShapeOptions(p => !p)}
-            className="w-full flex items-center justify-between bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg"
+        {/* Shape Cards */}
+        {shapeCards.map((_, index) => (
+          <div
+            key={index}
+            className="bg-white rounded-xl shadow px-6 py-4 w-[340px] mb-4"
           >
-            Options
-            <span
-              className={`transition-transform ${
-                showShapeOptions ? "rotate-180" : ""
-              }`}
-            >
-              ▼
-            </span>
-          </button>
+            <h3 className="font-semibold mb-3">
+              Shape {index + 1}
+            </h3>
 
-          {/* OPTIONS PANEL */}
-          {showShapeOptions && (
-            <div className="mt-4 bg-white rounded-xl shadow px-6 py-4 space-y-4">
-              {/* Shape Type */}
-              <div>
-                <label className="block text-sm font-semibold mb-1">
-                  Shape
-                </label>
+            {/* Options Button */}
+            <button
+              onClick={() =>
+                setOpenCardIndex(openCardIndex === index ? null : index)
+              }
+              className="w-full flex items-center justify-between bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg"
+            >
+              Options
+              <span
+                className={`transition-transform ${
+                  openCardIndex === index ? "rotate-180" : ""
+                }`}
+              >
+                ▼
+              </span>
+            </button>
+
+            {/* OPTIONS PANEL */}
+            {openCardIndex === index && (
+              <div className="mt-4 bg-white rounded-xl shadow px-6 py-4 space-y-4">
+                {/* Shape Type */}
                 <select
                   value={shapeType}
                   onChange={e =>
                     setShapeType(e.target.value as ShapeType)
                   }
-                  className="w-full rounded px-3 py-1 bg-white shadow-sm appearance-none focus:outline-none"
+                  className="w-full rounded px-3 py-1 bg-white shadow-sm"
                 >
                   <option value="Polygon">Polygon</option>
                   <option value="Circle">Circle</option>
@@ -134,142 +145,38 @@ export default function DistributedLoadPage() {
                   <option value="Quarter-circle-3">Quarter-circle-3</option>
                   <option value="Quarter-circle-4">Quarter-circle-4</option>
                 </select>
+
+                {/* Hollow / Solid */}
+                <select
+                  value={hollow}
+                  onChange={e => setHollow(e.target.value)}
+                  className="w-full rounded px-3 py-1 bg-white shadow-sm"
+                >
+                  <option>Hollow</option>
+                  <option>Solid</option>
+                </select>
+
+                {isCircularShape && (
+                  <CircularInputs
+                    radius={radius}
+                    x={circleX}
+                    y={circleY}
+                    onRadiusChange={setRadius}
+                    onXChange={setCircleX}
+                    onYChange={setCircleY}
+                  />
+                )}
+
+                <button
+                  onClick={handleAddShape}
+                  className="w-full bg-green-700 text-white py-2 rounded-lg font-semibold"
+                >
+                  + Add Shape
+                </button>
               </div>
-
-              {/* Hollow / Solid */}
-              <select
-                value={hollow}
-                onChange={e => setHollow(e.target.value)}
-                className="w-full rounded px-3 py-1 bg-white shadow-sm appearance-none focus:outline-none"
-              >
-                <option>Hollow</option>
-                <option>Solid</option>
-              </select>
-
-              {/* ===== CIRCLE / SEMI / QUARTER ===== */}
-              {isCircularShape && (
-                <CircularInputs
-                  radius={radius}
-                  x={circleX}
-                  y={circleY}
-                  onRadiusChange={setRadius}
-                  onXChange={setCircleX}
-                  onYChange={setCircleY}
-                />
-              )}
-
-              {/* ================= POLYGON ================= */}
-              {shapeType === "Polygon" && (
-                <>
-                  {/* Joints */}
-                  <div>
-                    <h4 className="font-semibold mb-2">Joints</h4>
-
-                    {nodes.map((n, i) => (
-                      <div key={i} className="flex items-center gap-2 mb-2">
-                        <span className="w-14 text-sm">
-                          Joint {String.fromCharCode(65 + i)}
-                        </span>
-                        <input
-                          value={n.x}
-                          onChange={e =>
-                            updateNode(i, "x", e.target.value)
-                          }
-                          placeholder="x"
-                          className="w-14 rounded px-2 py-1 bg-white shadow-sm focus:outline-none"
-                        />
-                        <input
-                          value={n.y}
-                          onChange={e =>
-                            updateNode(i, "y", e.target.value)
-                          }
-                          placeholder="y"
-                          className="w-14 rounded px-2 py-1 bg-white shadow-sm focus:outline-none"
-                        />
-                        <button
-                          onClick={() => removeNode(i)}
-                          className="bg-red-500 text-white px-2 rounded"
-                        >
-                          −
-                        </button>
-                      </div>
-                    ))}
-
-                    <button
-                      onClick={addNode}
-                      className="bg-green-600 text-white px-3 py-1 rounded text-sm"
-                    >
-                      + Add Joint
-                    </button>
-                  </div>
-
-                  {/* Sides */}
-                  <div>
-                    <h4 className="font-semibold mb-2">Sides</h4>
-
-                    {sides.map((s, i) => (
-                      <div key={i} className="flex items-center gap-2 mb-2">
-                        <span className="w-14 text-sm">Side</span>
-                        <select
-                          value={s.a}
-                          onChange={e =>
-                            updateSide(
-                              i,
-                              "a",
-                              Number(e.target.value)
-                            )
-                          }
-                          className="rounded px-2 py-1 bg-white shadow-sm appearance-none focus:outline-none"
-                        >
-                          {nodes.map((_, j) => (
-                            <option key={j} value={j}>
-                              Joint {String.fromCharCode(65 + j)}
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          value={s.b}
-                          onChange={e =>
-                            updateSide(
-                              i,
-                              "b",
-                              Number(e.target.value)
-                            )
-                          }
-                          className="rounded px-2 py-1 bg-white shadow-sm appearance-none focus:outline-none"
-                        >
-                          {nodes.map((_, j) => (
-                            <option key={j} value={j}>
-                              Joint {String.fromCharCode(65 + j)}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={() => removeSide(i)}
-                          className="bg-red-500 text-white px-2 rounded"
-                        >
-                          −
-                        </button>
-                      </div>
-                    ))}
-
-                    <button
-                      onClick={addSide}
-                      className="bg-green-600 text-white px-3 py-1 rounded text-sm"
-                    >
-                      + Add Side
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {/* Add Shape */}
-              <button className="w-full bg-green-700 text-white py-2 rounded-lg font-semibold">
-                + Add Shape
-              </button>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        ))}
       </main>
 
       <Footer />
