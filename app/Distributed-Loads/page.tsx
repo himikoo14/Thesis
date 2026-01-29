@@ -108,97 +108,100 @@ export default function DistributedLoadPage() {
           of the composite shape should be at (0,0).
         </p>
 
-        {/* Shape Cards */}
-        {shapeCards.map((_, index) => (
-          <div
-            key={index}
-            className="bg-white rounded-xl shadow px-6 py-4 w-[340px] mb-4"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold">
-                Shape {index + 1}
-              </h3>
-
-              <button
-                onClick={() => handleRemoveShape(index)}
-                className="w-8 h-8 flex items-center justify-center 
-             bg-red-500 text-white rounded-lg 
-             hover:bg-red-600 transition text-lg font-bold"
-                title="Remove shape"
-              >
-                –
-              </button>
-            </div>
-
-
-            {/* Options Button */}
-            <button
-              onClick={() =>
-                setOpenCardIndex(openCardIndex === index ? null : index)
-              }
-              className="w-full flex items-center justify-between bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg"
+        {/* Shape Cards Container */}
+        <div className="flex flex-wrap justify-center gap-6">
+          {shapeCards.map((_, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-xl shadow px-6 py-4 w-[340px]"
             >
-              Options
-              <span
-                className={`transition-transform ${openCardIndex === index ? "rotate-180" : ""
-                  }`}
-              >
-                ▼
-              </span>
-            </button>
 
-            {/* OPTIONS PANEL */}
-            {openCardIndex === index && (
-              <div className="mt-4 bg-white rounded-xl shadow px-6 py-4 space-y-4">
-                {/* Shape Type */}
-                <select
-                  value={shapeType}
-                  onChange={e =>
-                    setShapeType(e.target.value as ShapeType)
-                  }
-                  className="w-full rounded px-3 py-1 bg-white shadow-sm"
-                >
-                  <option value="Polygon">Polygon</option>
-                  <option value="Circle">Circle</option>
-                  <option value="Semi-circle-1">Semi-circle-1</option>
-                  <option value="Semi-circle-2">Semi-circle-2</option>
-                  <option value="Quarter-circle-1">Quarter-circle-1</option>
-                  <option value="Quarter-circle-2">Quarter-circle-2</option>
-                  <option value="Quarter-circle-3">Quarter-circle-3</option>
-                  <option value="Quarter-circle-4">Quarter-circle-4</option>
-                </select>
-
-                {/* Hollow / Solid */}
-                <select
-                  value={hollow}
-                  onChange={e => setHollow(e.target.value)}
-                  className="w-full rounded px-3 py-1 bg-white shadow-sm"
-                >
-                  <option>Hollow</option>
-                  <option>Solid</option>
-                </select>
-
-                {isCircularShape && (
-                  <CircularInputs
-                    radius={radius}
-                    x={circleX}
-                    y={circleY}
-                    onRadiusChange={setRadius}
-                    onXChange={setCircleX}
-                    onYChange={setCircleY}
-                  />
-                )}
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold">
+                  Shape {index + 1}
+                </h3>
 
                 <button
-                  onClick={handleAddShape}
-                  className="w-full bg-green-700 text-white py-2 rounded-lg font-semibold"
+                  onClick={() => handleRemoveShape(index)}
+                  className="w-8 h-8 flex items-center justify-center 
+             bg-red-500 text-white rounded-lg 
+             hover:bg-red-600 transition text-lg font-bold"
+                  title="Remove shape"
                 >
-                  + Add Shape
+                  –
                 </button>
               </div>
-            )}
-          </div>
-        ))}
+
+
+              {/* Options Button */}
+              <button
+                onClick={() =>
+                  setOpenCardIndex(openCardIndex === index ? null : index)
+                }
+                className="w-full flex items-center justify-between bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg"
+              >
+                Options
+                <span
+                  className={`transition-transform ${openCardIndex === index ? "rotate-180" : ""
+                    }`}
+                >
+                  ▼
+                </span>
+              </button>
+
+              {/* OPTIONS PANEL */}
+              {openCardIndex === index && (
+                <div className="mt-4 bg-white rounded-xl shadow px-6 py-4 space-y-4">
+                  {/* Shape Type */}
+                  <select
+                    value={shapeType}
+                    onChange={e =>
+                      setShapeType(e.target.value as ShapeType)
+                    }
+                    className="w-full rounded px-3 py-1 bg-white shadow-sm"
+                  >
+                    <option value="Polygon">Polygon</option>
+                    <option value="Circle">Circle</option>
+                    <option value="Semi-circle-1">Semi-circle-1</option>
+                    <option value="Semi-circle-2">Semi-circle-2</option>
+                    <option value="Quarter-circle-1">Quarter-circle-1</option>
+                    <option value="Quarter-circle-2">Quarter-circle-2</option>
+                    <option value="Quarter-circle-3">Quarter-circle-3</option>
+                    <option value="Quarter-circle-4">Quarter-circle-4</option>
+                  </select>
+
+                  {/* Hollow / Solid */}
+                  <select
+                    value={hollow}
+                    onChange={e => setHollow(e.target.value)}
+                    className="w-full rounded px-3 py-1 bg-white shadow-sm"
+                  >
+                    <option>Hollow</option>
+                    <option>Solid</option>
+                  </select>
+
+                  {isCircularShape && (
+                    <CircularInputs
+                      radius={radius}
+                      x={circleX}
+                      y={circleY}
+                      onRadiusChange={setRadius}
+                      onXChange={setCircleX}
+                      onYChange={setCircleY}
+                    />
+                  )}
+
+                  <button
+                    onClick={handleAddShape}
+                    className="w-full bg-green-700 text-white py-2 rounded-lg font-semibold"
+                  >
+                    + Add Shape
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </main>
 
       <Footer />
