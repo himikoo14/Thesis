@@ -78,6 +78,16 @@ export default function DistributedLoadPage() {
   const handleAddShape = () => {
     setShapeCards(prev => [...prev, prev.length]);
   };
+  const handleRemoveShape = (index: number) => {
+    if (shapeCards.length === 1) return; // prevent removing last card
+
+    setShapeCards(prev => prev.filter((_, i) => i !== index));
+
+    // close options if the removed card was open
+    if (openCardIndex === index) {
+      setOpenCardIndex(null);
+    }
+  };
 
   /* ---------------- UI ---------------- */
   return (
@@ -104,9 +114,22 @@ export default function DistributedLoadPage() {
             key={index}
             className="bg-white rounded-xl shadow px-6 py-4 w-[340px] mb-4"
           >
-            <h3 className="font-semibold mb-3">
-              Shape {index + 1}
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">
+                Shape {index + 1}
+              </h3>
+
+              <button
+                onClick={() => handleRemoveShape(index)}
+                className="w-8 h-8 flex items-center justify-center 
+             bg-red-500 text-white rounded-lg 
+             hover:bg-red-600 transition text-lg font-bold"
+                title="Remove shape"
+              >
+                –
+              </button>
+            </div>
+
 
             {/* Options Button */}
             <button
@@ -117,9 +140,8 @@ export default function DistributedLoadPage() {
             >
               Options
               <span
-                className={`transition-transform ${
-                  openCardIndex === index ? "rotate-180" : ""
-                }`}
+                className={`transition-transform ${openCardIndex === index ? "rotate-180" : ""
+                  }`}
               >
                 ▼
               </span>
