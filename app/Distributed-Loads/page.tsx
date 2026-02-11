@@ -5,8 +5,7 @@ import Header from "<Ian>/components/Header";
 import Footer from "<Ian>/components/Footer";
 import CircularInputs from "<Ian>/components/CircularInputs";
 import ShapeCanvas from "<Ian>/components/ShapeCanvas";
-
-
+import { computeMOI } from "../../lib/MOIEngine";
 
 /* ================= TYPES ================= */
 type XY = { x: string; y: string };
@@ -59,12 +58,43 @@ export default function DistributedLoadPage() {
     },
   ]);
 
+const [result, setResult] = useState<{
+  area: number;
+  centroidX: number;
+  centroidY: number;
+  Ix: number;
+  Iy: number;
+} | null>(null);
+
+
   /* ================= HELPERS ================= */
 
   // TEMP placeholder function (so the button works)
-  const calculateResultant = () => {
-    console.log("Calculate clicked!");
-  };
+const calculateResultant = () => {
+  const computed = computeMOI(shapes);
+
+  let Ix = computed.Ix;
+  let Iy = computed.Iy;
+
+  if (axisType === "Custom") {
+    const customX = Number(axisX);
+    const customY = Number(axisY);
+
+    const dx = computed.centroidX - customX;
+    const dy = computed.centroidY - customY;
+
+    Ix = Ix + computed.area * dy * dy;
+    Iy = Iy + computed.area * dx * dx;
+  }
+
+  setResult({
+    area: computed.area,
+    centroidX: computed.centroidX,
+    centroidY: computed.centroidY,
+    Ix,
+    Iy,
+  });
+};
 
 
   const handleAddShape = () => {
@@ -90,6 +120,30 @@ export default function DistributedLoadPage() {
   const handleRemoveShape = (index: number) => {
     if (shapes.length === 1) return;
     setShapes(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // ================= GLOBAL JOINT LABEL (A, B ... Z, AA, AB ...) =================
+  const getJointLabel = (shapeIndex: number, nodeIndex: number) => {
+    let count = 0;
+
+    // Count joints from previous shapes
+    for (let i = 0; i < shapeIndex; i++) {
+      count += shapes[i].nodes.length;
+    }
+
+    let globalIndex = count + nodeIndex;
+
+    // Convert number → Excel-style letters
+    let label = "";
+    globalIndex += 1; // make it 1-based
+
+    while (globalIndex > 0) {
+      const remainder = (globalIndex - 1) % 26;
+      label = String.fromCharCode(65 + remainder) + label;
+      globalIndex = Math.floor((globalIndex - 1) / 26);
+    }
+
+    return label;
   };
 
   /* ================= UI ================= */
@@ -166,6 +220,20 @@ export default function DistributedLoadPage() {
                 Calculate
               </button>
             </div>
+
+{result && (
+  <div className="mt-6 bg-white rounded-xl shadow p-4">
+    <h3 className="font-semibold mb-3">Results</h3>
+
+    <p>Area: {result.area.toFixed(3)}</p>
+    <p>
+      Centroid: ({result.centroidX.toFixed(3)},{" "}
+      {result.centroidY.toFixed(3)})
+    </p>
+    <p>Ix: {result.Ix.toFixed(3)}</p>
+    <p>Iy: {result.Iy.toFixed(3)}</p>
+  </div>
+)}
 
           </div>
 
@@ -256,7 +324,7 @@ export default function DistributedLoadPage() {
 
                               {shape.nodes.map((node, i) => (
                                 <div key={i} className="flex items-center gap-2 mb-2">
-                                  <span className="w-16">Joint {String.fromCharCode(65 + i)}</span>
+                                  <span className="w-16">Joint {getJointLabel(index, i)}</span>
 
                                   <input
                                     placeholder="x"
@@ -332,7 +400,7 @@ export default function DistributedLoadPage() {
                                   >
                                     {shape.nodes.map((_, j) => (
                                       <option key={j} value={j}>
-                                        Joint {String.fromCharCode(65 + j)}
+                                        Joint {getJointLabel(index, j)}
                                       </option>
                                     ))}
                                   </select>
@@ -348,7 +416,7 @@ export default function DistributedLoadPage() {
                                   >
                                     {shape.nodes.map((_, j) => (
                                       <option key={j} value={j}>
-                                        Joint {String.fromCharCode(65 + j)}
+                                        Joint {getJointLabel(index, j)}
                                       </option>
                                     ))}
                                   </select>
