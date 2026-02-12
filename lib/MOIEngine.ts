@@ -32,9 +32,15 @@ export function computeMOI(shapes: ShapeData[]) {
 
   shapes.forEach(shape => {
     if (shape.type === "Circle") {
+      // ✅ Ignore if values are empty
+      if (!shape.radius || !shape.x || !shape.y) return;
+
       const r = Number(shape.radius);
       const cx = Number(shape.x);
       const cy = Number(shape.y);
+
+      // ✅ Ignore invalid numbers
+      if (isNaN(r) || isNaN(cx) || isNaN(cy)) return;
 
       const area = Math.PI * r * r;
 
@@ -45,12 +51,21 @@ export function computeMOI(shapes: ShapeData[]) {
       Ix += (Math.PI * Math.pow(r, 4)) / 4;
       Iy += (Math.PI * Math.pow(r, 4)) / 4;
     }
-
-    // (Polygon logic can be added later)
   });
 
-  const centroidX = totalArea !== 0 ? sumX / totalArea : 0;
-  const centroidY = totalArea !== 0 ? sumY / totalArea : 0;
+  // ✅ If nothing computed, return plain zero
+  if (totalArea === 0) {
+    return {
+      area: 0,
+      centroidX: 0,
+      centroidY: 0,
+      Ix: 0,
+      Iy: 0,
+    };
+  }
+
+  const centroidX = sumX / totalArea;
+  const centroidY = sumY / totalArea;
 
   return {
     area: totalArea,

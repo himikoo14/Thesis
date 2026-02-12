@@ -58,43 +58,43 @@ export default function DistributedLoadPage() {
     },
   ]);
 
-const [result, setResult] = useState<{
-  area: number;
-  centroidX: number;
-  centroidY: number;
-  Ix: number;
-  Iy: number;
-} | null>(null);
+  const [result, setResult] = useState<{
+    area: number;
+    centroidX: number;
+    centroidY: number;
+    Ix: number;
+    Iy: number;
+  } | null>(null);
 
 
   /* ================= HELPERS ================= */
 
   // TEMP placeholder function (so the button works)
-const calculateResultant = () => {
-  const computed = computeMOI(shapes);
+  const calculateResultant = () => {
+    const computed = computeMOI(shapes);
 
-  let Ix = computed.Ix;
-  let Iy = computed.Iy;
+    let Ix = computed.Ix;
+    let Iy = computed.Iy;
 
-  if (axisType === "Custom") {
-    const customX = Number(axisX);
-    const customY = Number(axisY);
+    if (axisType === "Custom") {
+      const customX = Number(axisX);
+      const customY = Number(axisY);
 
-    const dx = computed.centroidX - customX;
-    const dy = computed.centroidY - customY;
+      const dx = computed.centroidX - customX;
+      const dy = computed.centroidY - customY;
 
-    Ix = Ix + computed.area * dy * dy;
-    Iy = Iy + computed.area * dx * dx;
-  }
+      Ix = Ix + computed.area * dy * dy;
+      Iy = Iy + computed.area * dx * dx;
+    }
 
-  setResult({
-    area: computed.area,
-    centroidX: computed.centroidX,
-    centroidY: computed.centroidY,
-    Ix,
-    Iy,
-  });
-};
+    setResult({
+      area: computed.area,
+      centroidX: computed.centroidX,
+      centroidY: computed.centroidY,
+      Ix,
+      Iy,
+    });
+  };
 
 
   const handleAddShape = () => {
@@ -221,19 +221,24 @@ const calculateResultant = () => {
               </button>
             </div>
 
-{result && (
-  <div className="mt-6 bg-white rounded-xl shadow p-4">
-    <h3 className="font-semibold mb-3">Results</h3>
+            {result && (
+              <div className="mt-6 bg-white rounded-xl shadow p-4">
+                <h3 className="font-semibold mb-3">Results</h3>
 
-    <p>Area: {result.area.toFixed(3)}</p>
-    <p>
-      Centroid: ({result.centroidX.toFixed(3)},{" "}
-      {result.centroidY.toFixed(3)})
-    </p>
-    <p>Ix: {result.Ix.toFixed(3)}</p>
-    <p>Iy: {result.Iy.toFixed(3)}</p>
-  </div>
-)}
+                <p>Area: {result.area === 0 ? 0 : result.area.toFixed(3)}</p>
+
+                <p>
+                  Centroid: (
+                  {result.centroidX === 0 ? 0 : result.centroidX.toFixed(3)},{" "}
+                  {result.centroidY === 0 ? 0 : result.centroidY.toFixed(3)}
+                  )
+                </p>
+
+                <p>Ix: {result.Ix === 0 ? 0 : result.Ix.toFixed(3)}</p>
+                <p>Iy: {result.Iy === 0 ? 0 : result.Iy.toFixed(3)}</p>
+
+              </div>
+            )}
 
           </div>
 
