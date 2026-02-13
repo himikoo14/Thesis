@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "StatiCalcs",
   description: "Interactive calculators for learning and solving Statics of Rigid Bodies.",
+  icons: {
+    icon: "/StatiCalcs Logo.png",   // 👈 Add this line
+  },
 };
 
 export default function RootLayout({

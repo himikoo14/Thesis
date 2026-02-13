@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Header() {
   return (
@@ -12,8 +13,16 @@ export default function Header() {
           href="/"
           className="flex items-center gap-3 justify-center sm:justify-start hover:text-[#1848a0] transition"
         >
-          <div className="w-10 h-10 border-2 border-black rounded-full" />
-          <span className="font-bold text-[30px] text-black">Statics Calculator</span>
+          <Image
+            src="/StatiCalcs Logo.png"
+            alt="StatiCalcs Logo"
+            width={45}
+            height={45}
+            className="object-contain"
+          />
+          <span className="font-bold text-[30px] text-black">
+            Statics Calculator
+          </span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -57,7 +66,9 @@ export default function Header() {
           <Link href="/" className="hover:text-[#1848a0]">Home</Link>
 
           <details className="w-full">
-            <summary className="cursor-pointer text-center hover:text-[#1848a0]">Topics</summary>
+            <summary className="cursor-pointer text-center hover:text-[#1848a0]">
+              Topics
+            </summary>
             <div className="flex flex-col mt-2 gap-2">
               <Link href="/Introduction" className="hover:text-[#1848a0] p-2">
                 Chapter 1: Introduction to Statics
