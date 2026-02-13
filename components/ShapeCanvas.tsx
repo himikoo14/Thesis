@@ -4,10 +4,12 @@ type XY = { x: string; y: string };
 
 type ShapeData = {
   type: string;
-  hollow: "Hollow" | "Solid";  // ✅ ADD THIS
+  hollow: "Hollow" | "Solid";
   nodes: XY[];
   sides: { a: number; b: number }[];
+  radius?: string;   // ✅ ADD THIS
 };
+
 
 
 type Props = {
@@ -21,17 +23,71 @@ export default function ShapeCanvas({ shapes }: Props) {
   const points: { x: number; y: number }[] = [];
 
   shapes.forEach(s => {
-    if (s.type !== "Polygon") return;
-    s.nodes.forEach(n => {
-      if (n.x.trim() === "" || n.y.trim() === "") return;
 
-      const x = Number(n.x);
-      const y = Number(n.y);
+    // ✅ POLYGON
+    if (s.type === "Polygon") {
+      s.nodes.forEach(n => {
+        if (n.x.trim() === "" || n.y.trim() === "") return;
 
-      if (!isNaN(x) && !isNaN(y)) {
-        points.push({ x, y });
-      }
-    });
+        const x = Number(n.x);
+        const y = Number(n.y);
+
+        if (!isNaN(x) && !isNaN(y)) {
+          points.push({ x, y });
+        }
+      });
+    }
+
+    // ✅ CIRCLE
+    if (s.type === "Circle") {
+      const center = s.nodes[0];
+      if (!center) return;
+
+      const cx = Number(center.x);
+      const cy = Number(center.y);
+      const r = Number(s.radius);
+
+      if ([cx, cy, r].some(isNaN)) return;
+
+      // push bounding box of circle
+      points.push({ x: cx - r, y: cy - r });
+      points.push({ x: cx + r, y: cy + r });
+    }
+
+
+    // ✅ 🔴 ADD THIS BLOCK RIGHT HERE
+    if (s.type?.startsWith("Semi-circle")) {
+      const center = s.nodes[0];
+      if (!center) return;
+
+      const cx = Number(center.x);
+      const cy = Number(center.y);
+      const r = Number(s.radius);
+
+      if ([cx, cy, r].some(isNaN)) return;
+
+      // Always use full circular bounding box
+      points.push({ x: cx - r, y: cy - r });
+      points.push({ x: cx + r, y: cy + r });
+    }
+    // ✅ QUARTER CIRCLE
+    if (s.type?.startsWith("Quarter-circle")) {
+      const center = s.nodes[0];
+      if (!center) return;
+
+      const cx = Number(center.x);
+      const cy = Number(center.y);
+      const r = Number(s.radius);
+
+      if ([cx, cy, r].some(isNaN)) return;
+
+      // Always use full circular bounding box (stable scaling)
+      points.push({ x: cx - r, y: cy - r });
+      points.push({ x: cx + r, y: cy + r });
+    }
+
+
+
   });
 
   // 🚨 If no valid points, render empty canvas
@@ -111,6 +167,323 @@ export default function ShapeCanvas({ shapes }: Props) {
 
         {/* SHAPES */}
         {shapes.map((shape, si) => {
+
+          // ======================
+          // 🟣 SEMICIRCLES
+          // ======================
+          if (shape.type?.startsWith("Semi-circle")) {
+            const center = shape.nodes[0];
+            if (!center) return null;
+
+            const cx = Number(center.x);
+            const cy = Number(center.y);
+            const r = Number(shape.radius);
+
+            if (isNaN(cx) || isNaN(cy) || isNaN(r) || r <= 0) return null;
+
+            const mapped = map(cx, cy);
+            const sr = r * scale;
+
+            let startX = 0;
+            let startY = 0;
+            let endX = 0;
+            let endY = 0;
+            let sweep = 1;
+
+            switch (shape.type) {
+              case "Semi-circle-1": // UP
+                startX = mapped.x - sr;
+                startY = mapped.y;
+                endX = mapped.x + sr;
+                endY = mapped.y;
+                sweep = 1;
+                break;
+
+              case "Semi-circle-2": // DOWN
+                startX = mapped.x - sr;
+                startY = mapped.y;
+                endX = mapped.x + sr;
+                endY = mapped.y;
+                sweep = 0;
+                break;
+
+              case "Semi-circle-3": // RIGHT
+                startX = mapped.x;
+                startY = mapped.y - sr;
+                endX = mapped.x;
+                endY = mapped.y + sr;
+                sweep = 0;   // ✅ FIXED
+                break;
+
+
+              case "Semi-circle-4": // LEFT
+                startX = mapped.x;
+                startY = mapped.y - sr;
+                endX = mapped.x;
+                endY = mapped.y + sr;
+                sweep = 1;
+                break;
+            }
+
+            const pathData = `
+    M ${startX} ${startY}
+    A ${sr} ${sr} 0 0 ${sweep} ${endX} ${endY}
+    L ${startX} ${startY}
+    Z
+  `;
+
+            return (
+              <g key={si}>
+
+                {/* SEMICIRCLE */}
+                <path
+                  d={pathData}
+                  fill={
+                    shape.hollow === "Hollow"
+                      ? "rgba(156,163,175,0.5)"
+                      : "rgba(59,130,246,0.3)"
+                  }
+                  stroke="#111827"
+                  strokeWidth={3}
+                  strokeDasharray={
+                    shape.hollow === "Hollow" ? "8 6" : "0"
+                  }
+                />
+
+                {/* CENTER POINT */}
+                <circle
+                  cx={mapped.x}
+                  cy={mapped.y}
+                  r={10}
+                  fill="#dc2626"
+                />
+
+                {/* DIAMETER ENDPOINTS */}
+                <circle cx={startX} cy={startY} r={8} fill="#2563eb" />
+                <circle cx={endX} cy={endY} r={8} fill="#2563eb" />
+
+                {/* RADIUS LINE */}
+                <line
+                  x1={mapped.x}
+                  y1={mapped.y}
+                  x2={startX}
+                  y2={startY}
+                  stroke="#16a34a"
+                  strokeWidth={3}
+                />
+
+                {/* RADIUS LABEL */}
+                <text
+                  x={(mapped.x + startX) / 2}
+                  y={(mapped.y + startY) / 2 - 12}
+                  fontSize="28"
+                  fontWeight="bold"
+                  fill="#16a34a"
+                  textAnchor="middle"
+                >
+                  r = {r}
+                </text>
+
+              </g>
+            );
+
+            {/* CENTER POINT */ }
+            <circle
+              cx={mapped.x}
+              cy={mapped.y}
+              r={10}
+              fill="#dc2626"
+            />
+
+            {/* CENTER LABEL */ }
+            <text
+              x={mapped.x + 14}
+              y={mapped.y - 14}
+              fontSize="30"
+              fontWeight="bold"
+              fill="#111827"
+            >
+              C
+            </text>
+
+          }
+
+          // ======================
+          // 🟠 QUARTER CIRCLES
+          // ======================
+          if (shape.type?.startsWith("Quarter-circle")) {
+            const center = shape.nodes[0];
+            if (!center) return null;
+
+            const cx = Number(center.x);
+            const cy = Number(center.y);
+            const r = Number(shape.radius);
+
+            if (isNaN(cx) || isNaN(cy) || isNaN(r) || r <= 0) return null;
+
+            const mapped = map(cx, cy);
+            const sr = r * scale;
+
+            let startX = 0;
+            let startY = 0;
+            let endX = 0;
+            let endY = 0;
+            let sweep = 0;
+
+            switch (shape.type) {
+              case "Quarter-circle-1": // Upper Right
+                startX = mapped.x;
+                startY = mapped.y - sr;
+                endX = mapped.x + sr;
+                endY = mapped.y;
+                sweep = 1;
+                break;
+
+              case "Quarter-circle-2": // Upper Left
+                startX = mapped.x - sr;
+                startY = mapped.y;
+                endX = mapped.x;
+                endY = mapped.y - sr;
+                sweep = 1;
+                break;
+
+              case "Quarter-circle-3": // Lower Left
+                startX = mapped.x;
+                startY = mapped.y + sr;
+                endX = mapped.x - sr;
+                endY = mapped.y;
+                sweep = 1;
+                break;
+
+              case "Quarter-circle-4": // Lower Right
+                startX = mapped.x + sr;
+                startY = mapped.y;
+                endX = mapped.x;
+                endY = mapped.y + sr;
+                sweep = 1;
+                break;
+            }
+
+            const pathData = `
+    M ${mapped.x} ${mapped.y}
+    L ${startX} ${startY}
+    A ${sr} ${sr} 0 0 ${sweep} ${endX} ${endY}
+    Z
+  `;
+
+            return (
+              <g key={si}>
+
+                {/* QUARTER SHAPE */}
+                <path
+                  d={pathData}
+                  fill={
+                    shape.hollow === "Hollow"
+                      ? "rgba(156,163,175,0.5)"
+                      : "rgba(59,130,246,0.3)"
+                  }
+                  stroke="#111827"
+                  strokeWidth={3}
+                  strokeDasharray={
+                    shape.hollow === "Hollow" ? "8 6" : "0"
+                  }
+                />
+
+                {/* CENTER */}
+                <circle
+                  cx={mapped.x}
+                  cy={mapped.y}
+                  r={10}
+                  fill="#dc2626"
+                />
+
+                {/* RADIUS LINES */}
+                <line
+                  x1={mapped.x}
+                  y1={mapped.y}
+                  x2={startX}
+                  y2={startY}
+                  stroke="#16a34a"
+                  strokeWidth={3}
+                />
+
+                <line
+                  x1={mapped.x}
+                  y1={mapped.y}
+                  x2={endX}
+                  y2={endY}
+                  stroke="#16a34a"
+                  strokeWidth={3}
+                />
+
+                {/* RADIUS LABEL */}
+                <text
+                  x={(mapped.x + startX) / 2}
+                  y={(mapped.y + startY) / 2 - 12}
+                  fontSize="28"
+                  fontWeight="bold"
+                  fill="#16a34a"
+                  textAnchor="middle"
+                >
+                  r = {r}
+                </text>
+
+              </g>
+            );
+          }
+
+          // ======================
+          // 🔵 CIRCLE
+          // ======================
+          if (shape.type === "Circle") {
+            const center = shape.nodes[0];
+            if (!center) return null;
+
+            const cx = Number(center.x);
+            const cy = Number(center.y);
+            const r = Number(shape.radius);
+
+            if ([cx, cy, r].some(isNaN)) return null;
+
+            const mappedCenter = map(cx, cy);
+            const scaledRadius = r * scale;
+
+            return (
+              <g key={si}>
+                <circle
+                  cx={mappedCenter.x}
+                  cy={mappedCenter.y}
+                  r={scaledRadius}
+                  fill={
+                    shape.hollow === "Hollow"
+                      ? "rgba(156, 163, 175, 0.5)"
+                      : "rgba(59, 130, 246, 0.25)"
+                  }
+                  stroke="#111827"
+                  strokeWidth={3}
+                  strokeDasharray={
+                    shape.hollow === "Hollow" ? "8 6" : "0"
+                  }
+                />
+
+                {/* Radius Label */}
+                <text
+                  x={mappedCenter.x}
+                  y={mappedCenter.y - scaledRadius - 20}
+                  fontSize="28"
+                  fontWeight="bold"
+                  fill="#16a34a"
+                  textAnchor="middle"
+                >
+                  r = {r}
+                </text>
+              </g>
+            );
+          }
+
+          // ======================
+          // 🔷 POLYGON (your original logic)
+          // ======================
           if (shape.type !== "Polygon") return null;
 
           // convert valid nodes
