@@ -66,8 +66,11 @@ export default function DistributedLoadPage() {
     Iy: number;
   } | null>(null);
 
-
-  /* ================= HELPERS ================= */
+  // ================= NUMBER FORMATTER =================
+  const formatNumber = (num: number) => {
+    const rounded = Number(num.toFixed(3));
+    return Number.isInteger(rounded) ? rounded : rounded;
+  };
 
   // TEMP placeholder function (so the button works)
   const calculateResultant = () => {
@@ -225,17 +228,18 @@ export default function DistributedLoadPage() {
               <div className="mt-6 bg-white rounded-xl shadow p-4">
                 <h3 className="font-semibold mb-3">Results</h3>
 
-                <p>Area: {result.area === 0 ? 0 : result.area.toFixed(3)}</p>
+                <p>Area: {formatNumber(result.area)}</p>
 
                 <p>
                   Centroid: (
-                  {result.centroidX === 0 ? 0 : result.centroidX.toFixed(3)},{" "}
-                  {result.centroidY === 0 ? 0 : result.centroidY.toFixed(3)}
+                  {formatNumber(result.centroidX)},{" "}
+                  {formatNumber(result.centroidY)}
                   )
                 </p>
 
-                <p>Ix: {result.Ix === 0 ? 0 : result.Ix.toFixed(3)}</p>
-                <p>Iy: {result.Iy === 0 ? 0 : result.Iy.toFixed(3)}</p>
+                <p>Ix: {formatNumber(result.Ix)}</p>
+                <p>Iy: {formatNumber(result.Iy)}</p>
+
 
               </div>
             )}
