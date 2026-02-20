@@ -14,8 +14,8 @@ export default function Header() {
           className="flex items-center gap-3 justify-center sm:justify-start hover:text-[#1848a0] transition"
         >
           <Image
-            src="/StatiCalcs Logo.png"
-            alt="StatiCalcs Logo"
+            src="/logo.png"
+            alt="logo"
             width={45}
             height={45}
             className="object-contain"

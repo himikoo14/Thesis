@@ -1,365 +1,486 @@
 "use client";
 
-import { useState } from "react";
-import Header from "<Ian>/components/Header";
-import Footer from "<Ian>/components/Footer";
+import { useRef, useState } from "react";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+import "katex/dist/katex.min.css";
+import { BlockMath } from "react-katex";
 
-type XY = { x: string; y: string };
-type Shape = { type: string; radius: string; x: string; y: string };
-type Support = { x: string; y: string; type: string };
+/* ===================== Force System Logic ===================== */
+class ForceSystem2D {
+  vectors: { fx: number; fy: number; magnitude: number; angleDeg: number }[];
 
-export default function EquilibriumPage() {
-  /* ---------------- STATES ---------------- */
-  const [nodes, setNodes] = useState<XY[]>([
-    { x: "", y: "" },
-    { x: "", y: "" },
-    { x: "", y: "" },
-  ]);
+  constructor() {
+    this.vectors = [];
+  }
 
-  const [shapes, setShapes] = useState<Shape[]>([
-    { type: "circle", radius: "", x: "", y: "" },
-  ]);
+  addForce(magnitude: number, angleDeg: number) {
+    const angleRad = (angleDeg * Math.PI) / 180;
+    const fx = magnitude * Math.cos(angleRad);
+    const fy = magnitude * Math.sin(angleRad);
+    this.vectors.push({ fx, fy, magnitude, angleDeg });
+  }
 
-  const [sides, setSides] = useState<XY[]>([
-    { x: "", y: "" },
-    { x: "", y: "" },
-    { x: "", y: "" },
-  ]);
+  stepByStepSolution() {
+    const steps: string[] = [];
+    steps.push("Step 1: Resolve each force into components:");
 
-  const [supports, setSupports] = useState<Support[]>([
-    { x: "", y: "", type: "Pinned" },
-    { x: "", y: "", type: "Roller" },
-  ]);
+    let sumFx = 0;
+    let sumFy = 0;
 
-  const [x, setX] = useState("");
-  const [y, setY] = useState("");
+    this.vectors.forEach((v, i) => {
+      steps.push(
+        `\\text{Force ${i + 1}: } |F|=${v.magnitude}\\,\\text{kN},\\; \\theta=${v.angleDeg}^\\circ`
+      );
 
-  /* ---------------- STYLES ---------------- */
-  const input =
-    "w-16 rounded-md border border-gray-300 p-1 text-center text-[16px]";
-  const redBtn =
-    "bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600";
-  const greenBtn =
-    "bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700";
+      steps.push(`
+        \\begin{align*}
+        F_{x${i + 1}} &= ${v.magnitude}\\cos(${v.angleDeg}^\\circ) \\\\
+                      &= ${v.fx.toFixed(3)}\\,\\text{kN} \\\\
+        F_{y${i + 1}} &= ${v.magnitude}\\sin(${v.angleDeg}^\\circ) \\\\
+                      &= ${v.fy.toFixed(3)}\\,\\text{kN}
+        \\end{align*}
+      `);
 
-  /* ---------------- HELPERS ---------------- */
-  const update = <T,>(
-    arr: T[],
-    setArr: (v: T[]) => void,
-    i: number,
-    key: keyof T,
-    value: string
-  ) => {
-    const copy = [...arr];
-    copy[i][key] = value as any;
-    setArr(copy);
-  };
+      sumFx += v.fx;
+      sumFy += v.fy;
+    });
 
-  const remove = <T,>(arr: T[], setArr: (v: T[]) => void, i: number) => {
-    if (arr.length > 1) {
-      setArr(arr.filter((_, idx) => idx !== i));
-    }
-  };
+    steps.push("Step 2: Sum of components:");
+    steps.push(`
+      \\begin{align*}
+      \\Sigma F_x &= ${sumFx.toFixed(3)}\\,\\text{kN} \\\\
+      \\Sigma F_y &= ${sumFy.toFixed(3)}\\,\\text{kN}
+      \\end{align*}
+    `);
 
-  /* ---------------- UI ---------------- */
+    const R = Math.hypot(sumFx, sumFy);
+    const theta = (Math.atan2(sumFy, sumFx) * 180) / Math.PI;
+
+    const arrow = theta >= 0 ? "↺" : "↻";
+
+    steps.push("Step 3: Resultant force:");
+    steps.push(`
+      \\begin{align*}
+      R &= \\sqrt{(\\Sigma F_x)^2 + (\\Sigma F_y)^2} \\\\
+        &= ${R.toFixed(3)}\\,\\text{kN} \\\\
+      \\theta &= \\tan^{-1}\\left(\\tfrac{\\Sigma F_y}{\\Sigma F_x}\\right) \\\\
+              &= ${theta.toFixed(2)}^\\circ ${arrow}\\,\\text{from +x axis}
+      \\end{align*}
+    `);
+
+    return { steps, sumFx, sumFy, R, theta };
+  }
+}
+
+/* ===================== Types ===================== */
+type ForceInput = {
+  magnitude: string;
+  angle: string;
+};
+
+type ForceResult = {
+  steps: string[];
+  sumFx: number;
+  sumFy: number;
+  R: number;
+  theta: number;
+};
+
+/* ⭐⭐⭐⭐⭐ ADDED — FULL FBD FOR STEP 4 (all forces + resultant) ⭐⭐⭐⭐⭐ */
+function ResultantFBD({
+  forces,
+  result,
+}: {
+  forces: ForceInput[];
+  result: ForceResult;
+}) {
+  const vectors = forces
+    .map((f) => {
+      const m = parseFloat(f.magnitude);
+      const a = parseFloat(f.angle);
+      if (isNaN(m) || isNaN(a)) return null;
+      const rad = (a * Math.PI) / 180;
+      return { x: m * Math.cos(rad), y: m * Math.sin(rad) };
+    })
+    .filter(Boolean) as { x: number; y: number }[];
+
+  const R = { x: result.sumFx, y: result.sumFy };
+
+  const magnitudes = [
+    ...vectors.map((v) => Math.hypot(v.x, v.y)),
+    Math.hypot(R.x, R.y),
+  ];
+  const maxMag = Math.max(1, ...magnitudes);
+
+  const scale = 90 / maxMag;
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100 text-gray-900">
+    <svg
+      width="300"
+      height="300"
+      className="border rounded-lg bg-white shadow mx-auto"
+    >
+      <g transform="translate(150,150)">
+        {/* Axes */}
+        <line x1={-140} y1={0} x2={140} y2={0} stroke="gray" strokeWidth="1" />
+        <line x1={0} y1={-140} x2={0} y2={140} stroke="gray" strokeWidth="1" />
+
+        {/* Draw each force */}
+        {vectors.map((v, i) => {
+          const x = v.x * scale;
+          const y = -v.y * scale;
+
+          return (
+            <g key={i}>
+              <line
+                x1={0}
+                y1={0}
+                x2={x}
+                y2={y}
+                stroke="#1848a0"
+                strokeWidth="3"
+                markerEnd="url(#arrowF)"
+              />
+              <text
+                x={x * 0.55}
+                y={y * 0.55}
+                fontSize="14"
+                fill="#1848a0"
+                fontWeight="bold"
+              >
+                F{i + 1}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Draw resultant */}
+        <line
+          x1={0}
+          y1={0}
+          x2={R.x * scale}
+          y2={-R.y * scale}
+          stroke="#009900"
+          strokeWidth="4"
+          markerEnd="url(#arrowR)"
+        />
+        <text
+          x={(R.x * scale) * 0.55}
+          y={(-R.y * scale) * 0.55}
+          fontSize="16"
+          fill="#009900"
+          fontWeight="bold"
+        >
+          R
+        </text>
+
+        {/* Arrow definitions */}
+        <defs>
+          <marker
+            id="arrowF"
+            markerWidth="10"
+            markerHeight="10"
+            refX="5"
+            refY="3"
+            orient="auto"
+          >
+            <polygon points="0 0, 6 3, 0 6" fill="#1848a0" />
+          </marker>
+
+          <marker
+            id="arrowR"
+            markerWidth="12"
+            markerHeight="12"
+            refX="6"
+            refY="3"
+            orient="auto"
+          >
+            <polygon points="0 0, 7 3, 0 6" fill="#009900" />
+          </marker>
+        </defs>
+      </g>
+    </svg>
+  );
+}
+
+/* ===================== SVG FBD Component (draggable + resultant) ===================== */
+function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: ForceInput[]) => void }) {
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+
+  // Convert forces to vectors (math coords; y positive up)
+  const vectors = forces
+    .map((f) => {
+      const m = parseFloat(f.magnitude);
+      const a = parseFloat(f.angle);
+      if (isNaN(m) || isNaN(a)) return null;
+      const rad = (a * Math.PI) / 180;
+      return {
+        x: m * Math.cos(rad),
+        y: m * Math.sin(rad),
+      };
+    })
+    .filter(Boolean) as { x: number; y: number }[];
+
+  // Determine scale so arrows fit nicely
+  const maxMag = Math.max(1, ...vectors.map((v) => Math.hypot(v.x, v.y)));
+  const scale = 80 / maxMag; // dynamic scale
+
+  const screenPointToSvg = (clientX: number, clientY: number) => {
+    const svg = svgRef.current;
+    if (!svg) return null;
+    const pt = svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return null;
+    return pt.matrixTransform(ctm.inverse());
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (dragIndex === null) return;
+
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+
+    // convert cursor to SVG coordinates
+    const cursor = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+    const x = cursor.x - 150;
+    const y = cursor.y - 150;
+
+    /* ---------------------------------------------------------
+       ONLY UPDATE ANGLE — KEEP SAME MAGNITUDE FROM THE USER
+       --------------------------------------------------------- */
+    const newAngle = (Math.atan2(-y, x) * 180) / Math.PI;
+
+    const newForces = [...forces];
+
+    newForces[dragIndex] = {
+      ...newForces[dragIndex],
+      angle: newAngle.toFixed(3),  // Only angle changes
+    };
+
+    setForces(newForces);
+  };
+
+
+  const stopDrag = () => setDragIndex(null);
+
+  // compute resultant in math coords
+  const sum = vectors.reduce((acc, v) => ({ x: acc.x + v.x, y: acc.y + v.y }), { x: 0, y: 0 });
+  const Rx = sum.x * scale;
+  const Ry = -sum.y * scale; // svg y inverted
+
+  return (
+    <svg
+      ref={svgRef}
+      width="300"
+      height="300"
+      className="border rounded-lg bg-white shadow"
+      style={{ background: "white" }}
+      onMouseMove={handleMouseMove}
+      onMouseUp={stopDrag}
+      onMouseLeave={stopDrag}
+    >
+      <g transform="translate(150,150)">
+        {/* Axes */}
+        <line x1={-140} y1={0} x2={140} y2={0} stroke="gray" strokeWidth="1" />
+        <line x1={0} y1={-140} x2={0} y2={140} stroke="gray" strokeWidth="1" />
+
+        {/* Force vectors */}
+        {vectors.map((v, i) => {
+          const x = v.x * scale;
+          const y = -v.y * scale; // invert for svg
+          return (
+            <g key={i}>
+              <line
+                x1={0}
+                y1={0}
+                x2={x}
+                y2={y}
+                stroke="#1848a0"
+                strokeWidth="3"
+                markerEnd="url(#arrow)"
+                className="cursor-pointer" // arrow line is now draggable
+                onMouseDown={() => setDragIndex(i)}
+              />
+              <text x={x * 0.55} y={y * 0.55} fontSize="14" fill="black">
+                F{i + 1}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Arrow definitions */}
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto">
+            <polygon points="0 0, 6 3, 0 6" fill="#1848a0" />
+          </marker>
+
+          <marker id="arrowR" markerWidth="12" markerHeight="12" refX="6" refY="3" orient="auto">
+            <polygon points="0 0, 7 3, 0 6" fill="#009900" />
+          </marker>
+        </defs>
+      </g>
+    </svg>
+
+  );
+}
+
+/* ===================== MAIN COMPONENT ===================== */
+export default function Solver2D() {
+  const [forces, setForces] = useState<ForceInput[]>([{ magnitude: "", angle: "" }]);
+
+  const [result, setResult] = useState<ForceResult | null>(null);
+
+  const handleInputChange = (index: number, field: "magnitude" | "angle", value: string) => {
+    const newForces = [...forces];
+    newForces[index][field] = value;
+    setForces(newForces);
+  };
+
+  const calculateResultant = () => {
+    const system = new ForceSystem2D();
+
+    forces.forEach((f) => {
+      const mag = parseFloat(f.magnitude);
+      const ang = parseFloat(f.angle);
+      if (!isNaN(mag) && !isNaN(ang)) system.addForce(mag, ang);
+    });
+
+    setResult(system.stepByStepSolution());
+  };
+
+  return (
+    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900 text-[18px]">
       <Header />
 
-      <main className="flex-grow max-w-7xl mx-auto px-6 py-10">
-        <h1 className="text-3xl font-bold mb-8 text-center">
-          Moment of Inertia for Composite Shapes Calculator
-        </h1>
+      <main className="flex-grow flex flex-col items-center px-4 py-10">
+        <h1 className="text-[32px] font-bold mb-6">2D Resultant Force Calculator</h1>
 
-        <div className="bg-white border rounded-xl h-[280px] mb-6" />
-
-        <p className="text-sm text-gray-700 mb-6">
-          Note: The most lower left point of the composite shape should be at (0,0).
-        </p>
-
-        {/* ======================================================= */}
-        {/*  TOP GRID — Nodes / Round Shapes / Sides               */}
-        {/* ======================================================= */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* -------- Nodes -------- */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h3 className="font-semibold mb-3">Nodes</h3>
-
-            {nodes.map((n, i) => (
-              <div key={i} className="flex items-center gap-2 mb-2">
-                <span className="w-16">
-                  Joint {String.fromCharCode(65 + i)}
-                </span>
-
-                <input
-                  placeholder="x"
-                  value={n.x}
-                  onChange={(e) =>
-                    update(nodes, setNodes, i, "x", e.target.value)
-                  }
-                  className={input}
-                />
-
-                <input
-                  placeholder="y"
-                  value={n.y}
-                  onChange={(e) =>
-                    update(nodes, setNodes, i, "y", e.target.value)
-                  }
-                  className={input}
-                />
-
-                {nodes.length > 1 && (
-                  <button
-                    onClick={() => remove(nodes, setNodes, i)}
-                    className={redBtn}
-                  >
-                    –
-                  </button>
-                )}
-              </div>
-            ))}
-
-            <button
-              onClick={() => setNodes([...nodes, { x: "", y: "" }])}
-              className={`${greenBtn} w-full mt-3`}
-            >
-              + Add Joint
-            </button>
-          </div>
-
-          {/* -------- Round Shapes -------- */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h3 className="font-semibold mb-3">Round Shapes’ Joints</h3>
-
-            <label className="flex items-center gap-2 mb-2">
-              <input type="checkbox" />
-              No Round Shape
-            </label>
-
-            <label className="flex items-center gap-2 mb-3">
-              <input type="checkbox" />
-              With Round Shape
-            </label>
-
-            {shapes.map((s, i) => (
-              <div key={i} className="flex flex-col gap-3 mb-4">
-
-                {/* Radius + Shape */}
-                <div className="flex items-end gap-3">
-                  <div>
-                    <span className="block mb-1">Radius</span>
-                    <input
-                      placeholder="Radius"
-                      value={s.radius}
-                      onChange={(e) =>
-                        update(shapes, setShapes, i, "radius", e.target.value)
-                      }
-                      className={input}
-                    />
-                  </div>
-
-                  <div>
-                    <span className="block mb-1">Shape</span>
-                    <select
-                      value={s.type}
-                      onChange={(e) =>
-                        update(shapes, setShapes, i, "type", e.target.value)
-                      }
-                      className="border rounded-md p-1"
-                    >
-                      <option>circle</option>
-                      <option>semi-circle</option>
-                      <option>quarter-circle</option>
-                    </select>
-                  </div>
-
-                  {shapes.length > 1 && (
-                    <button
-                      onClick={() => remove(shapes, setShapes, i)}
-                      className={`${redBtn} w-8 h-8 p-0 self-end`}
-                    >
-                      –
-                    </button>
-                  )}
-                </div>
-
-
-                {/* x */}
-                <div className="flex items-center gap-2">
-                  <span className="w-24">x-Axis</span>
-                  <input
-                    placeholder="x"
-                    value={s.x}
-                    onChange={(e) =>
-                      update(shapes, setShapes, i, "x", e.target.value)
-                    }
-                    className={input}
-                  />
-                </div>
-
-                {/* y */}
-                <div className="flex items-center gap-2">
-                  <span className="w-24">y-Axis</span>
-                  <input
-                    placeholder="y"
-                    value={s.y}
-                    onChange={(e) =>
-                      update(shapes, setShapes, i, "y", e.target.value)
-                    }
-                    className={input}
-                  />
-                </div>
-
-              </div>
-            ))}
-
-            <button
-              onClick={() =>
-                setShapes([
-                  ...shapes,
-                  { type: "circle", radius: "", x: "", y: "" },
-                ])
-              }
-              className={`${greenBtn} w-full`}
-            >
-              + Add Shape
-            </button>
-          </div>
-
-
-          {/* -------- Sides -------- */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h3 className="font-semibold mb-3">Sides</h3>
-
-            {sides.map((s, i) => (
-              <div key={i} className="flex items-center gap-2 mb-2">
-                <span className="w-24">
-                  Side {String.fromCharCode(65 + i)}
-                </span>
-
-                <input
-                  placeholder="x"
-                  value={s.x}
-                  onChange={(e) =>
-                    update(sides, setSides, i, "x", e.target.value)
-                  }
-                  className={input}
-                />
-
-                <input
-                  placeholder="y"
-                  value={s.y}
-                  onChange={(e) =>
-                    update(sides, setSides, i, "y", e.target.value)
-                  }
-                  className={input}
-                />
-
-                {sides.length > 1 && (
-                  <button
-                    onClick={() => remove(sides, setSides, i)}
-                    className={redBtn}
-                  >
-                    –
-                  </button>
-                )}
-              </div>
-            ))}
-
-            <button
-              onClick={() => setSides([...sides, { x: "", y: "" }])}
-              className={`${greenBtn} w-full mt-3`}
-            >
-              + Add Side
-            </button>
-          </div>
+        {/* FBD Live Preview */}
+        <div className="mb-8">
+          <h2 className="text-[20px] font-semibold text-center mb-2">Real-Time Free Body Diagram</h2>
+          <FBD forces={forces} setForces={setForces} />
         </div>
 
-        {/* ======================================================= */}
-        {/*   ORIENTATION FIX — 3 PANELS SIDE BY SIDE               */}
-        {/* ======================================================= */}
-        <p className="text-sm text-gray-700 my-6">For Analysis.</p>
+        {/* Inputs */}
+        <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 space-y-6">
+          <h2 className="text-[20px] font-semibold">Force setup</h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-          {/* -------- Reference Axis -------- */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h3 className="font-semibold mb-3">Reference Axis</h3>
-
-            <label className="flex items-center gap-2 mb-2">
-              <input type="checkbox" />
-              Centroidal Axis
-            </label>
-
-            <label className="flex items-center gap-2 mb-3">
-              <input type="checkbox" />
-              Custom Axis
-            </label>
-
-            <div className="flex flex-col gap-3 mb-3">
-              <div className="flex items-center gap-2">
-                <span className="w-24">x-Axis</span>
-                <input placeholder="x" className={input} />
+          <div className="grid grid-cols-2 gap-4">
+            {forces.map((f, i) => (
+              <div key={i} className="col-span-2 flex gap-4 items-end">
+                <div className="flex-1">
+                  <label className="block font-medium text-[18px]">
+                    Force {i + 1} (kN)
+                  </label>
+                  <input
+                    type="number"
+                    value={f.magnitude}
+                    onChange={(e) =>
+                      handleInputChange(i, "magnitude", e.target.value)
+                    }
+                    placeholder="Magnitude (kN)"
+                    className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block font-medium text-[18px]">
+                    Angle {i + 1} (°)
+                  </label>
+                  <input
+                    type="number"
+                    value={f.angle}
+                    onChange={(e) =>
+                      handleInputChange(i, "angle", e.target.value)
+                    }
+                    placeholder="Angle (deg)"
+                    className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2"
+                  />
+                </div>
+                {forces.length > 1 && (
+                  <button
+                    onClick={() =>
+                      setForces(forces.filter((_, idx) => idx !== i))
+                    }
+                    className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-[18px]"
+                  >
+                    –
+                  </button>
+                )}
               </div>
+            ))}
+          </div>
+          <button onClick={() => setForces([...forces, { magnitude: "", angle: "" }])} className="w-full bg-[#008409] text-white py-3 rounded-lg hover:bg-[#15711b] transition text-[18px]">
+            + Add Force
+          </button>
 
-              <div className="flex items-center gap-2">
-                <span className="w-24">y-Axis</span>
-                <input placeholder="y" className={input} />
-              </div>
+          <button onClick={calculateResultant} className="w-full bg-[#1848a0] text-white py-3 rounded-lg hover:bg-[#163d8a] transition text-[18px]">
+            Calculate
+          </button>
+        </div>
+
+        {/* Output */}
+        {result && (
+          <div className="w-full max-w-xl mt-6 bg-white rounded-2xl shadow p-6 space-y-4">
+            <h2 className="text-[20px] font-semibold">Resultant Force (kN)</h2>
+            <div>
+              <label className="block font-medium text-[18px]">Horizontal component (Fx)</label>
+              <input type="text" value={`${result.sumFx.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2" />
+            </div>
+
+            <div>
+              <label className="block font-medium text-[18px]">Vertical component (Fy)</label>
+              <input type="text" value={`${result.sumFy.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2" />
+            </div>
+
+            <div>
+              <label className="block font-medium text-[18px]">Magnitude of resultant force (R)</label>
+              <input type="text" value={`${result.R.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2" />
+            </div>
+
+            <div>
+              <label className="block font-medium text-[18px]">Direction of resultant force (θ)</label>
+              <input type="text" value={`${result.theta.toFixed(2)}°`} readOnly className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2" />
             </div>
           </div>
+        )}
 
-          {/* -------- Shapes -------- */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h3 className="font-semibold mb-3">Shapes</h3>
+        {/* Step-by-Step Solution */}
+        {result && (
+          <div className="w-full max-w-xl mt-6 bg-white rounded-2xl shadow p-6">
+            <h2 className="text-[20px] font-semibold mb-2">Step-by-Step Solution</h2>
+            
+            
+            <div className="space-y-4">
+              {result.steps.map((line, i) =>
+                line.startsWith("Step") ? (
+                  <p key={i} className="font-medium text-[18px]">
+                    {line}
+                  </p>
+                ) : (
+                  <div key={i} className="text-[18px]">
+                    <BlockMath>{line}</BlockMath>
+                  </div>
+                )
+              )}
+            </div>
 
-            {shapes.map((s, i) => (
-              <div key={i} className="mb-3">
-
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="w-14">Shape</span>
-                  <select
-                    value={s.type}
-                    onChange={(e) =>
-                      update(shapes, setShapes, i, "type", e.target.value)
-                    }
-                    className="border rounded-md p-1"
-                  >
-                    <option>Solid</option>
-                    <option>Hollow</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2 mb-3">
-                  <select className="border rounded-md p-1 w-28">
-                    <option>unit A</option>
-                  </select>
-
-                  <select className="border rounded-md p-1 w-28">
-                    <option>unit B</option>
-                  </select>
-                </div>
-
-              </div>
-            ))}
-
-            <button className={`${greenBtn} w-full mt-2`}>
-              + Add Shape
-            </button>
+            {/* ⭐⭐⭐⭐⭐ ADDED — Step 4 Resultant FBD with all forces ⭐⭐⭐⭐⭐ */}
+            <div className="mt-8">
+              <p className="font-medium text-[18px] mb-2">
+                Step 4: Final Free Body Diagram (All Forces + Resultant)
+              </p>
+              <ResultantFBD forces={forces} result={result} />
+            </div>
           </div>
-
-          {/* -------- Calculate -------- */}
-          <div className="flex items-start justify-center md:justify-end w-full">
-            <button
-              className="w-full bg-blue-800 text-white py-3 rounded-lg font-semibold mb-6 hover:bg-blue-900 transition"
-            >
-              Calculate
-            </button>
-          </div>
-
-
-        </div>
+        )}
       </main>
 
       <Footer />

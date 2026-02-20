@@ -35,6 +35,24 @@ type ShapeData = {
   y: string;
 };
 
+type MOIResult = {
+  step1: any[];
+  centroid: {
+    totalArea: number;
+    centroidX: number;
+    centroidY: number;
+  };
+  step3: any[];
+  centroidMOI?: {
+    Ix: number;
+    Iy: number;
+  };
+  final: {
+    Ix: number;
+    Iy: number;
+  };
+};
+
 export default function DistributedLoadPage() {
   /* ================= STATES ================= */
 
@@ -58,13 +76,8 @@ export default function DistributedLoadPage() {
     },
   ]);
 
-  const [result, setResult] = useState<{
-    area: number;
-    centroidX: number;
-    centroidY: number;
-    Ix: number;
-    Iy: number;
-  } | null>(null);
+  const [result, setResult] = useState<any>(null);
+
 
   // ================= NUMBER FORMATTER =================
   const formatNumber = (num: number) => {
@@ -74,28 +87,37 @@ export default function DistributedLoadPage() {
 
   // TEMP placeholder function (so the button works)
   const calculateResultant = () => {
-    const computed = computeMOI(shapes);
+    const computed = computeMOI(shapes) as MOIResult;
 
-    let Ix = computed.Ix;
-    let Iy = computed.Iy;
+    console.log("COMPUTED:", computed);
+
+    const Ix_centroid = computed.final.Ix;
+    const Iy_centroid = computed.final.Iy;
+
+    let Ix = Ix_centroid;
+    let Iy = Iy_centroid;
 
     if (axisType === "Custom") {
       const customX = Number(axisX);
       const customY = Number(axisY);
 
-      const dx = computed.centroidX - customX;
-      const dy = computed.centroidY - customY;
+      const dx = computed.centroid.centroidX - customX;
+      const dy = computed.centroid.centroidY - customY;
 
-      Ix = Ix + computed.area * dy * dy;
-      Iy = Iy + computed.area * dx * dx;
+      Ix = Ix + computed.centroid.totalArea * dy * dy;
+      Iy = Iy + computed.centroid.totalArea * dx * dx;
     }
 
     setResult({
-      area: computed.area,
-      centroidX: computed.centroidX,
-      centroidY: computed.centroidY,
-      Ix,
-      Iy,
+      ...computed,
+      centroidMOI: {
+        Ix: Ix_centroid,
+        Iy: Iy_centroid,
+      },
+      final: {
+        Ix,
+        Iy,
+      },
     });
   };
 
@@ -226,23 +248,39 @@ export default function DistributedLoadPage() {
 
             {result && (
               <div className="mt-6 bg-white rounded-xl shadow p-4">
-                <h3 className="font-semibold mb-3">Results</h3>
 
-                <p>Area: {formatNumber(result.area)}</p>
+                <h3 className="font-semibold mb-3">STEP 2 — Global Centroid</h3>
+
+                <p>Total Area (ΣA): {formatNumber(result.centroid.totalArea)}</p>
 
                 <p>
-                  Centroid: (
-                  {formatNumber(result.centroidX)},{" "}
-                  {formatNumber(result.centroidY)}
-                  )
+                  Centroid X: {formatNumber(result.centroid.centroidX)}
                 </p>
 
-                <p>Ix: {formatNumber(result.Ix)}</p>
-                <p>Iy: {formatNumber(result.Iy)}</p>
+                <p>
+                  Centroid Y: {formatNumber(result.centroid.centroidY)}
+                </p>
+
+                <hr className="my-4" />
+
+                <h3 className="font-semibold mb-3">CENTROIDAL MOI</h3>
+
+                <p>Ix (centroid): {formatNumber(result.centroidMOI.Ix)}</p>
+                <p>Iy (centroid): {formatNumber(result.centroidMOI.Iy)}</p>
+
+                <hr className="my-4" />
+
+                <h3 className="font-semibold mb-3">
+                  {axisType === "Custom" ? "MOI About Custom Axis" : "FINAL MOI"}
+                </h3>
+
+                <p>Ix: {formatNumber(result.final.Ix)}</p>
+                <p>Iy: {formatNumber(result.final.Iy)}</p>
 
 
               </div>
             )}
+
 
           </div>
 
