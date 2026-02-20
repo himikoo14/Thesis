@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "StatiCalcs",
   description: "Interactive calculators for learning and solving Statics of Rigid Bodies.",
   icons: {
-    icon: "/StatiCalcs Logo.png",   // 👈 Add this line
+    icon: "/Logo.png",   // 👈 Add this line
   },
 };
 
