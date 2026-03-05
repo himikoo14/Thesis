@@ -12,9 +12,9 @@ export default function Footer({
   links = [
     { label: "About", href: "/about" },
     { label: "References", href: "/reference" },
-    { label: "Contact", href: "/contact" },
-    { label: "Developer", href: "/developers" },
+    { label: "Developers", href: "/developers" },
   ],
+
 }: FooterProps) {
   return (
     <footer className="bg-white border-t mt-auto">

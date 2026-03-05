@@ -17,7 +17,7 @@ export default function DevelopersSection() {
         {/* Developer 1 */}
         <DeveloperCard
           image="/ian.png"
-          name="Ian Carl P. Cona"
+          name="Ian Carl P. Coña"
           email="iancarl.cona@msugensan.edu.ph"
           facebook="facebook.com/Himiikoo14"
           roles={["Programmer", "Website Developer"]}

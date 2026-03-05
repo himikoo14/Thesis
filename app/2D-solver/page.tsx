@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import Solver3D from "../3D-solver/page";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 
@@ -334,6 +335,7 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
 
 /* ===================== MAIN COMPONENT ===================== */
 export default function Solver2D() {
+  const [activeTab, setActiveTab] = useState<"2d" | "3d">("2d");
   const [forces, setForces] = useState<ForceInput[]>([{ magnitude: "", angle: "" }]);
 
   const [result, setResult] = useState<ForceResult | null>(null);
@@ -361,7 +363,35 @@ export default function Solver2D() {
       <Header />
 
       <main className="flex-grow flex flex-col items-center px-4 py-10">
-        <h1 className="text-[32px] font-bold mb-6">2D Resultant Force Calculator</h1>
+        {/* TABS */}
+<div className="flex justify-center mb-6 gap-4">
+
+  <button
+    onClick={() => setActiveTab("2d")}
+    className={`px-5 py-2 rounded-lg font-semibold ${
+      activeTab === "2d"
+        ? "bg-[#1848a0] text-white"
+        : "bg-gray-200"
+    }`}
+  >
+    2D Resultant
+  </button>
+
+  <button
+    onClick={() => setActiveTab("3d")}
+    className={`px-5 py-2 rounded-lg font-semibold ${
+      activeTab === "3d"
+        ? "bg-[#1848a0] text-white"
+        : "bg-gray-200"
+    }`}
+  >
+    3D Resultant
+  </button>
+
+</div>
+{activeTab === "2d" && (
+<>
+<h1 className="text-[32px] font-bold mb-6">2D Resultant Force Calculator</h1>
 
         {/* FBD Live Preview */}
         <div className="mb-8">
@@ -456,8 +486,8 @@ export default function Solver2D() {
         {result && (
           <div className="w-full max-w-xl mt-6 bg-white rounded-2xl shadow p-6">
             <h2 className="text-[20px] font-semibold mb-2">Step-by-Step Solution</h2>
-            
-            
+
+
             <div className="space-y-4">
               {result.steps.map((line, i) =>
                 line.startsWith("Step") ? (
@@ -481,6 +511,10 @@ export default function Solver2D() {
             </div>
           </div>
         )}
+        </>
+)}
+
+{activeTab === "3d" && <Solver3D />}
       </main>
 
       <Footer />

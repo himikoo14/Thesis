@@ -1,8 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 
@@ -358,10 +356,9 @@ export default function Solver2D() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900 text-[18px]">
-      <Header />
 
-      <main className="flex-grow flex flex-col items-center px-4 py-10">
-        <h1 className="text-[32px] font-bold mb-6">2D Resultant Force Calculator</h1>
+      <main className="flex-grow flex flex-col items-center px-4 pt-0 pb-10">
+        <h1 className="text-[32px] font-bold mb-6">3D Resultant Force Calculator</h1>
 
         {/* FBD Live Preview */}
         <div className="mb-8">
@@ -483,7 +480,6 @@ export default function Solver2D() {
         )}
       </main>
 
-      <Footer />
     </div>
   );
 }

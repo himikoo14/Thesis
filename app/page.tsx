@@ -38,7 +38,7 @@ export default function HomePage() {
               href="/2D-solver"
               className="bg-[#1848a0] text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] transition text-[18px]"
             >
-              2D Resultant Solver
+              Resultant Force Solver
             </Link>
 
             {/* Chapter 3 */}
