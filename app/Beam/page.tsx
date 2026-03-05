@@ -82,9 +82,9 @@ export default function BeamSolverUI() {
   /* ===================== JSX ===================== */
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900">
+    <div className="w-full flex flex-col items-center">
 
-      <main className="flex-grow flex flex-col items-center px-4 pt-0 pb-10">
+      <div className="w-full max-w-6xl flex flex-col items-center px-4 pt-0 pb-10">
 
         <h1 className="text-3xl font-bold text-center mb-2">
           Beam Calculator
@@ -317,8 +317,7 @@ export default function BeamSolverUI() {
           Calculate
         </button>
 
-      </main>
-
+      </div>
 
     </div>
   );

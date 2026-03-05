@@ -6,6 +6,7 @@ import Footer from "../../components/Footer";
 import { computeEquilibrant } from "../../lib/Equilibriumconc";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
+import BeamPage from "../Beam/page";
 
 /* ===================== Types ===================== */
 type ForceInput = {
@@ -118,6 +119,7 @@ export default function Equilibrium() {
     { magnitude: "", angle: "", magnitudeUnknown: false, angleUnknown: false },
   ]);
   const [solution, setSolution] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<"concurrent" | "nonconcurrent">("concurrent");
 
   const toggleUnknown = (index: number, field: "magnitude" | "angle") => {
     const newForces = [...forces];
@@ -159,149 +161,186 @@ export default function Equilibrium() {
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900 text-[18px]">
       <Header />
 
-      <main className="flex-grow flex flex-col items-center px-4 py-10">
-        <h1 className="text-[32px] font-bold mb-6">
-          Concurrent Equilibrium Calculator
-        </h1>
+      <main className="flex-grow flex flex-col items-center px-4 pt-8 pb-10">
+        {/* Tabs */}
+        <div className="flex justify-center mb-6 gap-4">
 
-        <div className="mb-8">
-          <h2 className="text-[20px] font-semibold text-center mb-2">
-            Free Body Diagram
-          </h2>
-          <FBD forces={forces} setForces={setForces} />
+          <button
+            onClick={() => setActiveTab("concurrent")}
+            className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "concurrent"
+                ? "bg-[#1848a0] text-white"
+                : "bg-gray-200"
+              }`}
+          >
+            Concurrent Force System
+          </button>
+
+          <button
+            onClick={() => setActiveTab("nonconcurrent")}
+            className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "nonconcurrent"
+                ? "bg-[#1848a0] text-white"
+                : "bg-gray-200"
+              }`}
+          >
+            Non-Concurrent Force System
+          </button>
+
         </div>
 
-        <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 space-y-6">
-          <h2 className="text-[20px] font-semibold">Force setup</h2>
+        {activeTab === "concurrent" && (
+          <>
+        <h1 className="text-3xl font-bold text-center mb-2">
+          Beam Calculator
+        </h1>
 
-          {forces.map((f, i) => (
-            <div key={i} className="flex gap-4 items-end">
+
+            <div className="mb-8">
+              <h2 className="text-[20px] font-semibold text-center mb-2">
+                Free Body Diagram
+              </h2>
+              <FBD forces={forces} setForces={setForces} />
+            </div>
+
+            <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 space-y-6">
+              <h2 className="text-[20px] font-semibold">Force setup</h2>
+
+              {forces.map((f, i) => (
+                <div key={i} className="flex gap-4 items-end">
 
 
-              {/* FORCE INPUT */}
-              <div className="flex-1">
-                <label className="block font-medium">
-                  Force {i + 1} (kN)
-                </label>
-                <div className="relative mt-1">
-                  <input
-                    type="number"
-                    value={f.magnitude}
-                    onChange={(e) =>
-                      handleInputChange(i, "magnitude", e.target.value)
-                    }
-                    className="w-full rounded-xl border border-gray-300 p-3 pr-14"
-                  />
+                  {/* FORCE INPUT */}
+                  <div className="flex-1">
+                    <label className="block font-medium">
+                      Force {i + 1} (kN)
+                    </label>
+                    <div className="relative mt-1">
+                      <input
+                        type="number"
+                        value={f.magnitude}
+                        onChange={(e) =>
+                          handleInputChange(i, "magnitude", e.target.value)
+                        }
+                        className="w-full rounded-xl border border-gray-300 p-3 pr-14"
+                      />
 
-                  <button
-                    type="button"
-                    onClick={() => toggleUnknown(i, "magnitude")}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2
+                      <button
+                        type="button"
+                        onClick={() => toggleUnknown(i, "magnitude")}
+                        className={`absolute right-2 top-1/2 -translate-y-1/2
      w-9 h-9 rounded-xl border
      text-lg font-semibold transition duration-200
      ${f.magnitudeUnknown
-                        ? "bg-[#1848a0] text-white border-[#1848a0]"
-                        : "bg-white text-[#1848a0] border-gray-300 hover:bg-blue-50"
-                      }`}
-                  >
-                    ?
-                  </button>
-                </div>
-              </div>
+                            ? "bg-[#1848a0] text-white border-[#1848a0]"
+                            : "bg-white text-[#1848a0] border-gray-300 hover:bg-blue-50"
+                          }`}
+                      >
+                        ?
+                      </button>
+                    </div>
+                  </div>
 
-              {/* ANGLE INPUT */}
-              <div className="flex-1">
-                <label className="block font-medium">
-                  Angle {i + 1} (°)
-                </label>
+                  {/* ANGLE INPUT */}
+                  <div className="flex-1">
+                    <label className="block font-medium">
+                      Angle {i + 1} (°)
+                    </label>
 
-                <div className="relative mt-1">
-                  <input
-                    type="number"
-                    value={f.angle}
-                    onChange={(e) =>
-                      handleInputChange(i, "angle", e.target.value)
-                    }
-                    className="w-full rounded-xl border border-gray-300 p-3 pr-12"
-                  />
+                    <div className="relative mt-1">
+                      <input
+                        type="number"
+                        value={f.angle}
+                        onChange={(e) =>
+                          handleInputChange(i, "angle", e.target.value)
+                        }
+                        className="w-full rounded-xl border border-gray-300 p-3 pr-12"
+                      />
 
-                  <button
-                    type="button"
-                    onClick={() => toggleUnknown(i, "angle")}
-                    className={`absolute right-2 top-1/2 -translate-y-1/2
+                      <button
+                        type="button"
+                        onClick={() => toggleUnknown(i, "angle")}
+                        className={`absolute right-2 top-1/2 -translate-y-1/2
      w-9 h-9 rounded-xl border
      text-lg font-semibold transition duration-200
      ${f.angleUnknown
-                        ? "bg-[#1848a0] text-white border-[#1848a0]"
-                        : "bg-white text-[#1848a0] border-gray-300 hover:bg-blue-50"
-                      }`}
-                  >
-                    ?
-                  </button>
+                            ? "bg-[#1848a0] text-white border-[#1848a0]"
+                            : "bg-white text-[#1848a0] border-gray-300 hover:bg-blue-50"
+                          }`}
+                      >
+                        ?
+                      </button>
+                    </div>
+                  </div>
+
+                  {forces.length > 1 && (
+                    <button
+                      onClick={() =>
+                        setForces(forces.filter((_, idx) => idx !== i))
+                      }
+                      className="px-3 py-1 bg-red-500 text-white rounded-lg 
+           hover:bg-red-600 transition duration-200"
+                    >
+                      –
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              <button
+                onClick={() =>
+                  setForces([...forces, { magnitude: "", angle: "" }])
+                }
+                className="w-full bg-[#008409] text-white py-3 rounded-lg 
+           hover:bg-[#15711b] transition duration-200"
+              >
+                + Add Force
+              </button>
+
+              <button
+                onClick={calculateResultant}
+                className="w-full bg-[#1848a0] text-white py-3 rounded-lg 
+           hover:bg-[#163d8a] transition duration-200 text-[18px]"
+              >
+                Calculate
+              </button>
+            </div>
+
+            {solution && (
+              <div className="mt-6 bg-gray-50 p-4 rounded-xl border">
+                <h3 className="font-semibold mb-2">Step-by-Step Solution</h3>
+
+                {solution.steps?.map((step: string, index: number) => (
+                  <div key={index} className="mb-3">
+                    {step.includes("\\begin") ? (
+                      <BlockMath>{step}</BlockMath>) : (
+                      <p>{step}</p>
+                    )}
+                  </div>
+                ))}
+
+                <div className="mt-3 font-semibold">
+                  Resultant Magnitude: {solution.resultantMagnitude.toFixed(3)} kN
+                </div>
+                <div>
+                  Resultant Angle: {solution.resultantAngle.toFixed(3)}°
+                </div>
+
+                <div className="mt-3 font-semibold">
+                  Equilibrant Magnitude: {solution.equilibrantMagnitude.toFixed(3)} kN
+                </div>
+                <div>
+                  Equilibrant Angle: {solution.equilibrantAngle.toFixed(3)}°
                 </div>
               </div>
+            )}
+          </>
+        )}
 
-              {forces.length > 1 && (
-                <button
-                  onClick={() =>
-                    setForces(forces.filter((_, idx) => idx !== i))
-                  }
-                  className="px-3 py-1 bg-red-500 text-white rounded-lg 
-           hover:bg-red-600 transition duration-200"
-                >
-                  –
-                </button>
-              )}
-            </div>
-          ))}
-
-          <button
-            onClick={() =>
-              setForces([...forces, { magnitude: "", angle: "" }])
-            }
-            className="w-full bg-[#008409] text-white py-3 rounded-lg 
-           hover:bg-[#15711b] transition duration-200"
-          >
-            + Add Force
-          </button>
-
-          <button
-            onClick={calculateResultant}
-            className="w-full bg-[#1848a0] text-white py-3 rounded-lg 
-           hover:bg-[#163d8a] transition duration-200 text-[18px]"
-          >
-            Calculate
-          </button>
-        </div>
-
-        {solution && (
-          <div className="mt-6 bg-gray-50 p-4 rounded-xl border">
-            <h3 className="font-semibold mb-2">Step-by-Step Solution</h3>
-
-            {solution.steps?.map((step: string, index: number) => (
-              <div key={index} className="mb-3">
-                {step.includes("\\begin") ? (
-                  <BlockMath>{step}</BlockMath>) : (
-                  <p>{step}</p>
-                )}
-              </div>
-            ))}
-
-            <div className="mt-3 font-semibold">
-              Resultant Magnitude: {solution.resultantMagnitude.toFixed(3)} kN
-            </div>
-            <div>
-              Resultant Angle: {solution.resultantAngle.toFixed(3)}°
-            </div>
-
-            <div className="mt-3 font-semibold">
-              Equilibrant Magnitude: {solution.equilibrantMagnitude.toFixed(3)} kN
-            </div>
-            <div>
-              Equilibrant Angle: {solution.equilibrantAngle.toFixed(3)}°
-            </div>
+        {activeTab === "nonconcurrent" && (
+          <div className="w-full max-w-6xl">
+            <BeamPage />
           </div>
         )}
+
       </main>
 
       <Footer />

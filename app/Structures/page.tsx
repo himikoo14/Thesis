@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import BeamPage from "../Beam/page";
 
 /* ===================== TYPES ===================== */
 
@@ -34,7 +33,6 @@ type GenericObject = Record<string, any>;
 /* ===================== COMPONENT ===================== */
 
 export default function TrussSolverUI() {
-  const [activeTab, setActiveTab] = useState<"concurrent" | "nonconcurrent">("concurrent");
   /* ---------- STATE ---------- */
   const [supports, setSupports] = useState<Support[]>([
     { x: "", y: "", type: "Pinned" },
@@ -272,316 +270,285 @@ export default function TrussSolverUI() {
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900">
       <Header />
       <main className="flex-grow px-6 py-10 max-w-6xl mx-auto w-full">
-        {/* TABS */}
-        <div className="flex justify-center mb-6 gap-4">
+        <h1 className="text-3xl font-bold text-center mb-2">Truss Calculator</h1>
+        <h2 className="text-xl font-semibold text-center mb-6">Real-Time Free Body Diagram</h2>
 
-          <button
-            onClick={() => setActiveTab("concurrent")}
-            className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "concurrent"
-                ? "bg-blue-800 text-white"
-                : "bg-gray-200"
-              }`}
+        {/* FBD */}
+        <div
+          className="relative rounded-xl shadow h-[420px] mb-8 overflow-hidden bg-white"
+        >
+          {/* board */}
+          <svg
+            viewBox={`0 0 ${svgSize} ${svgSize}`}
+            width="100%"
+            height="100%"
+            preserveAspectRatio="xMidYMid meet"
           >
-            Concurrent Force System
-          </button>
+            {/* SCALE BASED ON HEIGHT */}
+            {(() => {
+              const numericNodesScaled = numericNodes;
+              const minYCoord = Math.min(...numericNodesScaled.map(n => n.y), 0);
+              const maxYCoord = Math.max(...numericNodesScaled.map(n => n.y), 1);
+              const minXCoord = Math.min(...numericNodesScaled.map(n => n.x), 0);
+              const maxXCoord = Math.max(...numericNodesScaled.map(n => n.x), 1);
 
-          <button
-            onClick={() => setActiveTab("nonconcurrent")}
-            className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "nonconcurrent"
-                ? "bg-blue-800 text-white"
-                : "bg-gray-200"
-              }`}
-          >
-            Non-Concurrent Force System
-          </button>
+              const yRange = maxYCoord - minYCoord || 1;
+              const xRange = maxXCoord - minXCoord || 1;
 
-        </div>
-        {activeTab === "concurrent" && (
-          <>
-            <h1 className="text-3xl font-bold text-center mb-2">Truss Calculator</h1>
-            <h2 className="text-xl font-semibold text-center mb-6">Real-Time Free Body Diagram</h2>
+              // scale based on height
+              const scale = (svgSize - 2 * padding) / yRange;
 
-            {/* FBD */}
-            <div
-              className="relative rounded-xl shadow h-[420px] mb-8 overflow-hidden bg-white"
-            >
-              {/* board */}
-              <svg
-                viewBox={`0 0 ${svgSize} ${svgSize}`}
-                width="100%"
-                height="100%"
-                preserveAspectRatio="xMidYMid meet"
-              >
-                {/* SCALE BASED ON HEIGHT */}
-                {(() => {
-                  const numericNodesScaled = numericNodes;
-                  const minYCoord = Math.min(...numericNodesScaled.map(n => n.y), 0);
-                  const maxYCoord = Math.max(...numericNodesScaled.map(n => n.y), 1);
-                  const minXCoord = Math.min(...numericNodesScaled.map(n => n.x), 0);
-                  const maxXCoord = Math.max(...numericNodesScaled.map(n => n.x), 1);
+              // horizontal offset to center the truss
+              const totalWidth = xRange * scale;
+              const xOffset = (svgSize - totalWidth) / 2 - minXCoord * scale;
 
-                  const yRange = maxYCoord - minYCoord || 1;
-                  const xRange = maxXCoord - minXCoord || 1;
+              const toSvgXScaled = (x: number) => x * scale + xOffset;
+              const toSvgYScaled = (y: number) => svgSize - padding - (y - minYCoord) * scale;
 
-                  // scale based on height
-                  const scale = (svgSize - 2 * padding) / yRange;
+              return (
+                <>
 
-                  // horizontal offset to center the truss
-                  const totalWidth = xRange * scale;
-                  const xOffset = (svgSize - totalWidth) / 2 - minXCoord * scale;
+                  {/* Axes */}
+                  <line
+                    x1={toSvgXScaled(minXCoord)}
+                    y1={toSvgYScaled(0)}
+                    x2={toSvgXScaled(maxXCoord)}
+                    y2={toSvgYScaled(0)}
+                    stroke="gray"
+                  />
+                  <line
+                    x1={toSvgXScaled(0)}
+                    y1={toSvgYScaled(minYCoord)}
+                    x2={toSvgXScaled(0)}
+                    y2={toSvgYScaled(maxYCoord)}
+                    stroke="gray"
+                  />
 
-                  const toSvgXScaled = (x: number) => x * scale + xOffset;
-                  const toSvgYScaled = (y: number) => svgSize - padding - (y - minYCoord) * scale;
-
-                  return (
-                    <>
-
-                      {/* Axes */}
+                  {/* Members */}
+                  {members.map((m, i) => {
+                    const n1 = numericNodesScaled[m.start];
+                    const n2 = numericNodesScaled[m.end];
+                    if (!n1 || !n2) return null;
+                    return (
                       <line
-                        x1={toSvgXScaled(minXCoord)}
-                        y1={toSvgYScaled(0)}
-                        x2={toSvgXScaled(maxXCoord)}
-                        y2={toSvgYScaled(0)}
-                        stroke="gray"
+                        key={`member-${i}`}
+                        x1={toSvgXScaled(n1.x)}
+                        y1={toSvgYScaled(n1.y)}
+                        x2={toSvgXScaled(n2.x)}
+                        y2={toSvgYScaled(n2.y)}
+                        stroke="black"
+                        strokeWidth={2}
                       />
-                      <line
-                        x1={toSvgXScaled(0)}
-                        y1={toSvgYScaled(minYCoord)}
-                        x2={toSvgXScaled(0)}
-                        y2={toSvgYScaled(maxYCoord)}
-                        stroke="gray"
-                      />
+                    );
+                  })}
 
-                      {/* Members */}
-                      {members.map((m, i) => {
-                        const n1 = numericNodesScaled[m.start];
-                        const n2 = numericNodesScaled[m.end];
-                        if (!n1 || !n2) return null;
-                        return (
-                          <line
-                            key={`member-${i}`}
-                            x1={toSvgXScaled(n1.x)}
-                            y1={toSvgYScaled(n1.y)}
-                            x2={toSvgXScaled(n2.x)}
-                            y2={toSvgYScaled(n2.y)}
-                            stroke="black"
-                            strokeWidth={2}
-                          />
-                        );
-                      })}
+                  {/* Joints */}
+                  {numericNodesScaled.map((n, i) => (
+                    <g key={`joint-${i}`}>
+                      <circle cx={toSvgXScaled(n.x)} cy={toSvgYScaled(n.y)} r={5} fill="blue" />
+                      <text x={toSvgXScaled(n.x) + 6} y={toSvgYScaled(n.y) - 6} fontSize="12">
+                        {nodeLabel(i)}
+                      </text>
+                    </g>
+                  ))}
 
-                      {/* Joints */}
-                      {numericNodesScaled.map((n, i) => (
-                        <g key={`joint-${i}`}>
-                          <circle cx={toSvgXScaled(n.x)} cy={toSvgYScaled(n.y)} r={5} fill="blue" />
-                          <text x={toSvgXScaled(n.x) + 6} y={toSvgYScaled(n.y) - 6} fontSize="12">
-                            {nodeLabel(i)}
-                          </text>
-                        </g>
-                      ))}
-
-                      {/* Supports */}
-                      {supports.map((s, i) => {
-                        const n = numericNodesScaled[i];
-                        if (!n) return null;
-                        return s.type === "Pinned" ? (
-                          <polygon
-                            key={`support-${i}`}
-                            points={`
+                  {/* Supports */}
+                  {supports.map((s, i) => {
+                    const n = numericNodesScaled[i];
+                    if (!n) return null;
+                    return s.type === "Pinned" ? (
+                      <polygon
+                        key={`support-${i}`}
+                        points={`
                   ${toSvgXScaled(n.x) - 8},${toSvgYScaled(n.y) + 10}
                   ${toSvgXScaled(n.x) + 8},${toSvgYScaled(n.y) + 10}
                   ${toSvgXScaled(n.x)},${toSvgYScaled(n.y)}
                 `}
-                            fill="gray"
-                          />
-                        ) : (
-                          <rect
-                            key={`support-${i}`}
-                            x={toSvgXScaled(n.x) - 8}
-                            y={toSvgYScaled(n.y) + 2}
-                            width={16}
-                            height={6}
-                            fill="gray"
-                          />
-                        );
-                      })}
-
-                      {/* Forces */}
-                      {forces.map((f, i) => {
-                        const n = numericNodesScaled[f.Joint];
-                        if (!n) return null;
-                        const angle = (parseFloat(f.angle || "0") * Math.PI) / 180;
-                        const length = 30;
-                        const x1 = toSvgXScaled(n.x);
-                        const y1 = toSvgYScaled(n.y);
-                        const x2 = x1 + length * Math.cos(angle);
-                        const y2 = y1 - length * Math.sin(angle);
-
-                        return (
-                          <line
-                            key={`force-${i}`}
-                            x1={x1}
-                            y1={y1}
-                            x2={x2}
-                            y2={y2}
-                            stroke="red"
-                            strokeWidth={2}
-                            markerEnd="url(#arrow)"
-                          />
-                        );
-                      })}
-                    </>
-                  );
-                })()}
-
-                {/* Arrow marker */}
-                <defs>
-                  <marker id="arrow" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
-                    <path d="M0,0 L6,3 L0,6 Z" fill="red" />
-                  </marker>
-                </defs>
-              </svg>
-            </div>
-
-            {/* INPUT PANELS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {/* Supports */}
-              <div className="bg-white rounded-xl shadow p-4">
-                <h3 className="text-xl font-semibold mb-2">Supports</h3>
-                {supports.map((s, i) => (
-                  <div key={i} className="grid grid-cols-5 gap-2 items-end mb-2">
-                    <span className="font-medium text-[18px]">Joint {nodeLabel(i)}</span>
-                    <input type="number" placeholder="x" value={s.x} onChange={(e) => handleChange(supports, setSupports, i, "x", e.target.value)} className={inputClass} />
-                    <input type="number" placeholder="y" value={s.y} onChange={(e) => handleChange(supports, setSupports, i, "y", e.target.value)} className={inputClass} />
-                    <select value={s.type} onChange={(e) => handleChange(supports, setSupports, i, "type", e.target.value)} className={inputClass}>
-                      <option>Pinned</option>
-                      <option>Roller</option>
-                    </select>
-                    {supports.length > 1 && <button onClick={() => removeItem(supports, setSupports, i)} className={redButtonClass}>–</button>}
-                  </div>
-                ))}
-                <button onClick={() => addItem(supports, setSupports, { x: "", y: "", type: "Pinned" })} className={greenButtonClass}>+ Add Support</button>
-              </div>
-
-              {/* Nodes */}
-              <div className="bg-white rounded-xl shadow p-4">
-                <h3 className="text-xl font-semibold mb-2">Nodes</h3>
-                {nodes.map((n, i) => (
-                  <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
-                    <span className="font-medium text-[18px]">Joint {nodeLabel(supports.length + i)}</span>
-                    <input type="number" placeholder="x" value={n.x} onChange={(e) => handleChange(nodes, setNodes, i, "x", e.target.value)} className={inputClass} />
-                    <input type="number" placeholder="y" value={n.y} onChange={(e) => handleChange(nodes, setNodes, i, "y", e.target.value)} className={inputClass} />
-                    {nodes.length > 1 && <button onClick={() => removeItem(nodes, setNodes, i)} className={redButtonClass}>–</button>}
-                  </div>
-                ))}
-                <button onClick={() => addItem(nodes, setNodes, { x: "", y: "" })} className={greenButtonClass}>+ Add Joint</button>
-              </div>
-
-              {/* Members */}
-              <div className="bg-white rounded-xl shadow p-4">
-                <h3 className="text-xl font-semibold mb-2">Members</h3>
-
-                {/* Label Row */}
-                <div className="grid grid-cols-4 gap-2 items-end mb-2">
-                  <span className="text-[16px] font-medium text-gray-700"> </span>
-                  <span className="text-[16px] font-medium text-gray-700">Start Joint</span>
-                  <span className="text-[16px] font-medium text-gray-700">End Joint</span>
-                  <span className="text-[16px] font-medium text-gray-700"> </span>
-                </div>
-
-                {members.map((m, i) => (
-                  <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
-                    <span className="font-medium text-[18px]">
-                      Member {nodeLabel(m.start)}{nodeLabel(m.end)}
-                    </span>
-
-                    <select
-                      value={m.start}
-                      onChange={(e) => handleChange(members, setMembers, i, "start", Number(e.target.value))}
-                      className={inputClass}
-                    >
-                      {allNodes.map((_, idx) => (
-                        <option key={idx} value={idx}>Joint {nodeLabel(idx)}</option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={m.end}
-                      onChange={(e) => handleChange(members, setMembers, i, "end", Number(e.target.value))}
-                      className={inputClass}
-                    >
-                      {allNodes.map((_, idx) => (
-                        <option key={idx} value={idx}>Joint {nodeLabel(idx)}</option>
-                      ))}
-                    </select>
-
-                    {members.length > 1 ? (
-                      <button onClick={() => removeItem(members, setMembers, i)} className={redButtonClass}>–</button>
+                        fill="gray"
+                      />
                     ) : (
-                      <div /> // empty placeholder to keep grid alignment
-                    )}
-                  </div>
-                ))}
+                      <rect
+                        key={`support-${i}`}
+                        x={toSvgXScaled(n.x) - 8}
+                        y={toSvgYScaled(n.y) + 2}
+                        width={16}
+                        height={6}
+                        fill="gray"
+                      />
+                    );
+                  })}
 
-                <button
-                  onClick={() => addItem(members, setMembers, { start: 0, end: 0 })}
-                  className={greenButtonClass}
-                >
-                  + Add Member
-                </button>
+                  {/* Forces */}
+                  {forces.map((f, i) => {
+                    const n = numericNodesScaled[f.Joint];
+                    if (!n) return null;
+                    const angle = (parseFloat(f.angle || "0") * Math.PI) / 180;
+                    const length = 30;
+                    const x1 = toSvgXScaled(n.x);
+                    const y1 = toSvgYScaled(n.y);
+                    const x2 = x1 + length * Math.cos(angle);
+                    const y2 = y1 - length * Math.sin(angle);
+
+                    return (
+                      <line
+                        key={`force-${i}`}
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke="red"
+                        strokeWidth={2}
+                        markerEnd="url(#arrow)"
+                      />
+                    );
+                  })}
+                </>
+              );
+            })()}
+
+            {/* Arrow marker */}
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" fill="red" />
+              </marker>
+            </defs>
+          </svg>
+        </div>
+
+        {/* INPUT PANELS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Supports */}
+          <div className="bg-white rounded-xl shadow p-4">
+            <h3 className="text-xl font-semibold mb-2">Supports</h3>
+            {supports.map((s, i) => (
+              <div key={i} className="grid grid-cols-5 gap-2 items-end mb-2">
+                <span className="font-medium text-[18px]">Joint {nodeLabel(i)}</span>
+                <input type="number" placeholder="x" value={s.x} onChange={(e) => handleChange(supports, setSupports, i, "x", e.target.value)} className={inputClass} />
+                <input type="number" placeholder="y" value={s.y} onChange={(e) => handleChange(supports, setSupports, i, "y", e.target.value)} className={inputClass} />
+                <select value={s.type} onChange={(e) => handleChange(supports, setSupports, i, "type", e.target.value)} className={inputClass}>
+                  <option>Pinned</option>
+                  <option>Roller</option>
+                </select>
+                {supports.length > 1 && <button onClick={() => removeItem(supports, setSupports, i)} className={redButtonClass}>–</button>}
               </div>
+            ))}
+            <button onClick={() => addItem(supports, setSupports, { x: "", y: "", type: "Pinned" })} className={greenButtonClass}>+ Add Support</button>
+          </div>
 
-
-              {/* Forces */}
-              <div className="bg-white rounded-xl shadow p-4">
-                <h3 className="text-xl font-semibold mb-2">Forces</h3>
-                {forces.map((f, i) => (
-                  <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
-                    <select value={f.Joint} onChange={(e) => handleChange(forces, setForces, i, "Joint", Number(e.target.value))} className={inputClass}>
-                      {allNodes.map((_, idx) => <option key={idx} value={idx}>Joint {String.fromCharCode(65 + idx)}</option>)}
-                    </select>
-                    <input type="number" placeholder="kN" value={f.magnitude} onChange={(e) => handleChange(forces, setForces, i, "magnitude", e.target.value)} className={inputClass} />
-                    <input type="number" placeholder="deg" value={f.angle} onChange={(e) => handleChange(forces, setForces, i, "angle", e.target.value)} className={inputClass} />
-                    {forces.length > 1 && <button onClick={() => removeItem(forces, setForces, i)} className={redButtonClass}>–</button>}
-                  </div>
-                ))}
-                <button onClick={() => addItem(forces, setForces, { Joint: 0, magnitude: "", angle: "" })} className={greenButtonClass}>+ Add Force</button>
+          {/* Nodes */}
+          <div className="bg-white rounded-xl shadow p-4">
+            <h3 className="text-xl font-semibold mb-2">Nodes</h3>
+            {nodes.map((n, i) => (
+              <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
+                <span className="font-medium text-[18px]">Joint {nodeLabel(supports.length + i)}</span>
+                <input type="number" placeholder="x" value={n.x} onChange={(e) => handleChange(nodes, setNodes, i, "x", e.target.value)} className={inputClass} />
+                <input type="number" placeholder="y" value={n.y} onChange={(e) => handleChange(nodes, setNodes, i, "y", e.target.value)} className={inputClass} />
+                {nodes.length > 1 && <button onClick={() => removeItem(nodes, setNodes, i)} className={redButtonClass}>–</button>}
               </div>
+            ))}
+            <button onClick={() => addItem(nodes, setNodes, { x: "", y: "" })} className={greenButtonClass}>+ Add Joint</button>
+          </div>
+
+          {/* Members */}
+          <div className="bg-white rounded-xl shadow p-4">
+            <h3 className="text-xl font-semibold mb-2">Members</h3>
+
+            {/* Label Row */}
+            <div className="grid grid-cols-4 gap-2 items-end mb-2">
+              <span className="text-[16px] font-medium text-gray-700"> </span>
+              <span className="text-[16px] font-medium text-gray-700">Start Joint</span>
+              <span className="text-[16px] font-medium text-gray-700">End Joint</span>
+              <span className="text-[16px] font-medium text-gray-700"> </span>
             </div>
 
-            <button className="w-full bg-blue-800 text-white py-3 rounded-lg font-semibold mb-6" onClick={solveTruss}>Calculate</button>
+            {members.map((m, i) => (
+              <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
+                <span className="font-medium text-[18px]">
+                  Member {nodeLabel(m.start)}{nodeLabel(m.end)}
+                </span>
 
-            {solution && (
-              <div className="bg-white rounded-xl shadow p-4">
-                <h3 className="text-xl font-semibold mb-2">Solution</h3>
+                <select
+                  value={m.start}
+                  onChange={(e) => handleChange(members, setMembers, i, "start", Number(e.target.value))}
+                  className={inputClass}
+                >
+                  {allNodes.map((_, idx) => (
+                    <option key={idx} value={idx}>Joint {nodeLabel(idx)}</option>
+                  ))}
+                </select>
 
-                {/* Step-by-Step */}
-                <div className="mt-2">
-                  <h4 className="font-medium mb-1">Step-by-Step Solution:</h4>
-                  <pre className="whitespace-pre-wrap text-sm">
-                    {solution.steps.join("\n")}
-                  </pre>
-                </div>
+                <select
+                  value={m.end}
+                  onChange={(e) => handleChange(members, setMembers, i, "end", Number(e.target.value))}
+                  className={inputClass}
+                >
+                  {allNodes.map((_, idx) => (
+                    <option key={idx} value={idx}>Joint {nodeLabel(idx)}</option>
+                  ))}
+                </select>
 
-                {/* Member Forces */}
-                <div className="mt-2">
-                  <h4 className="font-medium">Member Forces:</h4>
-                  <pre>
-                    {solution.memberForces.map((f, i) => {
-                      const type = f >= 0 ? "Tension" : "Compression";
-                      const letterStart = String.fromCharCode(65 + members[i].start); // A, B, C...
-                      const letterEnd = String.fromCharCode(65 + members[i].end);
-                      return `Member ${letterStart}${letterEnd}: ${Math.abs(f).toFixed(5)} ${type}`;
-                    }).join("\n")}
-                  </pre>
-                </div>
+                {members.length > 1 ? (
+                  <button onClick={() => removeItem(members, setMembers, i)} className={redButtonClass}>–</button>
+                ) : (
+                  <div /> // empty placeholder to keep grid alignment
+                )}
               </div>
-            )}
+            ))}
 
-          </>
+            <button
+              onClick={() => addItem(members, setMembers, { start: 0, end: 0 })}
+              className={greenButtonClass}
+            >
+              + Add Member
+            </button>
+          </div>
+
+
+          {/* Forces */}
+          <div className="bg-white rounded-xl shadow p-4">
+            <h3 className="text-xl font-semibold mb-2">Forces</h3>
+            {forces.map((f, i) => (
+              <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
+                <select value={f.Joint} onChange={(e) => handleChange(forces, setForces, i, "Joint", Number(e.target.value))} className={inputClass}>
+                  {allNodes.map((_, idx) => <option key={idx} value={idx}>Joint {String.fromCharCode(65 + idx)}</option>)}
+                </select>
+                <input type="number" placeholder="kN" value={f.magnitude} onChange={(e) => handleChange(forces, setForces, i, "magnitude", e.target.value)} className={inputClass} />
+                <input type="number" placeholder="deg" value={f.angle} onChange={(e) => handleChange(forces, setForces, i, "angle", e.target.value)} className={inputClass} />
+                {forces.length > 1 && <button onClick={() => removeItem(forces, setForces, i)} className={redButtonClass}>–</button>}
+              </div>
+            ))}
+            <button onClick={() => addItem(forces, setForces, { Joint: 0, magnitude: "", angle: "" })} className={greenButtonClass}>+ Add Force</button>
+          </div>
+        </div>
+
+        <button className="w-full bg-blue-800 text-white py-3 rounded-lg font-semibold mb-6" onClick={solveTruss}>Calculate</button>
+
+        {solution && (
+          <div className="bg-white rounded-xl shadow p-4">
+            <h3 className="text-xl font-semibold mb-2">Solution</h3>
+
+            {/* Step-by-Step */}
+            <div className="mt-2">
+              <h4 className="font-medium mb-1">Step-by-Step Solution:</h4>
+              <pre className="whitespace-pre-wrap text-sm">
+                {solution.steps.join("\n")}
+              </pre>
+            </div>
+
+            {/* Member Forces */}
+            <div className="mt-2">
+              <h4 className="font-medium">Member Forces:</h4>
+              <pre>
+                {solution.memberForces.map((f, i) => {
+                  const type = f >= 0 ? "Tension" : "Compression";
+                  const letterStart = String.fromCharCode(65 + members[i].start); // A, B, C...
+                  const letterEnd = String.fromCharCode(65 + members[i].end);
+                  return `Member ${letterStart}${letterEnd}: ${Math.abs(f).toFixed(5)} ${type}`;
+                }).join("\n")}
+              </pre>
+            </div>
+          </div>
         )}
-
-        {activeTab === "nonconcurrent" && <BeamPage />}
 
       </main>
       <Footer />
