@@ -38,7 +38,7 @@ export default function HomePage() {
               href="/2D-solver"
               className="bg-[#1848a0] text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] transition text-[18px]"
             >
-              Resultant Force Solver
+              Resultant Force  Calculator
             </Link>
 
             {/* Chapter 3 */}
@@ -47,7 +47,7 @@ export default function HomePage() {
               href="/Equilibrium"
               className="bg-[#1848a0] text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] transition text-[18px]"
             >
-              Equilibrium Solver
+              Equilibrium Calculator
             </Link>
 
             {/* Chapter 4 */}
@@ -65,7 +65,7 @@ export default function HomePage() {
               href="/Distributed-Loads"
               className="bg-[#1848a0] text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] transition text-[18px]"
             >
-              Structures Solver
+              Structures Calculator
             </Link>
 
             {/* Chapter 6 */}
