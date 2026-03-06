@@ -98,28 +98,30 @@ export function computeMOI(shapes: ShapeData[]) {
     return { A, Cx: cx, Cy: cy, Ix, Iy };
   }
 
-  function computeSemiCircle(shape: ShapeData): ShapeResult | null {
-    const r = Number(shape.radius);
-    const cx = Number(shape.x);
-    const cy = Number(shape.y);
-    if (isNaN(r) || isNaN(cx) || isNaN(cy)) return null;
+function computeSemiCircle(shape: ShapeData): ShapeResult | null {
+  const r = Number(shape.radius);
+  const cx = Number(shape.x);
+  const cy = Number(shape.y);
+  if (isNaN(r) || isNaN(cx) || isNaN(cy)) return null;
 
-    const A = (Math.PI * r * r) / 2;
-    const d = (4 * r) / (3 * Math.PI);
+  const A = (Math.PI * r * r) / 2;
 
-    let Cx = cx;
-    let Cy = cy;
+  // FIXED distance from circle center
+  const d = r - (4 * r) / (3 * Math.PI);
 
-    if (shape.type === "Semi-circle-1") Cy += d;
-    if (shape.type === "Semi-circle-2") Cx += d;
-    if (shape.type === "Semi-circle-3") Cy -= d;
-    if (shape.type === "Semi-circle-4") Cx -= d;
+  let Cx = cx;
+  let Cy = cy;
 
-    const Ix = (Math.PI * r ** 4) / 8;
-    const Iy = Ix;
+  if (shape.type === "Semi-circle-1") Cy += d;
+  if (shape.type === "Semi-circle-2") Cx += d;
+  if (shape.type === "Semi-circle-3") Cy -= d;
+  if (shape.type === "Semi-circle-4") Cx -= d;
 
-    return { A, Cx, Cy, Ix, Iy };
-  }
+  const Ix = (Math.PI * r ** 4) / 8;
+  const Iy = Ix;
+
+  return { A, Cx, Cy, Ix, Iy };
+}
 
   function computeQuarterCircle(shape: ShapeData): ShapeResult | null {
     const r = Number(shape.radius);
@@ -133,10 +135,10 @@ export function computeMOI(shapes: ShapeData[]) {
     let Cx = cx;
     let Cy = cy;
 
-    if (shape.type === "Quarter-circle-1") { Cx += d; Cy += d; }
-    if (shape.type === "Quarter-circle-2") { Cx -= d; Cy += d; }
-    if (shape.type === "Quarter-circle-3") { Cx -= d; Cy -= d; }
-    if (shape.type === "Quarter-circle-4") { Cx += d; Cy -= d; }
+if (shape.type === "Quarter-circle-1") { Cx += r - d; Cy += r - d; }
+if (shape.type === "Quarter-circle-2") { Cx -= r - d; Cy += r - d; }
+if (shape.type === "Quarter-circle-3") { Cx -= r - d; Cy -= r - d; }
+if (shape.type === "Quarter-circle-4") { Cx += r - d; Cy -= r - d; }
 
     const Ix = (Math.PI * r ** 4) / 16;
     const Iy = Ix;

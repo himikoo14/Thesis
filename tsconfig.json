@@ -38,7 +38,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
-  ],
+, "app/3D-solver/page.jsx"  ],
   "exclude": [
     "node_modules"
   ]

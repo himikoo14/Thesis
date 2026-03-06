@@ -190,7 +190,7 @@ export default function Equilibrium() {
         {activeTab === "concurrent" && (
           <>
         <h1 className="text-3xl font-bold text-center mb-2">
-          Beam Calculator
+          Concurent Force System Calculator
         </h1>
 
 
