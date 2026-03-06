@@ -31,10 +31,7 @@ type ShapeResult = {
 
 export function computeMOI(shapes: ShapeData[]) {
 
-  const step1: any[] = [];
-  const step3: any[] = [];
-
-  /* 🔷 Helper Functions INSIDE computeMOI */
+  /* 🔷 Helper Functions */
 
   function computePolygon(shape: ShapeData): ShapeResult | null {
     if (!shape.nodes || shape.nodes.length < 3) return null;
@@ -67,20 +64,15 @@ export function computeMOI(shapes: ShapeData[]) {
     A /= 2;
     if (A === 0) return null;
 
-    // Save orientation sign
     const orientation = Math.sign(A) || 1;
 
-    // Make area positive
     A = Math.abs(A);
 
-    // Centroid (still uses signed area in denominator)
     Cx /= (6 * orientation * A);
     Cy /= (6 * orientation * A);
 
-    // MOI
     Ix = Math.abs(Ix / 12);
     Iy = Math.abs(Iy / 12);
-
 
     return { A, Cx, Cy, Ix, Iy };
   }
@@ -98,30 +90,29 @@ export function computeMOI(shapes: ShapeData[]) {
     return { A, Cx: cx, Cy: cy, Ix, Iy };
   }
 
-function computeSemiCircle(shape: ShapeData): ShapeResult | null {
-  const r = Number(shape.radius);
-  const cx = Number(shape.x);
-  const cy = Number(shape.y);
-  if (isNaN(r) || isNaN(cx) || isNaN(cy)) return null;
+  function computeSemiCircle(shape: ShapeData): ShapeResult | null {
+    const r = Number(shape.radius);
+    const cx = Number(shape.x);
+    const cy = Number(shape.y);
+    if (isNaN(r) || isNaN(cx) || isNaN(cy)) return null;
 
-  const A = (Math.PI * r * r) / 2;
+    const A = (Math.PI * r * r) / 2;
 
-  // FIXED distance from circle center
-  const d = r - (4 * r) / (3 * Math.PI);
+    const d = r - (4 * r) / (3 * Math.PI);
 
-  let Cx = cx;
-  let Cy = cy;
+    let Cx = cx;
+    let Cy = cy;
 
-  if (shape.type === "Semi-circle-1") Cy += d;
-  if (shape.type === "Semi-circle-2") Cx += d;
-  if (shape.type === "Semi-circle-3") Cy -= d;
-  if (shape.type === "Semi-circle-4") Cx -= d;
+    if (shape.type === "Semi-circle-1") Cy += d;
+    if (shape.type === "Semi-circle-2") Cx += d;
+    if (shape.type === "Semi-circle-3") Cy -= d;
+    if (shape.type === "Semi-circle-4") Cx -= d;
 
-  const Ix = (Math.PI * r ** 4) / 8;
-  const Iy = Ix;
+    const Ix = (Math.PI * r ** 4) / 8;
+    const Iy = Ix;
 
-  return { A, Cx, Cy, Ix, Iy };
-}
+    return { A, Cx, Cy, Ix, Iy };
+  }
 
   function computeQuarterCircle(shape: ShapeData): ShapeResult | null {
     const r = Number(shape.radius);
@@ -135,10 +126,10 @@ function computeSemiCircle(shape: ShapeData): ShapeResult | null {
     let Cx = cx;
     let Cy = cy;
 
-if (shape.type === "Quarter-circle-1") { Cx += r - d; Cy += r - d; }
-if (shape.type === "Quarter-circle-2") { Cx -= r - d; Cy += r - d; }
-if (shape.type === "Quarter-circle-3") { Cx -= r - d; Cy -= r - d; }
-if (shape.type === "Quarter-circle-4") { Cx += r - d; Cy -= r - d; }
+    if (shape.type === "Quarter-circle-1") { Cx += r - d; Cy += r - d; }
+    if (shape.type === "Quarter-circle-2") { Cx -= r - d; Cy += r - d; }
+    if (shape.type === "Quarter-circle-3") { Cx -= r - d; Cy -= r - d; }
+    if (shape.type === "Quarter-circle-4") { Cx += r - d; Cy -= r - d; }
 
     const Ix = (Math.PI * r ** 4) / 16;
     const Iy = Ix;
@@ -150,26 +141,48 @@ if (shape.type === "Quarter-circle-4") { Cx += r - d; Cy -= r - d; }
 
   const results: ShapeResult[] = [];
 
-  shapes.forEach(shape => {
-    let result: ShapeResult | null = null;
+  // step1: per-shape raw properties (before sign flip)
+  const step1: any[] = [];
 
-    if (shape.type === "Polygon") result = computePolygon(shape);
-    else if (shape.type === "Circle") result = computeCircle(shape);
-    else if (shape.type.startsWith("Semi")) result = computeSemiCircle(shape);
-    else if (shape.type.startsWith("Quarter")) result = computeQuarterCircle(shape);
+  shapes.forEach((shape, index) => {
+    let raw: ShapeResult | null = null;
 
-    if (!result) return;
+    if (shape.type === "Polygon") raw = computePolygon(shape);
+    else if (shape.type === "Circle") raw = computeCircle(shape);
+    else if (shape.type.startsWith("Semi")) raw = computeSemiCircle(shape);
+    else if (shape.type.startsWith("Quarter")) raw = computeQuarterCircle(shape);
+
+    if (!raw) return;
 
     const sign = shape.hollow === "Hollow" ? -1 : 1;
 
+    // Push to step1 BEFORE sign so KaTeX can show true geometry values
+    step1.push({
+      index: index + 1,
+      type: shape.type,
+      hollow: shape.hollow,
+      // raw unsigned geometry
+      area: raw.A,           // always positive magnitude
+      cx: raw.Cx,
+      cy: raw.Cy,
+      Ix_own: raw.Ix,        // own-axis MOI (always positive)
+      Iy_own: raw.Iy,
+      // signed values used in summation
+      signedArea: sign * raw.A,
+      signedIx: sign * raw.Ix,
+      signedIy: sign * raw.Iy,
+    });
+
     results.push({
-      A: sign * result.A,
-      Cx: result.Cx,
-      Cy: result.Cy,
-      Ix: sign * result.Ix,
-      Iy: sign * result.Iy,
+      A: sign * raw.A,
+      Cx: raw.Cx,
+      Cy: raw.Cy,
+      Ix: sign * raw.Ix,
+      Iy: sign * raw.Iy,
     });
   });
+
+  /* 🔷 Centroid */
 
   let totalArea = 0;
   let sumX = 0;
@@ -184,22 +197,16 @@ if (shape.type === "Quarter-circle-4") { Cx += r - d; Cy -= r - d; }
   if (totalArea === 0) {
     return {
       step1: [],
-      centroid: {
-        totalArea: 0,
-        centroidX: 0,
-        centroidY: 0,
-      },
+      centroid: { totalArea: 0, centroidX: 0, centroidY: 0 },
       step3: [],
-      final: {
-        Ix: 0,
-        Iy: 0,
-      },
+      final: { Ix: 0, Iy: 0 },
     };
   }
 
-
   const centroidX = sumX / totalArea;
   const centroidY = sumY / totalArea;
+
+  /* 🔷 Parallel Axis Theorem */
 
   let Ix_final = 0;
   let Iy_final = 0;
@@ -207,42 +214,48 @@ if (shape.type === "Quarter-circle-4") { Cx += r - d; Cy -= r - d; }
   const step3Results: any[] = [];
 
   results.forEach((r, index) => {
-
     const dx = r.Cx - centroidX;
     const dy = r.Cy - centroidY;
 
-    // Parallel Axis Theorem
-    const Ix_shifted = r.Ix + r.A * dy * dy;
-    const Iy_shifted = r.Iy + r.A * dx * dx;
+    const Ix_transferred = r.Ix + r.A * dy * dy;
+    const Iy_transferred = r.Iy + r.A * dx * dx;
 
-    Ix_final += Ix_shifted;
-    Iy_final += Iy_shifted;
+    Ix_final += Ix_transferred;
+    Iy_final += Iy_transferred;
+
+    const s1 = step1[index];
 
     step3Results.push({
       shape: index + 1,
-      Ix_centroid: r.Ix,
-      Iy_centroid: r.Iy,
+      hollow: s1?.hollow ?? "Solid",
+      // own-axis MOI (unsigned magnitude for display)
+      Ix_own: s1?.Ix_own ?? Math.abs(r.Ix),
+      Iy_own: s1?.Iy_own ?? Math.abs(r.Iy),
+      // signed area (for d² term)
+      area: r.A,
+      // centroid of this shape
+      cx: r.Cx,
+      cy: r.Cy,
+      // transfer distances
       dx,
       dy,
-      Ix_shifted,
-      Iy_shifted,
+      // final transferred values (signed, because hollow shapes subtract)
+      Ix_transferred,
+      Iy_transferred,
     });
   });
 
-
   return {
-    step1: [],
+    step1,
     centroid: {
       totalArea,
       centroidX,
       centroidY,
     },
     step3: step3Results,
-
     final: {
       Ix: Ix_final,
       Iy: Iy_final,
     },
   };
-
 }

@@ -41,11 +41,22 @@ function BeamFBD({
 }) {
   const L = parseFloat(beamLength);
   if (!L || L <= 0) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af", fontSize: 14 }}>
-        Enter a beam length to see the diagram
-      </div>
-    );
+return (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      height: "200px",
+      width: "100%",
+      textAlign: "center",
+      color: "#9ca3af",
+      fontSize: 14,
+    }}
+  >
+    Enter a beam length to see the diagram
+  </div>
+);
   }
 
   const W = 680;

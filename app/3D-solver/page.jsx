@@ -334,7 +334,7 @@ export default function Solver3D() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "#f3f4f6", fontFamily: "Georgia, 'Times New Roman', serif", color: "#111", alignItems: "center" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "#f9fafb", fontFamily: "Georgia, 'Times New Roman', serif", color: "#111", alignItems: "center" }}>
       <div style={{ width: "100%", maxWidth: 580, padding: "0 16px 40px" }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, textAlign: "center", marginTop: 28, marginBottom: 20 }}>3D Resultant Force Calculator</h1>
 
