@@ -58,6 +58,35 @@ export default function Header() {
           </div>
 
           <span>|</span>
+
+          {/* Module Dropdown */}
+          <div className="group relative">
+            <button className="hover:text-[#1848a0]">Modules ▾</button>
+            <div
+              className="absolute left-1/2 -translate-x-1/2 mt-2 w-56 bg-white border rounded-lg shadow-lg 
+                opacity-0 group-hover:opacity-100 invisible group-hover:visible transition text-[18px]"
+            >
+              <div className="flex flex-col p-2 text-gray-700">
+                <Link href="/Introduction" className="hover:text-[#1848a0] p-2">
+                  Module 1: Introduction to Statics
+                </Link>
+                <Link href="/2D-solver" className="hover:text-[#1848a0] p-2">
+                  Module 2: Force Systems
+                </Link>
+                <Link href="/Equilibrium" className="hover:text-[#1848a0] p-2">
+                  Module 3: Equilibrium
+                </Link>
+                <Link href="/Structures" className="hover:text-[#1848a0] p-2">
+                  Module 4: Structures
+                </Link>
+                <Link href="/Distributed-Loads" className="hover:text-[#1848a0] p-2">
+                  Module 5: Distributed Loads
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <span>|</span>
           <Link href="/about" className="hover:text-[#1848a0]">About</Link>
         </nav>
 
@@ -67,23 +96,23 @@ export default function Header() {
 
           <details className="w-full">
             <summary className="cursor-pointer text-center hover:text-[#1848a0]">
-              Topics
+              Modules
             </summary>
             <div className="flex flex-col mt-2 gap-2">
               <Link href="/Introduction" className="hover:text-[#1848a0] p-2">
-                Chapter 1: Introduction to Statics
+                Module 1: Introduction to Statics
               </Link>
               <Link href="/2D-solver" className="hover:text-[#1848a0] p-2">
-                Chapter 2: Force Systems
+                Module 2: Force Systems
               </Link>
               <Link href="/Equilibrium" className="hover:text-[#1848a0] p-2">
-                Chapter 3: Equilibrium
+                Module 3: Equilibrium
               </Link>
               <Link href="/Structures" className="hover:text-[#1848a0] p-2">
-                Chapter 4: Structures
+                Module 4: Structures
               </Link>
               <Link href="/Distributed-Loads" className="hover:text-[#1848a0] p-2">
-                Chapter 5: Distributed Loads
+                Module 5: Distributed Loads
               </Link>
             </div>
           </details>

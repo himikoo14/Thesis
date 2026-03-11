@@ -68,18 +68,6 @@ export default function HomePage() {
               Structures Calculator
             </Link>
 
-            {/* Chapter 6 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Chapter 6: Friction</p>
-            <button className="border-2 border-[#1848a0] text-[#1848a0] px-6 py-3 rounded-md hover:bg-[#163d8a] hover:text-white transition text-[18px]">
-              Coming Soon
-            </button>
-
-            {/* Chapter 7 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Chapter 7: Virtual Work</p>
-            <button className="border-2 border-[#1848a0] text-[#1848a0] px-6 py-3 rounded-md hover:bg-[#163d8a] hover:text-white transition text-[18px]">
-              Coming Soon
-            </button>
-
           </div>
         </div>
       </section>
