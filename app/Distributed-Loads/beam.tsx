@@ -35,7 +35,7 @@ export default function BeamSolverUI() {
     "w-10 px-2 py-0.5 bg-red-500 text-white rounded-md hover:bg-red-600 text-[20px]";
 
   const greenButtonClass =
-    "px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 text-[18px]";
+    "px-3 py-1 bg-[#008409] text-white rounded-lg hover:bg-[#15711b] transition text-[18px]";
 
   const handleChange = <T extends GenericObject>(
     arr: T[],
@@ -289,7 +289,7 @@ export default function BeamSolverUI() {
 
         </div>
 
-        <button className="w-full bg-blue-800 text-white py-3 rounded-lg font-semibold mb-6">
+        <button className="w-full bg-[#1848a0] hover:bg-[#163d8a] text-white py-3 rounded-lg font-semibold mb-6 transition">
           Calculate
         </button>
 

@@ -261,10 +261,17 @@ export default function BeamSolverUI() {
     background: "#fff", borderRadius: 16,
     boxShadow: "0 2px 12px rgba(0,0,0,0.08)", padding: 24,
   };
-  const greenButtonStyle: React.CSSProperties = {
-    background: "#008409", color: "#fff", border: "none", borderRadius: 8,
-    padding: "8px 16px", fontSize: 15, cursor: "pointer", fontFamily: "inherit", marginTop: 8,
-  };
+ const greenButtonStyle: React.CSSProperties = {
+  background: "#008409",
+  color: "#fff",
+  border: "none",
+  borderRadius: 8,
+  padding: "8px 16px",
+  fontSize: 15,
+  cursor: "pointer",
+  fontFamily: "inherit",
+  marginTop: 8,
+};
   const redButtonStyle: React.CSSProperties = {
     background: "#ef4444", color: "#fff", border: "none", borderRadius: 8,
     padding: "4px 12px", cursor: "pointer", fontSize: 18, fontFamily: "inherit",
@@ -374,7 +381,9 @@ export default function BeamSolverUI() {
               </div>
             ))}
             <button onClick={() => addItem(supports, setSupports, { type: "Pinned", location: "" })}
-              style={greenButtonStyle}>+ Add Support</button>
+              style={greenButtonStyle}
+  onMouseEnter={(e) => (e.currentTarget.style.background = "#15711b")}
+  onMouseLeave={(e) => (e.currentTarget.style.background = "#008409")}>+ Add Support</button>
           </div>
 
           {/* LOADS */}
@@ -403,7 +412,9 @@ export default function BeamSolverUI() {
               </div>
             ))}
             <button onClick={() => addItem(pointLoads, setPointLoads, { magnitude: "", location: "" })}
-              style={greenButtonStyle}>+ Add Point Load</button>
+              style={greenButtonStyle}
+  onMouseEnter={(e) => (e.currentTarget.style.background = "#15711b")}
+  onMouseLeave={(e) => (e.currentTarget.style.background = "#008409")}>+ Add Point Load</button>
 
             <p style={subHeadingStyle}>Distributed Loads</p>
             {distributedLoads.map((d, i) => (
@@ -450,7 +461,9 @@ export default function BeamSolverUI() {
               </div>
             ))}
             <button onClick={() => addItem(distributedLoads, setDistributedLoads, { start: "", end: "", startMag: "", endMag: "" })}
-              style={greenButtonStyle}>+ Add Distributed Load</button>
+              style={greenButtonStyle}
+  onMouseEnter={(e) => (e.currentTarget.style.background = "#15711b")}
+  onMouseLeave={(e) => (e.currentTarget.style.background = "#008409")}>+ Add Distributed Load</button>
           </div>
         </div>
 
@@ -462,13 +475,26 @@ export default function BeamSolverUI() {
         )}
 
         {/* CALCULATE */}
-        <button onClick={calculate} style={{
-          width: "100%", background: "#1848a0", color: "#fff", border: "none",
-          borderRadius: 8, padding: "14px 0", fontSize: 16, fontWeight: 600,
-          cursor: "pointer", fontFamily: "inherit", marginBottom: 20,
-        }}>
-          Calculate
-        </button>
+<button
+  onClick={calculate}
+  style={{
+    width: "100%",
+    background: "#1848a0",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    padding: "14px 0",
+    fontSize: 16,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+    marginBottom: 20,
+  }}
+  onMouseEnter={(e) => (e.currentTarget.style.background = "#163d8a")}
+  onMouseLeave={(e) => (e.currentTarget.style.background = "#1848a0")}
+>
+  Calculate
+</button>
 
         {/* RESULTS */}
         {result && (

@@ -67,20 +67,26 @@ export default function Header() {
                 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition text-[18px]"
             >
               <div className="flex flex-col p-2 text-gray-700">
-                <Link href="/Introduction" className="hover:text-[#1848a0] p-2">
+                <Link href="/modules/Introduction" className="hover:text-[#1848a0] p-2">
                   Module 1: Introduction to Statics
                 </Link>
-                <Link href="/2D-solver" className="hover:text-[#1848a0] p-2">
+                <Link href="/modules/FBD" className="hover:text-[#1848a0] p-2">
                   Module 2: Force Systems
                 </Link>
-                <Link href="/Equilibrium" className="hover:text-[#1848a0] p-2">
-                  Module 3: Equilibrium
+                <Link href="/modules/Resultant" className="hover:text-[#1848a0] p-2">
+                  Module 3: Resultant
                 </Link>
-                <Link href="/Structures" className="hover:text-[#1848a0] p-2">
-                  Module 4: Structures
+                <Link href="/modules/Equilibrium" className="hover:text-[#1848a0] p-2">
+                  Module 4: Equilibrium
                 </Link>
-                <Link href="/Distributed-Loads" className="hover:text-[#1848a0] p-2">
-                  Module 5: Distributed Loads
+                <Link href="/modules/Truss" className="hover:text-[#1848a0] p-2">
+                  Module 5: Truss
+                </Link>
+                <Link href="/modules/MOIcentroidal" className="hover:text-[#1848a0] p-2">
+                  Module 6: MOI - Centroidal Axis
+                </Link>
+                <Link href="/modules/MOIcustom" className="hover:text-[#1848a0] p-2">
+                  Module 7: MOI - Custom Axis
                 </Link>
               </div>
             </div>

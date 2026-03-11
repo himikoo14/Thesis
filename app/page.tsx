@@ -24,7 +24,7 @@ export default function HomePage() {
           <div className="grid grid-cols-2 gap-4 items-center">
 
             {/* Chapter 1 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold">Chapter 1: Introduction to Statics</p>
+            <p className="text-left text-black text-[18px] font-bold font-bold">Chapter 1: Modules to Statics</p>
             <Link
               href="/Introduction"
               className="bg-[#1848a0] text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] transition text-[18px]"

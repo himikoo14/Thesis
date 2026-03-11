@@ -361,7 +361,7 @@ export default function DistributedLoadPage() {
 
                   <button
                     onClick={() => { const copy = [...shapes]; copy[index].isOpen = !copy[index].isOpen; setShapes(copy); }}
-                    className="w-full flex justify-between bg-[#15711b] text-white px-4 py-2 rounded-lg"
+                    className="w-full flex justify-between bg-[#008409] text-white px-4 py-2 rounded-lg hover:bg-[#15711b] transition"
                   >
                     Options
                     <span className={`transition-transform ${shape.isOpen ? "rotate-180" : ""}`}>▼</span>
@@ -414,7 +414,7 @@ export default function DistributedLoadPage() {
                               </div>
                             ))}
                             <button onClick={() => { const copy = [...shapes]; copy[index].nodes.push({ x: "", y: "" }); setShapes(copy); }}
-                              className="bg-[#15711b] text-white px-3 py-1 rounded">+ Add Joint</button>
+                              className="bg-[#008409] text-white px-3 py-1 rounded-md shadow hover:bg-[#15711b] transition text-[16px]">+ Add Joint</button>
                           </div>
 
                           <div>
@@ -439,7 +439,7 @@ export default function DistributedLoadPage() {
                             <button onClick={() => {
                               if (shape.nodes.length < 2) return;
                               const copy = [...shapes]; copy[index].sides.push({ a: 0, b: 1 }); setShapes(copy);
-                            }} className="bg-[#15711b] text-white px-3 py-1 rounded">+ Add Side</button>
+                            }} className="bg-[#008409] text-white px-3 py-1 rounded-md shadow hover:bg-[#15711b] transition text-[16px]">+ Add Side</button>
                           </div>
                         </div>
                       )}
@@ -454,7 +454,7 @@ export default function DistributedLoadPage() {
                       )}
 
                       <button onClick={handleAddShape}
-                        className="w-full bg-[#15711b] text-white py-2 rounded-lg font-semibold">
+                        className="w-full bg-[#008409] text-white py-2 rounded-lg font-semibold hover:bg-[#15711b] transition">
                         + Add Shape
                       </button>
                     </div>
