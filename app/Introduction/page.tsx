@@ -404,3 +404,4 @@ const styles: Record<string, React.CSSProperties> = {
   noteIcon: { fontSize: "1.1rem", flexShrink: 0, marginTop: 2 },
   em: { color: colors.accent, fontStyle: "normal", fontWeight: 600 },
 };
+
