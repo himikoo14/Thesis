@@ -249,7 +249,7 @@ export default function ResultantCalculator() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f3f4f8", fontFamily: "'Segoe UI', sans-serif", padding: "28px 16px 48px" }}>
+    <div style={{ minHeight: "100vh", background: "#f3f4f8", fontFamily: "Georgia, 'Times New Roman', serif", padding: "28px 16px 48px" }}>
       <div style={{ maxWidth: 860, margin: "0 auto" }}>
 
         {/* Header */}
