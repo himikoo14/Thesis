@@ -36,10 +36,27 @@ export function computeMOI(shapes: ShapeData[]) {
   function computePolygon(shape: ShapeData): ShapeResult | null {
     if (!shape.nodes || shape.nodes.length < 3) return null;
 
-    const pts = shape.nodes.map(p => ({
-      x: Number(p.x),
-      y: Number(p.y),
-    }));
+const pts = shape.nodes
+  .map(p => ({
+    x: Number(p.x),
+    y: Number(p.y),
+  }))
+  .filter(p => !isNaN(p.x) && !isNaN(p.y));
+
+if (pts.length < 3) return null;
+
+// 🔧 Sort points around centroid (prevents self-intersections)
+const cx =
+  pts.reduce((s, p) => s + p.x, 0) / pts.length;
+
+const cy =
+  pts.reduce((s, p) => s + p.y, 0) / pts.length;
+
+pts.sort(
+  (a, b) =>
+    Math.atan2(a.y - cy, a.x - cx) -
+    Math.atan2(b.y - cy, b.x - cx)
+);
 
     let A = 0, Cx = 0, Cy = 0, Ix = 0, Iy = 0;
 

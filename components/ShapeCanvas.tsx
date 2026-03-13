@@ -17,6 +17,24 @@ type Props = {
 };
 
 export default function ShapeCanvas({ shapes }: Props) {
+  function getGlobalLabel(shapeIndex: number, nodeIndex: number) {
+    let count = 0;
+
+    for (let i = 0; i < shapeIndex; i++) {
+      count += shapes[i].nodes.length;
+    }
+
+    let globalIndex = count + nodeIndex + 1;
+
+    let label = "";
+    while (globalIndex > 0) {
+      const remainder = (globalIndex - 1) % 26;
+      label = String.fromCharCode(65 + remainder) + label;
+      globalIndex = Math.floor((globalIndex - 1) / 26);
+    }
+
+    return label;
+  }
   const SIZE = 1000;
   const PADDING = 80;
 
@@ -496,9 +514,25 @@ export default function ShapeCanvas({ shapes }: Props) {
 
               if (isNaN(x) || isNaN(y)) return null;
 
-              return map(x, y);
+              return {
+                ...map(x, y),
+                realX: x,
+                realY: y
+              };
             })
-            .filter(Boolean);
+            .filter((p): p is { x: number; y: number; realX: number; realY: number } => p !== null);;
+
+          const cx =
+            validNodes.reduce((s, p) => s + p.realX, 0) / validNodes.length;
+
+          const cy =
+            validNodes.reduce((s, p) => s + p.realY, 0) / validNodes.length;
+
+          validNodes.sort(
+            (a, b) =>
+              Math.atan2(a.realY - cy, a.realX - cx) -
+              Math.atan2(b.realY - cy, b.realX - cx)
+          );
 
           const isClosed =
             shape.nodes.length >= 3 &&
@@ -605,7 +639,7 @@ export default function ShapeCanvas({ shapes }: Props) {
                 const p = map(x, y);
 
                 // Convert index to letters A, B, C, ...
-                const label = String.fromCharCode(65 + i);
+                const label = getGlobalLabel(si, i);
 
                 return (
                   <g key={i}>
