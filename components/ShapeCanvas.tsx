@@ -20,6 +20,8 @@ type ShapeData = {
   nodes: XY[];
   sides: { a: number; b: number }[];
   radius?: string;
+  x?: string;
+  y?: string;
 };
 
 type Props = {
@@ -102,11 +104,8 @@ export default function ShapeCanvas({ shapes }: Props) {
 
     // ✅ CIRCLE
     if (s.type === "Circle") {
-      const center = s.nodes[0];
-      if (!center) return;
-
-      const cx = Number(center.x);
-      const cy = Number(center.y);
+      const cx = Number(s.x);
+      const cy = Number(s.y);
       const r = Number(s.radius);
 
       if ([cx, cy, r].some(isNaN)) return;
@@ -117,11 +116,8 @@ export default function ShapeCanvas({ shapes }: Props) {
 
     // ✅ SEMI-CIRCLE
     if (s.type?.startsWith("Semi-circle")) {
-      const center = s.nodes[0];
-      if (!center) return;
-
-      const cx = Number(center.x);
-      const cy = Number(center.y);
+      const cx = Number(s.x);
+      const cy = Number(s.y);
       const r = Number(s.radius);
 
       if ([cx, cy, r].some(isNaN)) return;
@@ -132,11 +128,8 @@ export default function ShapeCanvas({ shapes }: Props) {
 
     // ✅ QUARTER CIRCLE
     if (s.type?.startsWith("Quarter-circle")) {
-      const center = s.nodes[0];
-      if (!center) return;
-
-      const cx = Number(center.x);
-      const cy = Number(center.y);
+      const cx = Number(s.x);
+      const cy = Number(s.y);
       const r = Number(s.radius);
 
       if ([cx, cy, r].some(isNaN)) return;
@@ -211,11 +204,8 @@ export default function ShapeCanvas({ shapes }: Props) {
           // 🟣 SEMICIRCLES
           // ======================
           if (shape.type?.startsWith("Semi-circle")) {
-            const center = shape.nodes[0];
-            if (!center) return null;
-
-            const cx = Number(center.x);
-            const cy = Number(center.y);
+            const cx = Number(shape.x);
+            const cy = Number(shape.y);
             const r = Number(shape.radius);
 
             if (isNaN(cx) || isNaN(cy) || isNaN(r) || r <= 0) return null;
@@ -271,11 +261,8 @@ export default function ShapeCanvas({ shapes }: Props) {
           // 🟠 QUARTER CIRCLES
           // ======================
           if (shape.type?.startsWith("Quarter-circle")) {
-            const center = shape.nodes[0];
-            if (!center) return null;
-
-            const cx = Number(center.x);
-            const cy = Number(center.y);
+            const cx = Number(shape.x);
+            const cy = Number(shape.y);
             const r = Number(shape.radius);
 
             if (isNaN(cx) || isNaN(cy) || isNaN(r) || r <= 0) return null;
@@ -330,11 +317,8 @@ export default function ShapeCanvas({ shapes }: Props) {
           // 🔵 CIRCLE
           // ======================
           if (shape.type === "Circle") {
-            const center = shape.nodes[0];
-            if (!center) return null;
-
-            const cx = Number(center.x);
-            const cy = Number(center.y);
+            const cx = Number(shape.x);
+            const cy = Number(shape.y);
             const r = Number(shape.radius);
 
             if ([cx, cy, r].some(isNaN)) return null;

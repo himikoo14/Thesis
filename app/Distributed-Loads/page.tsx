@@ -288,7 +288,7 @@ export default function DistributedLoadPage() {
   };
 
   const handleAddShape = () => setShapes(prev => [...prev, {
-    type: "Polygon", hollow: "Hollow", isOpen: true,
+    type: "Polygon", hollow: "Solid", isOpen: true,
     nodes: [{ x: "", y: "" }, { x: "", y: "" }],
     sides: [{ a: 0, b: 1 }],
     radius: "", x: "", y: "",
