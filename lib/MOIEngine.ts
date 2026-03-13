@@ -36,27 +36,16 @@ export function computeMOI(shapes: ShapeData[]) {
   function computePolygon(shape: ShapeData): ShapeResult | null {
     if (!shape.nodes || shape.nodes.length < 3) return null;
 
-const pts = shape.nodes
-  .map(p => ({
-    x: Number(p.x),
-    y: Number(p.y),
-  }))
-  .filter(p => !isNaN(p.x) && !isNaN(p.y));
+    const pts = shape.nodes
+      .map(p => ({
+        x: Number(p.x),
+        y: Number(p.y),
+      }))
+      .filter(p => !isNaN(p.x) && !isNaN(p.y));
 
-if (pts.length < 3) return null;
+    if (pts.length < 3) return null;
 
-// 🔧 Sort points around centroid (prevents self-intersections)
-const cx =
-  pts.reduce((s, p) => s + p.x, 0) / pts.length;
-
-const cy =
-  pts.reduce((s, p) => s + p.y, 0) / pts.length;
-
-pts.sort(
-  (a, b) =>
-    Math.atan2(a.y - cy, a.x - cx) -
-    Math.atan2(b.y - cy, b.x - cx)
-);
+    // ✅ Removed angle sort — it corrupts winding order and breaks concave polygons
 
     let A = 0, Cx = 0, Cy = 0, Ix = 0, Iy = 0;
 
@@ -79,19 +68,23 @@ pts.sort(
     }
 
     A /= 2;
-    if (A === 0) return null;
+    if (Math.abs(A) < 1e-9) return null;
 
-    const orientation = Math.sign(A) || 1;
+    const sign = Math.sign(A);
+    const absA = Math.abs(A);
 
-    A = Math.abs(A);
+    Cx /= (6 * sign * absA);
+    Cy /= (6 * sign * absA);
 
-    Cx /= (6 * orientation * A);
-    Cy /= (6 * orientation * A);
+    // ✅ Fixed: Math.abs applied before division
+    Ix = Math.abs(Ix) / 12;
+    Iy = Math.abs(Iy) / 12;
 
-    Ix = Math.abs(Ix / 12);
-    Iy = Math.abs(Iy / 12);
+    // ✅ Transfer from origin to centroidal axis (parallel axis theorem in reverse)
+    Ix = Ix - absA * Cy * Cy;
+    Iy = Iy - absA * Cx * Cx;
 
-    return { A, Cx, Cy, Ix, Iy };
+    return { A: absA, Cx, Cy, Ix, Iy };
   }
 
   function computeCircle(shape: ShapeData): ShapeResult | null {

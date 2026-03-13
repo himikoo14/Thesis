@@ -79,6 +79,39 @@ type SolutionStep = { title: string; lines: StepLine[] };
 const fmt = (n: number, d = 4) => Number(n.toFixed(d));
 const fmtS = (n: number, d = 4) => n.toFixed(d);
 
+/* ===================== ORDER NODES BY SIDES ===================== */
+function orderNodesBySides(
+  nodes: XY[],
+  sides: { a: number; b: number }[]
+): XY[] {
+  if (sides.length === 0) return nodes;
+
+  // Build adjacency list
+  const adj: Map<number, number[]> = new Map();
+  sides.forEach(({ a, b }) => {
+    if (!adj.has(a)) adj.set(a, []);
+    if (!adj.has(b)) adj.set(b, []);
+    adj.get(a)!.push(b);
+    adj.get(b)!.push(a);
+  });
+
+  // Walk the polygon boundary starting from first side
+  const ordered: number[] = [];
+  const visited = new Set<number>();
+  let current = sides[0].a;
+
+  while (ordered.length < sides.length) {
+    ordered.push(current);
+    visited.add(current);
+    const neighbors = adj.get(current) || [];
+    const next = neighbors.find(n => !visited.has(n));
+    if (next === undefined) break;
+    current = next;
+  }
+
+  return ordered.map(i => nodes[i]);
+}
+
 /* ===================== BUILD KATEX STEPS ===================== */
 function buildKaTeXSteps(
   computed: MOIResult,
@@ -220,7 +253,16 @@ export default function DistributedLoadPage() {
   };
 
   const calculateResultant = () => {
-    const computed = computeMOI(shapes) as MOIResult;
+    // ✅ Order polygon nodes by sides before computing
+    const orderedShapes = shapes.map(shape => {
+      if (shape.type !== "Polygon") return shape;
+      return {
+        ...shape,
+        nodes: orderNodesBySides(shape.nodes, shape.sides),
+      };
+    });
+
+    const computed = computeMOI(orderedShapes) as MOIResult;
     const Ix_centroid = computed.final.Ix;
     const Iy_centroid = computed.final.Iy;
     let Ix = Ix_centroid;
