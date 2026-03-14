@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState, useCallback } from "react";
 import * as THREE from "three";
+import { useRouter } from "next/navigation";
 
 /* ===================== TYPES ===================== */
 type Point = { label: string; x: string; y: string; z: string };
@@ -22,11 +23,10 @@ function buildBaseScene() {
   );
   scene.add(origin);
 
-  // Axis arrows
   const AXES = [
-    { dir: [1, 0, 0], color: 0xe63946, label: "X" },
-    { dir: [0, 1, 0], color: 0x2a9d8f, label: "Y" },
-    { dir: [0, 0, 1], color: 0x4361ee, label: "Z" },
+    { dir: [1, 0, 0], color: 0xe63946 },
+    { dir: [0, 1, 0], color: 0x2a9d8f },
+    { dir: [0, 0, 1], color: 0x4361ee },
   ];
   AXES.forEach(({ dir, color }) => {
     const arrow = new THREE.ArrowHelper(
@@ -36,7 +36,6 @@ function buildBaseScene() {
     );
     scene.add(arrow);
 
-    // Dashed negative guide
     const pts = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(-dir[0] * 0.8, -dir[1] * 0.8, -dir[2] * 0.8)];
     const geo = new THREE.BufferGeometry().setFromPoints(pts);
     const mat = new THREE.LineDashedMaterial({ color, dashSize: 0.08, gapSize: 0.06, opacity: 0.3, transparent: true });
@@ -58,7 +57,6 @@ function ThreeCanvas({ points, forces }: { points: Point[]; forces: Force[] }) {
   const dynamicGroupRef = useRef<THREE.Group | null>(null);
   const rafRef = useRef<number>(0);
 
-  // Init Three.js once
   useEffect(() => {
     const el = mountRef.current;
     if (!el) return;
@@ -84,7 +82,6 @@ function ThreeCanvas({ points, forces }: { points: Point[]; forces: Force[] }) {
 
     const orbit = orbitRef.current;
 
-    // Mouse controls
     const onDown = (e: MouseEvent) => { orbit.isDragging = true; orbit.prev = { x: e.clientX, y: e.clientY }; };
     const onUp = () => { orbit.isDragging = false; };
     const onMove = (e: MouseEvent) => {
@@ -123,17 +120,14 @@ function ThreeCanvas({ points, forces }: { points: Point[]; forces: Force[] }) {
     };
   }, []);
 
-  // Update dynamic objects when points/forces change
   useEffect(() => {
     const group = dynamicGroupRef.current;
     if (!group) return;
 
-    // Clear old dynamic objects
     while (group.children.length) group.remove(group.children[0]);
 
     const COLORS = [0xe63946, 0x2a9d8f, 0x4361ee, 0xf4a261, 0xa8dadc, 0x9b5de5];
 
-    // Draw point spheres
     points.forEach((p, i) => {
       const x = parseFloat(p.x) || 0;
       const y = parseFloat(p.y) || 0;
@@ -146,8 +140,7 @@ function ThreeCanvas({ points, forces }: { points: Point[]; forces: Force[] }) {
       group.add(mesh);
     });
 
-    // Draw force arrows
-    forces.forEach((f, i) => {
+    forces.forEach((f) => {
       const mag = parseFloat(f.mag);
       if (!mag) return;
       const a = points[f.from], b = points[f.to];
@@ -181,6 +174,7 @@ function ThreeCanvas({ points, forces }: { points: Point[]; forces: Force[] }) {
 
 /* ===================== MAIN COMPONENT ===================== */
 export default function ResultantCalculator() {
+  const router = useRouter();
   const [points, setPoints] = useState<Point[]>([
     { label: "A", x: "", y: "", z: "" },
     { label: "B", x: "", y: "", z: "" },
@@ -194,10 +188,7 @@ export default function ResultantCalculator() {
   const addPoint = () => setPoints(prev => [...prev, { label: ptLabel(prev.length), x: "", y: "", z: "" }]);
   const removePoint = (i: number) => {
     if (points.length <= 2) return;
-    setPoints(prev => {
-      const next = prev.filter((_, j) => j !== i).map((p, j) => ({ ...p, label: ptLabel(j) }));
-      return next;
-    });
+    setPoints(prev => prev.filter((_, j) => j !== i).map((p, j) => ({ ...p, label: ptLabel(j) })));
     setForces(prev => prev.map(f => ({
       ...f,
       from: Math.min(f.from, points.length - 2),
@@ -247,6 +238,11 @@ export default function ResultantCalculator() {
     background: "#fff", borderRadius: 14, border: "1px solid #ebebeb",
     padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
   };
+  const navBtnStyle = (bg: string): React.CSSProperties => ({
+    flex: 1, background: bg, color: "#fff", border: "none", borderRadius: 10,
+    padding: "12px 0", fontSize: 15, fontWeight: 600, cursor: "pointer",
+    fontFamily: "Georgia, 'Times New Roman', serif",
+  });
 
   return (
     <div style={{ minHeight: "100vh", background: "#f3f4f8", fontFamily: "Georgia, 'Times New Roman', serif", padding: "28px 16px 48px" }}>
@@ -258,9 +254,29 @@ export default function ResultantCalculator() {
           <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>Real-Time Free Body Diagram</p>
         </div>
 
-        {/* Canvas */}
+        {/* Canvas + nav buttons */}
         <div style={{ marginBottom: 20 }}>
           <ThreeCanvas points={points} forces={forces} />
+
+          {/* ✅ Navigation buttons below canvas */}
+          <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+            <button
+              style={navBtnStyle("#1848a0")}
+              onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+              onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+              onClick={() => router.push("/3D-solver")}
+            >
+              3D Resultant (Angles)
+            </button>
+            <button
+              style={navBtnStyle("#008409")}
+              onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+              onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+              onClick={() => router.push("/resultant/coordinate")}
+            >
+              3D Coordinate
+            </button>
+          </div>
         </div>
 
         {/* Inputs row */}

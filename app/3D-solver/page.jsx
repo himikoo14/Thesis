@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import * as THREE from "three";
+import { useRouter } from "next/navigation";
 
 /* ===================== Force System Logic (3D) ===================== */
 class ForceSystem3D {
@@ -89,12 +90,8 @@ function buildBaseScene() {
   return scene;
 }
 
-/* Attaches orbit drag + scroll to a canvas. Returns cleanup fn. */
 function attachOrbit(canvas, state) {
-  const onDown = (e) => {
-    state.isDragging = true;
-    state.prevMouse = { x: e.clientX, y: e.clientY };
-  };
+  const onDown = (e) => { state.isDragging = true; state.prevMouse = { x: e.clientX, y: e.clientY }; };
   const onUp = () => { state.isDragging = false; };
   const onMove = (e) => {
     if (!state.isDragging) return;
@@ -104,17 +101,11 @@ function attachOrbit(canvas, state) {
     state.phi = Math.max(0.15, Math.min(Math.PI - 0.15, state.phi + dy * 0.012));
     state.prevMouse = { x: e.clientX, y: e.clientY };
   };
-  const onWheel = (e) => {
-    state.radius = Math.max(3, Math.min(16, state.radius + e.deltaY * 0.012));
-  };
-
-  // mousedown & wheel → canvas only
+  const onWheel = (e) => { state.radius = Math.max(3, Math.min(16, state.radius + e.deltaY * 0.012)); };
   canvas.addEventListener("mousedown", onDown);
   canvas.addEventListener("wheel", onWheel, { passive: true });
-  // mousemove & mouseup → window so drag works when cursor leaves canvas
   window.addEventListener("mousemove", onMove);
   window.addEventListener("mouseup", onUp);
-
   return () => {
     canvas.removeEventListener("mousedown", onDown);
     canvas.removeEventListener("wheel", onWheel);
@@ -123,29 +114,24 @@ function attachOrbit(canvas, state) {
   };
 }
 
-/* ===================== Live FBD (updates with inputs) ===================== */
+/* ===================== Live FBD ===================== */
 function FBD3D({ forces }) {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
   const arrowsRef = useRef([]);
   const orbitRef = useRef({ theta: 0.6, phi: 0.9, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } });
 
-  // Init renderer + scene once
   useEffect(() => {
     const el = mountRef.current;
     const W = el.clientWidth, H = el.clientHeight;
-
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(W, H);
     renderer.setPixelRatio(window.devicePixelRatio);
     el.appendChild(renderer.domElement);
-
     const scene = buildBaseScene();
     sceneRef.current = scene;
-
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
     const orbit = orbitRef.current;
-
     let raf;
     const animate = () => {
       raf = requestAnimationFrame(animate);
@@ -158,30 +144,23 @@ function FBD3D({ forces }) {
       renderer.render(scene, camera);
     };
     animate();
-
     const cleanup = attachOrbit(renderer.domElement, orbit);
-
     return () => {
       cancelAnimationFrame(raf);
       cleanup();
       renderer.dispose();
-      if (mountRef.current && renderer.domElement.parentNode === mountRef.current) {
+      if (mountRef.current && renderer.domElement.parentNode === mountRef.current)
         mountRef.current.removeChild(renderer.domElement);
-      }
     };
   }, []);
 
-  // Rebuild arrows whenever forces change
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene) return;
-
     arrowsRef.current.forEach(a => scene.remove(a));
     arrowsRef.current = [];
-
     const maxMag = Math.max(1, ...forces.map(f => parseFloat(f.magnitude) || 0));
     const scale = 2.5 / maxMag;
-
     forces.forEach((f, i) => {
       const m = parseFloat(f.magnitude), az = parseFloat(f.azimuth), el = parseFloat(f.elevation);
       if (isNaN(m) || isNaN(az) || isNaN(el) || m === 0) return;
@@ -208,7 +187,7 @@ function FBD3D({ forces }) {
   );
 }
 
-/* ===================== Resultant FBD (shown after Calculate) ===================== */
+/* ===================== Resultant FBD ===================== */
 function ResultantFBD3D({ forces, result }) {
   const mountRef = useRef(null);
 
@@ -216,18 +195,14 @@ function ResultantFBD3D({ forces, result }) {
     const el = mountRef.current;
     if (!el) return;
     const W = el.clientWidth, H = el.clientHeight;
-
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(W, H);
     renderer.setPixelRatio(window.devicePixelRatio);
     el.appendChild(renderer.domElement);
-
     const scene = buildBaseScene();
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
-
     const maxMag = Math.max(1, ...forces.map(f => parseFloat(f.magnitude) || 0), result.R);
     const scale = 2.5 / maxMag;
-
     forces.forEach((f, i) => {
       const m = parseFloat(f.magnitude), az = parseFloat(f.azimuth), el = parseFloat(f.elevation);
       if (isNaN(m) || isNaN(az) || isNaN(el) || m === 0) return;
@@ -235,14 +210,11 @@ function ResultantFBD3D({ forces, result }) {
       const vec = new THREE.Vector3(m * Math.cos(elR) * Math.cos(azR), m * Math.sin(elR), m * Math.cos(elR) * Math.sin(azR));
       addArrow(scene, vec, m * scale, FORCE_COLORS[i % FORCE_COLORS.length]);
     });
-
     if (result.R > 0.001) {
       const rVec = new THREE.Vector3(result.sumFx, result.sumFz, result.sumFy);
       addArrow(scene, rVec, result.R * scale, 0x009900);
     }
-
     const orbit = { theta: 0.6, phi: 0.9, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } };
-
     let raf;
     const animate = () => {
       raf = requestAnimationFrame(animate);
@@ -255,16 +227,13 @@ function ResultantFBD3D({ forces, result }) {
       renderer.render(scene, camera);
     };
     animate();
-
     const cleanup = attachOrbit(renderer.domElement, orbit);
-
     return () => {
       cancelAnimationFrame(raf);
       cleanup();
       renderer.dispose();
-      if (mountRef.current && renderer.domElement.parentNode === mountRef.current) {
+      if (mountRef.current && renderer.domElement.parentNode === mountRef.current)
         mountRef.current.removeChild(renderer.domElement);
-      }
     };
   }, [forces, result]);
 
@@ -291,6 +260,7 @@ function MathBlock({ children }) {
 
 /* ===================== MAIN COMPONENT ===================== */
 export default function Solver3D() {
+  const router = useRouter();
   const [forces, setForces] = useState([{ magnitude: "", azimuth: "", elevation: "" }]);
   const [result, setResult] = useState(null);
   const [katexLoaded, setKatexLoaded] = useState(false);
@@ -332,104 +302,140 @@ export default function Solver3D() {
     width: "100%", maxWidth: 580, background: "#fff", borderRadius: 16,
     boxShadow: "0 2px 12px rgba(0,0,0,0.08)", padding: 24, marginTop: 20,
   };
+  const navBtnStyle = (bg) => ({
+    flex: 1,
+    background: bg,
+    color: "#fff",
+    border: "none",
+    borderRadius: 10,
+    padding: "12px 0",
+    fontSize: 15,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+    transition: "opacity 0.15s",
+  });
 
+  // NOTE: No <Header> or <Footer> here — this component is rendered inside
+  // the 2D solver page which already provides the full page layout.
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "#f9fafb", fontFamily: "Georgia, 'Times New Roman', serif", color: "#111", alignItems: "center" }}>
-      <div style={{ width: "100%", maxWidth: 580, padding: "0 16px 40px" }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, textAlign: "center", marginTop: 28, marginBottom: 20 }}>3D Resultant Force Calculator</h1>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", paddingBottom: 40 }}>
+      <h1 style={{ fontSize: 28, fontWeight: 700, textAlign: "center", marginTop: 8, marginBottom: 20 }}>
+        3D Resultant Force Calculator
+      </h1>
 
-        <div style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 600, textAlign: "center", marginBottom: 8 }}>Real-Time Free Body Diagram</h2>
-          <FBD3D forces={forces} />
+      <div style={{ width: "100%", maxWidth: 580 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 600, textAlign: "center", marginBottom: 8 }}>Real-Time Free Body Diagram</h2>
+        <FBD3D forces={forces} />
+
+        {/* Inner navigation tabs */}
+        <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+          <button
+            style={navBtnStyle("#1848a0")}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+          >
+            3D Resultant (Angles)
+          </button>
+          <button
+            style={navBtnStyle("#008409")}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            onClick={() => router.push("/3D-coordinate")}
+          >
+            3D Coordinate
+          </button>
+        </div>
+      </div>
+
+      <div style={cardStyle}>
+        <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16, marginTop: 0 }}>Force Setup</h2>
+        <div style={{ fontSize: 13, color: "#666", marginBottom: 16 }}>
+          Enter each force with its <strong>azimuth</strong> (horizontal angle from +X, 0–360°) and <strong>elevation</strong> (vertical tilt, −90° to 90°).
         </div>
 
-        <div style={cardStyle}>
-          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16, marginTop: 0 }}>Force Setup</h2>
-          <div style={{ fontSize: 13, color: "#666", marginBottom: 16 }}>
-            Enter each force with its <strong>azimuth</strong> (horizontal angle from +X, 0–360°) and <strong>elevation</strong> (vertical tilt, −90° to 90°).
+        {forces.map((f, i) => (
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 10, alignItems: "end", marginBottom: 14 }}>
+            <div>
+              <label style={labelStyle}>Force {i + 1} (kN)</label>
+              <input type="number" placeholder="Magnitude" value={f.magnitude}
+                onChange={e => handleInputChange(i, "magnitude", e.target.value)} style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Azimuth (°)</label>
+              <input type="number" placeholder="0–360°" value={f.azimuth}
+                onChange={e => handleInputChange(i, "azimuth", e.target.value)} style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Elevation (°)</label>
+              <input type="number" placeholder="−90–90°" value={f.elevation}
+                onChange={e => handleInputChange(i, "elevation", e.target.value)} style={inputStyle} />
+            </div>
+            {forces.length > 1 && (
+              <button onClick={() => setForces(forces.filter((_, idx) => idx !== i))}
+                style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 18, marginBottom: 1 }}>–</button>
+            )}
           </div>
+        ))}
 
-          {forces.map((f, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 10, alignItems: "end", marginBottom: 14 }}>
-              <div>
-                <label style={labelStyle}>Force {i + 1} (kN)</label>
-                <input type="number" placeholder="Magnitude" value={f.magnitude}
-                  onChange={e => handleInputChange(i, "magnitude", e.target.value)} style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Azimuth (°)</label>
-                <input type="number" placeholder="0–360°" value={f.azimuth}
-                  onChange={e => handleInputChange(i, "azimuth", e.target.value)} style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Elevation (°)</label>
-                <input type="number" placeholder="−90–90°" value={f.elevation}
-                  onChange={e => handleInputChange(i, "elevation", e.target.value)} style={inputStyle} />
-              </div>
-              {forces.length > 1 && (
-                <button onClick={() => setForces(forces.filter((_, idx) => idx !== i))}
-                  style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 18, marginBottom: 1 }}>–</button>
-              )}
+        <button onClick={() => setForces([...forces, { magnitude: "", azimuth: "", elevation: "" }])}
+          style={{ width: "100%", background: "#008409", color: "#fff", border: "none", borderRadius: 8, padding: "12px 0", fontSize: 16, cursor: "pointer", marginBottom: 10, fontFamily: "inherit" }}>
+          + Add Force
+        </button>
+        <button onClick={calculateResultant}
+          style={{ width: "100%", background: "#1848a0", color: "#fff", border: "none", borderRadius: 8, padding: "12px 0", fontSize: 16, cursor: "pointer", fontFamily: "inherit" }}>
+          Calculate
+        </button>
+      </div>
+
+      {result && (
+        <div style={cardStyle}>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginTop: 0, marginBottom: 14 }}>Resultant Force (kN)</h2>
+          {[
+            ["X component (Fx)", `${result.sumFx.toFixed(3)} kN`],
+            ["Y component (Fy)", `${result.sumFy.toFixed(3)} kN`],
+            ["Z component (Fz)", `${result.sumFz.toFixed(3)} kN`],
+            ["Magnitude (R)", `${result.R.toFixed(3)} kN`],
+            ["Azimuth angle (φ)", `${result.azimuth.toFixed(2)}°`],
+            ["Elevation angle (α)", `${result.elevation.toFixed(2)}°`],
+          ].map(([lbl, val]) => (
+            <div key={lbl} style={{ marginBottom: 10 }}>
+              <label style={labelStyle}>{lbl}</label>
+              <input type="text" readOnly value={val} style={{ ...inputStyle, background: "#f9fafb", color: "#374151" }} />
             </div>
           ))}
-
-          <button onClick={() => setForces([...forces, { magnitude: "", azimuth: "", elevation: "" }])}
-            style={{ width: "100%", background: "#008409", color: "#fff", border: "none", borderRadius: 8, padding: "12px 0", fontSize: 16, cursor: "pointer", marginBottom: 10, fontFamily: "inherit" }}>
-            + Add Force
-          </button>
-          <button onClick={calculateResultant}
-            style={{ width: "100%", background: "#1848a0", color: "#fff", border: "none", borderRadius: 8, padding: "12px 0", fontSize: 16, cursor: "pointer", fontFamily: "inherit" }}>
-            Calculate
-          </button>
         </div>
+      )}
 
-        {result && (
-          <div style={cardStyle}>
-            <h2 style={{ fontSize: 18, fontWeight: 600, marginTop: 0, marginBottom: 14 }}>Resultant Force (kN)</h2>
-            {[
-              ["X component (Fx)", `${result.sumFx.toFixed(3)} kN`],
-              ["Y component (Fy)", `${result.sumFy.toFixed(3)} kN`],
-              ["Z component (Fz)", `${result.sumFz.toFixed(3)} kN`],
-              ["Magnitude (R)", `${result.R.toFixed(3)} kN`],
-              ["Azimuth angle (φ)", `${result.azimuth.toFixed(2)}°`],
-              ["Elevation angle (α)", `${result.elevation.toFixed(2)}°`],
-            ].map(([lbl, val]) => (
-              <div key={lbl} style={{ marginBottom: 10 }}>
-                <label style={labelStyle}>{lbl}</label>
-                <input type="text" readOnly value={val} style={{ ...inputStyle, background: "#f9fafb", color: "#374151" }} />
-              </div>
-            ))}
+      {result && (
+        <div style={cardStyle}>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginTop: 0, marginBottom: 12 }}>Step-by-Step Solution</h2>
+          <div style={{ lineHeight: 1.8 }}>
+            {result.steps.map((line, i) =>
+              line.startsWith("Step") ? (
+                <p key={i} style={{ fontWeight: 600, fontSize: 16, marginTop: 14, marginBottom: 4 }}>{line}</p>
+              ) : katexLoaded ? (
+                <MathBlock key={i}>{line}</MathBlock>
+              ) : (
+                <pre key={i} style={{ fontSize: 13, color: "#555" }}>{line}</pre>
+              )
+            )}
           </div>
-        )}
 
-        {result && (
-          <div style={cardStyle}>
-            <h2 style={{ fontSize: 18, fontWeight: 600, marginTop: 0, marginBottom: 12 }}>Step-by-Step Solution</h2>
-            <div style={{ lineHeight: 1.8 }}>
-              {result.steps.map((line, i) =>
-                line.startsWith("Step") ? (
-                  <p key={i} style={{ fontWeight: 600, fontSize: 16, marginTop: 14, marginBottom: 4 }}>{line}</p>
-                ) : katexLoaded ? (
-                  <MathBlock key={i}>{line}</MathBlock>
-                ) : (
-                  <pre key={i} style={{ fontSize: 13, color: "#555" }}>{line}</pre>
-                )
-              )}
-            </div>
-
-            <div style={{ marginTop: 24 }}>
-              <p style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>
-                Step 4: Final Free Body Diagram (All Forces + Resultant)
-              </p>
-              <ResultantFBD3D forces={forces} result={result} />
-              <div style={{ marginTop: 8, fontSize: 13, color: "#666", textAlign: "center" }}>
-                <span style={{ color: "#1848a0", fontWeight: 600 }}>■</span> Input Forces &nbsp;&nbsp;
-                <span style={{ color: "#009900", fontWeight: 600 }}>■</span> Resultant R
-              </div>
+          <div style={{ marginTop: 24 }}>
+            <p style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>
+              Step 4: Final Free Body Diagram (All Forces + Resultant)
+            </p>
+            <ResultantFBD3D forces={forces} result={result} />
+            <div style={{ marginTop: 8, fontSize: 13, color: "#666", textAlign: "center" }}>
+              <span style={{ color: "#1848a0", fontWeight: 600 }}>■</span> Input Forces &nbsp;&nbsp;
+              <span style={{ color: "#009900", fontWeight: 600 }}>■</span> Resultant R
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
+
+
 }
