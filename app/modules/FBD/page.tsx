@@ -141,7 +141,7 @@ export default function FBD() {
                             <img
                                 src="/FBD/figure/image3.png"
                                 alt="Figure 3"
-                                className="w-full rounded-xl border border-gray-200 object-contain"
+                                    className="w-full h-64 rounded-xl border border-gray-200 object-contain"
                             />
                             <span className="text-[13px] text-gray-400 uppercase tracking-widest font-semibold">Figure 3</span>
                         </div>
@@ -181,7 +181,7 @@ export default function FBD() {
                             <img
                                 src="/FBD/figure/image4.png"
                                 alt="Figure 4"
-                                className="w-full rounded-xl border border-gray-200 object-contain"
+                                    className="w-full h-64 rounded-xl border border-gray-200 object-contain"
                             />
                             <span className="text-[13px] text-gray-400 uppercase tracking-widest font-semibold">Figure 4</span>
                         </div>
