@@ -71,22 +71,28 @@ export default function Header() {
                   Module 1: Introduction to Statics
                 </Link>
                 <Link href="/modules/FBD" className="hover:text-[#1848a0] p-2">
-                  Module 2: Force Systems
+                  Module 2: Free Body Diagram
                 </Link>
-                <Link href="/modules/Resultant" className="hover:text-[#1848a0] p-2">
-                  Module 3: Resultant
+                <Link href="/modules/2D-Resultant" className="hover:text-[#1848a0] p-2">
+                  Module 3: 2D Resultant
                 </Link>
-                <Link href="/modules/Equilibrium" className="hover:text-[#1848a0] p-2">
-                  Module 4: Equilibrium
+                <Link href="/modules/3D-Resultant" className="hover:text-[#1848a0] p-2">
+                  Module 4: 3D Resultant
+                </Link>
+                <Link href="/modules/2D-Equilibrium" className="hover:text-[#1848a0] p-2">
+                  Module 5: 2D Equilibrium
+                </Link>
+                <Link href="/modules/3D-Equilibrium" className="hover:text-[#1848a0] p-2">
+                  Module 6: 3D Equilibrium
                 </Link>
                 <Link href="/modules/Truss" className="hover:text-[#1848a0] p-2">
-                  Module 5: Truss
+                  Module 7: Truss Joint Method
                 </Link>
                 <Link href="/modules/MOIcentroidal" className="hover:text-[#1848a0] p-2">
-                  Module 6: MOI - Centroidal Axis
+                  Module 8: MOI Centroidal Axis
                 </Link>
                 <Link href="/modules/MOIcustom" className="hover:text-[#1848a0] p-2">
-                  Module 7: MOI - Custom Axis
+                  Module 9: MOI Custom Axis
                 </Link>
               </div>
             </div>

@@ -44,7 +44,7 @@ export default function HomePage() {
             {/* Module 3 */}
             <p className="text-left text-black text-[18px] font-bold font-bold">Module 3: 2D Resultant</p>
             <Link
-              href="/modules/2D-Resultant"
+              href="/modules/Resultant"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
             >
               Module 3
@@ -53,7 +53,7 @@ export default function HomePage() {
             {/* Module 4 */}
             <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 4: 3D Resultant</p>
             <Link
-              href="/modules/3D-Resultant"
+              href="/modules/Equilibrium"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
             >
               Module 4
@@ -62,7 +62,7 @@ export default function HomePage() {
             {/* Module 5 */}
             <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 5: 2D Equilibrium</p>
             <Link
-              href="/modules/2D-Equilibrium"
+              href="/modules/Truss"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
             >
               Module 5
@@ -72,7 +72,7 @@ export default function HomePage() {
             {/* Module 6 */}
             <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 6: 3D Equilibrium</p>
             <Link
-              href="/modules/3D-Equilibrium"
+              href="/modules/Truss"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
             >
               Module 6
