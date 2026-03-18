@@ -33,7 +33,7 @@ export default function HomePage() {
             </Link>
 
             {/* Module 2 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold">How to Construct Free Body Diagram</p>
+            <p className="text-left text-black text-[18px] font-bold font-bold">Free Body Diagram</p>
             <Link
               href="/modules/FBD"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
@@ -42,7 +42,7 @@ export default function HomePage() {
             </Link>
 
             {/* Module 3 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold">How to solve 2D nad 3D Resultant Problems</p>
+            <p className="text-left text-black text-[18px] font-bold font-bold">2D Resultant</p>
             <Link
               href="/modules/Resultant"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
@@ -51,7 +51,7 @@ export default function HomePage() {
             </Link>
 
             {/* Module 4 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">How to solve 2D nad 3D Equilibrium Problems</p>
+            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">3D Resultant</p>
             <Link
               href="/modules/Equilibrium"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
