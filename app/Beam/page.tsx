@@ -327,12 +327,12 @@ export default function BeamSolverUI() {
     }}>
       <div style={{ width: "100%", maxWidth: 760, padding: "0 16px 40px" }}>
 
-        <h1 style={{ fontSize: 28, fontWeight: 700, textAlign: "center", marginTop: 28, marginBottom: 4 }}>
-          Non-Concurrent Force System Calculator
-        </h1>
-        <h2 style={{ fontSize: 18, fontWeight: 600, textAlign: "center", marginBottom: 20, color: "#374151" }}>
-          Real-Time Free Body Diagram
-        </h2>
+<h1 style={{ fontSize: 28, fontWeight: 700, textAlign: "center", marginTop: 28, marginBottom: 4 }}>
+  Non-Concurrent Parallel Force System
+</h1>
+<h2 style={{ color: "#1848a0",fontSize: 18, fontWeight: 600, textAlign: "center", marginBottom: 8 }}>Beam Analysis Calculator</h2>
+<p style={{ color: "#888", fontSize: 13, marginTop: 6, textAlign: "center" }}>Real-Time Free Body Diagram</p>
+
 
         {/* FBD */}
         <div style={{ ...cardStyle, marginBottom: 24, padding: 16, border: "1px solid #e5e7eb", minHeight: 200 }}>
@@ -541,7 +541,7 @@ export default function BeamSolverUI() {
           </div>
         )}
 
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }

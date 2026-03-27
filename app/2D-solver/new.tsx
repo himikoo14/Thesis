@@ -374,9 +374,11 @@ export default function Solver2D() {
               <h2 className="text-[20px] font-semibold text-center mb-2">Real-Time Free Body Diagram</h2>
               <FBD forces={forces} setForces={setForces} />
             </div>
+            
             <p className="w-full max-w-xl text-sm text-gray-700 mb-4 text-left">
               <span className="font-semibold">Note:</span> The angle is measured from the positive x-axis, counterclockwise.
             </p>
+
             {/* Inputs */}
             <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 space-y-6">
               <h2 className="text-[20px] font-semibold">Force setup</h2>

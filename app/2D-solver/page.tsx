@@ -127,6 +127,7 @@ function ResultantFBD({
         <line x1={-140} y1={0} x2={140} y2={0} stroke="gray" strokeWidth="1" />
         <line x1={0} y1={-140} x2={0} y2={140} stroke="gray" strokeWidth="1" />
 
+
         {/* Draw each force */}
         {vectors.map((v, i) => {
           const x = v.x * scale;
@@ -144,8 +145,8 @@ function ResultantFBD({
                 markerEnd="url(#arrowF)"
               />
               <text
-                x={x * 0.55}
-                y={y * 0.55}
+                x={x + 6}
+                y={y - 6}
                 fontSize="14"
                 fill="#1848a0"
                 fontWeight="bold"
@@ -167,8 +168,8 @@ function ResultantFBD({
           markerEnd="url(#arrowR)"
         />
         <text
-          x={(R.x * scale) * 0.55}
-          y={(-R.y * scale) * 0.55}
+          x={R.x * scale + 8}
+          y={-R.y * scale - 8}
           fontSize="16"
           fill="#009900"
           fontWeight="bold"
@@ -204,6 +205,7 @@ function ResultantFBD({
     </svg>
   );
 }
+
 
 /* ===================== SVG FBD Component (draggable + resultant) ===================== */
 function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: ForceInput[]) => void }) {
@@ -369,8 +371,8 @@ export default function Solver2D() {
           <button
             onClick={() => setActiveTab("2d")}
             className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "2d"
-                ? "bg-[#1848a0] text-white"
-                : "bg-gray-200"
+              ? "bg-[#1848a0] text-white"
+              : "bg-gray-200"
               }`}
           >
             2D Resultant
@@ -379,8 +381,8 @@ export default function Solver2D() {
           <button
             onClick={() => setActiveTab("3d")}
             className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "3d"
-                ? "bg-[#1848a0] text-white"
-                : "bg-gray-200"
+              ? "bg-[#1848a0] text-white"
+              : "bg-gray-200"
               }`}
           >
             3D Resultant
@@ -396,6 +398,10 @@ export default function Solver2D() {
               <h2 className="text-[20px] font-semibold text-center mb-2">Real-Time Free Body Diagram</h2>
               <FBD forces={forces} setForces={setForces} />
             </div>
+
+            <p className="w-full max-w-xl text-sm text-gray-700 mb-4 text-left">
+              <span className="font-semibold">Note:</span> The angle is measured from the positive x-axis, counterclockwise.
+            </p>
 
             {/* Inputs */}
             <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 space-y-6">

@@ -26,7 +26,7 @@ class ForceSystem3D {
     let sumFx = 0, sumFy = 0, sumFz = 0;
     this.vectors.forEach((v, i) => {
       steps.push(`\\text{Force ${i + 1}: } |F|=${v.magnitude}\\,\\text{kN},\\; \\phi=${v.azimuthDeg}^\\circ,\\; \\alpha=${v.elevationDeg}^\\circ`);
-      steps.push(`\\begin{align*}F_{x${i+1}}&=${v.magnitude}\\cos(${v.elevationDeg}^\\circ)\\cos(${v.azimuthDeg}^\\circ)=${v.fx.toFixed(3)}\\,\\text{kN}\\\\F_{y${i+1}}&=${v.magnitude}\\cos(${v.elevationDeg}^\\circ)\\sin(${v.azimuthDeg}^\\circ)=${v.fy.toFixed(3)}\\,\\text{kN}\\\\F_{z${i+1}}&=${v.magnitude}\\sin(${v.elevationDeg}^\\circ)=${v.fz.toFixed(3)}\\,\\text{kN}\\end{align*}`);
+      steps.push(`\\begin{align*}F_{x${i + 1}}&=${v.magnitude}\\cos(${v.elevationDeg}^\\circ)\\cos(${v.azimuthDeg}^\\circ)=${v.fx.toFixed(3)}\\,\\text{kN}\\\\F_{y${i + 1}}&=${v.magnitude}\\cos(${v.elevationDeg}^\\circ)\\sin(${v.azimuthDeg}^\\circ)=${v.fy.toFixed(3)}\\,\\text{kN}\\\\F_{z${i + 1}}&=${v.magnitude}\\sin(${v.elevationDeg}^\\circ)=${v.fz.toFixed(3)}\\,\\text{kN}\\end{align*}`);
       sumFx += v.fx; sumFy += v.fy; sumFz += v.fz;
     });
     steps.push("Step 2: Sum of components:");
@@ -235,7 +235,8 @@ function AnglesTab() {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
       <div style={{ width: "100%", maxWidth: 580 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, textAlign: "center", marginBottom: 8 }}>Real-Time Free Body Diagram</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 600, textAlign: "center", marginBottom: 8 }}>Azimuth-Elevation Method</h2>
+        <p style={{ color: "#888", fontSize: 13, marginTop: 6, textAlign: "center" }}>Real-Time Free Body Diagram</p>
         <FBD3D forces={forces} />
       </div>
 
@@ -338,8 +339,8 @@ function CoordThreeCanvas({ points, forces }) {
     scene.add(new THREE.GridHelper(6, 12, 0xdddddd, 0xeeeeee));
     scene.add(new THREE.HemisphereLight(0xffffff, 0xe0e0e0, 1.2));
     scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.08, 24, 24), new THREE.MeshStandardMaterial({ color: 0x222222 })));
-    [[[1,0,0],0xe63946],[[0,1,0],0x2a9d8f],[[0,0,1],0x4361ee]].forEach(([dir, color]) => {
-      scene.add(new THREE.ArrowHelper(new THREE.Vector3(...dir), new THREE.Vector3(0,0,0), 1.8, color, 0.3, 0.18));
+    [[[1, 0, 0], 0xe63946], [[0, 1, 0], 0x2a9d8f], [[0, 0, 1], 0x4361ee]].forEach(([dir, color]) => {
+      scene.add(new THREE.ArrowHelper(new THREE.Vector3(...dir), new THREE.Vector3(0, 0, 0), 1.8, color, 0.3, 0.18));
     });
     sceneRef.current = scene;
 
@@ -391,7 +392,7 @@ function CoordThreeCanvas({ points, forces }) {
     const COLORS = [0xe63946, 0x2a9d8f, 0x4361ee, 0xf4a261, 0xa8dadc, 0x9b5de5];
     points.forEach((p, i) => {
       const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), new THREE.MeshStandardMaterial({ color: COLORS[i % COLORS.length] }));
-      mesh.position.set(parseFloat(p.x)||0, parseFloat(p.y)||0, parseFloat(p.z)||0);
+      mesh.position.set(parseFloat(p.x) || 0, parseFloat(p.y) || 0, parseFloat(p.z) || 0);
       group.add(mesh);
     });
     forces.forEach((f) => {
@@ -399,8 +400,8 @@ function CoordThreeCanvas({ points, forces }) {
       if (!mag) return;
       const a = points[f.from], b = points[f.to];
       if (!a || !b) return;
-      const from = new THREE.Vector3(parseFloat(a.x)||0, parseFloat(a.y)||0, parseFloat(a.z)||0);
-      const to = new THREE.Vector3(parseFloat(b.x)||0, parseFloat(b.y)||0, parseFloat(b.z)||0);
+      const from = new THREE.Vector3(parseFloat(a.x) || 0, parseFloat(a.y) || 0, parseFloat(a.z) || 0);
+      const to = new THREE.Vector3(parseFloat(b.x) || 0, parseFloat(b.y) || 0, parseFloat(b.z) || 0);
       const dir = new THREE.Vector3().subVectors(to, from).normalize();
       const len = from.distanceTo(to);
       if (len < 0.001) return;
@@ -412,11 +413,165 @@ function CoordThreeCanvas({ points, forces }) {
     <div style={{ position: "relative", borderRadius: 14, overflow: "hidden", border: "1px solid #e8e8e8", background: "#fafafa" }}>
       <div ref={mountRef} style={{ width: "100%", height: 320, cursor: "grab" }} />
       <div style={{ position: "absolute", top: 10, left: 12, display: "flex", gap: 6, pointerEvents: "none" }}>
-        {[["X","#e63946","#fff0f1"],["Y","#2a9d8f","#f0faf9"],["Z","#4361ee","#f0f2ff"]].map(([l,c,bg])=>(
+        {[["X", "#e63946", "#fff0f1"], ["Y", "#2a9d8f", "#f0faf9"], ["Z", "#4361ee", "#f0f2ff"]].map(([l, c, bg]) => (
           <span key={l} style={{ background: bg, color: c, border: `1.5px solid ${c}33`, borderRadius: 6, padding: "2px 8px", fontSize: 13, fontWeight: 700 }}>{l}</span>
         ))}
       </div>
       <div style={{ position: "absolute", bottom: 8, right: 12, fontSize: 10, color: "#bbb", fontFamily: "monospace", pointerEvents: "none" }}>Drag to rotate · Scroll to zoom</div>
+    </div>
+  );
+}
+
+/* ===================== Step-by-Step Solution Component ===================== */
+function CoordStepSolution({ result }) {
+  const [openSteps, setOpenSteps] = useState({ 0: true, 1: true, 2: true, 3: true, 4: true });
+
+  const toggleStep = (i) => setOpenSteps(prev => ({ ...prev, [i]: !prev[i] }));
+
+  const stepColors = ["#1848a0", "#008409", "#7c3aed", "#b45309", "#0e7490"];
+  const stepBg = ["#eff6ff", "#f0fdf4", "#f5f3ff", "#fffbeb", "#ecfeff"];
+  const stepBorder = ["#bfdbfe", "#bbf7d0", "#ddd6fe", "#fde68a", "#a5f3fc"];
+
+  const steps = [
+    {
+      title: "Step 1 — Identify the Position Vector (r)",
+      content: result.details.map((d, i) => (
+        <div key={i} style={{ marginBottom: 16 }}>
+          <div style={{ fontWeight: 600, fontSize: 13, color: "#1848a0", marginBottom: 6 }}>
+            Force {d.i}: {d.mag} kN &nbsp;(Point {d.from} → Point {d.to})
+          </div>
+          <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #dbeafe", padding: "10px 14px", fontFamily: "monospace", fontSize: 13, lineHeight: 2 }}>
+            <div>r = (x<sub>B</sub> − x<sub>A</sub>)î + (y<sub>B</sub> − y<sub>A</sub>)ĵ + (z<sub>B</sub> − z<sub>A</sub>)k̂</div>
+            <div style={{ color: "#374151" }}>
+              r = ({d._dx >= 0 ? "" : ""}{d._dx.toFixed(3)})î + ({d._dy >= 0 ? "" : ""}{d._dy.toFixed(3)})ĵ + ({d._dz >= 0 ? "" : ""}{d._dz.toFixed(3)})k̂
+            </div>
+          </div>
+        </div>
+      ))
+    },
+    {
+      title: "Step 2 — Compute the Distance / Length (d)",
+      content: result.details.map((d, i) => (
+        <div key={i} style={{ marginBottom: 16 }}>
+          <div style={{ fontWeight: 600, fontSize: 13, color: "#008409", marginBottom: 6 }}>
+            Force {d.i} ({d.from} → {d.to})
+          </div>
+          <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #bbf7d0", padding: "10px 14px", fontFamily: "monospace", fontSize: 13, lineHeight: 2 }}>
+            <div>d = √(Δx² + Δy² + Δz²)</div>
+            <div>d = √(({d._dx.toFixed(3)})² + ({d._dy.toFixed(3)})² + ({d._dz.toFixed(3)})²)</div>
+            <div>d = √({(d._dx**2).toFixed(4)} + {(d._dy**2).toFixed(4)} + {(d._dz**2).toFixed(4)})</div>
+            <div style={{ color: "#008409", fontWeight: 700 }}>d = {d.len.toFixed(4)}</div>
+          </div>
+        </div>
+      ))
+    },
+    {
+      title: "Step 3 — Find the Unit Vector (û) and Force Components",
+      content: result.details.map((d, i) => (
+        <div key={i} style={{ marginBottom: 16 }}>
+          <div style={{ fontWeight: 600, fontSize: 13, color: "#7c3aed", marginBottom: 6 }}>
+            Force {d.i}: {d.mag} kN ({d.from} → {d.to})
+          </div>
+          <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #ddd6fe", padding: "10px 14px", fontFamily: "monospace", fontSize: 13, lineHeight: 2 }}>
+            <div>û = r / d</div>
+            <div>û = ({d._dx.toFixed(3)}/{d.len.toFixed(3)})î + ({d._dy.toFixed(3)}/{d.len.toFixed(3)})ĵ + ({d._dz.toFixed(3)}/{d.len.toFixed(3)})k̂</div>
+            <div style={{ borderTop: "1px dashed #ddd6fe", marginTop: 6, paddingTop: 6 }}>F = |F| × û = {d.mag} × û</div>
+            <div>F<sub>x</sub> = {d.mag} × ({d._dx.toFixed(3)}/{d.len.toFixed(3)}) = <strong style={{ color: "#7c3aed" }}>{d.Fx.toFixed(4)} kN</strong></div>
+            <div>F<sub>y</sub> = {d.mag} × ({d._dy.toFixed(3)}/{d.len.toFixed(3)}) = <strong style={{ color: "#7c3aed" }}>{d.Fy.toFixed(4)} kN</strong></div>
+            <div>F<sub>z</sub> = {d.mag} × ({d._dz.toFixed(3)}/{d.len.toFixed(3)}) = <strong style={{ color: "#7c3aed" }}>{d.Fz.toFixed(4)} kN</strong></div>
+          </div>
+        </div>
+      ))
+    },
+    {
+      title: "Step 4 — Sum All Components (ΣF)",
+      content: (
+        <div>
+          <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #fde68a", padding: "12px 14px", fontFamily: "monospace", fontSize: 13, lineHeight: 2.2 }}>
+            {/* Summation table */}
+            <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 1fr 1fr", gap: "2px 16px", marginBottom: 8 }}>
+              <span style={{ fontWeight: 700, color: "#555" }}>Force</span>
+              <span style={{ fontWeight: 700, color: "#e63946", textAlign: "right" }}>Fx (kN)</span>
+              <span style={{ fontWeight: 700, color: "#2a9d8f", textAlign: "right" }}>Fy (kN)</span>
+              <span style={{ fontWeight: 700, color: "#4361ee", textAlign: "right" }}>Fz (kN)</span>
+              {result.details.map((d, i) => (
+                <>
+                  <span key={`lbl-${i}`} style={{ color: "#555" }}>F{d.i} ({d.from}→{d.to})</span>
+                  <span key={`fx-${i}`} style={{ color: "#e63946", textAlign: "right" }}>{d.Fx.toFixed(4)}</span>
+                  <span key={`fy-${i}`} style={{ color: "#2a9d8f", textAlign: "right" }}>{d.Fy.toFixed(4)}</span>
+                  <span key={`fz-${i}`} style={{ color: "#4361ee", textAlign: "right" }}>{d.Fz.toFixed(4)}</span>
+                </>
+              ))}
+            </div>
+            <div style={{ borderTop: "2px solid #b45309", paddingTop: 8, display: "grid", gridTemplateColumns: "auto 1fr 1fr 1fr", gap: "2px 16px" }}>
+              <span style={{ fontWeight: 700 }}>Σ</span>
+              <span style={{ color: "#e63946", fontWeight: 700, textAlign: "right" }}>{result.Rx.toFixed(4)}</span>
+              <span style={{ color: "#2a9d8f", fontWeight: 700, textAlign: "right" }}>{result.Ry.toFixed(4)}</span>
+              <span style={{ color: "#4361ee", fontWeight: 700, textAlign: "right" }}>{result.Rz.toFixed(4)}</span>
+            </div>
+          </div>
+          <div style={{ marginTop: 10, background: "#fff", borderRadius: 8, border: "1px solid #fde68a", padding: "10px 14px", fontFamily: "monospace", fontSize: 13, lineHeight: 2 }}>
+            <div>ΣFx = {result.Rx.toFixed(4)} kN</div>
+            <div>ΣFy = {result.Ry.toFixed(4)} kN</div>
+            <div>ΣFz = {result.Rz.toFixed(4)} kN</div>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Step 5 — Calculate the Resultant Force (R)",
+      content: (
+        <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #a5f3fc", padding: "12px 14px", fontFamily: "monospace", fontSize: 13, lineHeight: 2.2 }}>
+          <div>R = √(ΣFx² + ΣFy² + ΣFz²)</div>
+          <div>R = √(({result.Rx.toFixed(4)})² + ({result.Ry.toFixed(4)})² + ({result.Rz.toFixed(4)})²)</div>
+          <div>R = √({(result.Rx**2).toFixed(4)} + {(result.Ry**2).toFixed(4)} + {(result.Rz**2).toFixed(4)})</div>
+          <div>R = √({(result.Rx**2 + result.Ry**2 + result.Rz**2).toFixed(4)})</div>
+          <div style={{ color: "#0e7490", fontWeight: 700, fontSize: 16, marginTop: 6, borderTop: "1px dashed #a5f3fc", paddingTop: 8 }}>
+            R = {result.R.toFixed(4)} kN
+          </div>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <div style={{ marginTop: 0 }}>
+      {/* Final answer banner */}
+      <div style={{ background: "linear-gradient(135deg, #1848a0 0%, #0e7490 100%)", borderRadius: 12, padding: "18px 20px", marginBottom: 20, textAlign: "center", color: "#fff" }}>
+        <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 4 }}>Resultant Force</div>
+        <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: "-0.5px" }}>R = {result.R.toFixed(4)} kN</div>
+        <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 10, fontSize: 13, opacity: 0.9 }}>
+          <span>ΣFx = {result.Rx.toFixed(3)} kN</span>
+          <span>ΣFy = {result.Ry.toFixed(3)} kN</span>
+          <span>ΣFz = {result.Rz.toFixed(3)} kN</span>
+        </div>
+      </div>
+
+      {/* Expandable steps */}
+      {steps.map((step, i) => (
+        <div key={i} style={{ marginBottom: 12, borderRadius: 12, border: `1.5px solid ${stepBorder[i]}`, overflow: "hidden" }}>
+          <button
+            onClick={() => toggleStep(i)}
+            style={{
+              width: "100%", background: stepBg[i], border: "none", padding: "13px 16px",
+              display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left"
+            }}
+          >
+            <span style={{
+              background: stepColors[i], color: "#fff", borderRadius: "50%",
+              width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 13, fontWeight: 700, flexShrink: 0
+            }}>{i + 1}</span>
+            <span style={{ fontWeight: 600, fontSize: 14, color: "#111", flex: 1 }}>{step.title}</span>
+            <span style={{ fontSize: 12, color: "#888" }}>{openSteps[i] ? "▲" : "▼"}</span>
+          </button>
+          {openSteps[i] && (
+            <div style={{ padding: "14px 16px", background: "#fff" }}>
+              {step.content}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -448,16 +603,17 @@ function CoordinateTab() {
       if (!mag) return;
       const a = points[f.from], b = points[f.to];
       if (!a || !b) return;
-      const dx = (parseFloat(b.x)||0)-(parseFloat(a.x)||0);
-      const dy = (parseFloat(b.y)||0)-(parseFloat(a.y)||0);
-      const dz = (parseFloat(b.z)||0)-(parseFloat(a.z)||0);
-      const len = Math.sqrt(dx*dx+dy*dy+dz*dz);
+      const dx = (parseFloat(b.x) || 0) - (parseFloat(a.x) || 0);
+      const dy = (parseFloat(b.y) || 0) - (parseFloat(a.y) || 0);
+      const dz = (parseFloat(b.z) || 0) - (parseFloat(a.z) || 0);
+      const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
       if (!len) return;
-      const Fx = mag*dx/len, Fy = mag*dy/len, Fz = mag*dz/len;
-      Rx+=Fx; Ry+=Fy; Rz+=Fz;
-      details.push({ i:i+1, mag, from:points[f.from].label, to:points[f.to].label, Fx, Fy, Fz, len });
+      const Fx = mag * dx / len, Fy = mag * dy / len, Fz = mag * dz / len;
+      Rx += Fx; Ry += Fy; Rz += Fz;
+      // store deltas for step-by-step
+      details.push({ i: i + 1, mag, from: points[f.from].label, to: points[f.to].label, Fx, Fy, Fz, len, _dx: dx, _dy: dy, _dz: dz });
     });
-    const R = Math.sqrt(Rx*Rx+Ry*Ry+Rz*Rz);
+    const R = Math.sqrt(Rx * Rx + Ry * Ry + Rz * Rz);
     setResult({ details, Rx, Ry, Rz, R });
     setShowSolution(true);
   };
@@ -468,8 +624,12 @@ function CoordinateTab() {
 
   return (
     <div style={{ width: "100%" }}>
-      <div style={{ marginBottom: 20 }}>
-        <CoordThreeCanvas points={points} forces={forces} />
+      <div style={{ width: "100%", maxWidth: 580, margin: "0 auto" }}>
+        <h2 style={{ fontSize: 18, fontWeight: 600, textAlign: "center", marginBottom: 8 }}>Cartesian Vector Method</h2>
+        <p style={{ color: "#888", fontSize: 13, marginTop: 6, textAlign: "center" }}>Real-Time Free Body Diagram</p>
+        <div style={{ marginBottom: 20 }}>
+          <CoordThreeCanvas points={points} forces={forces} />
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
@@ -477,12 +637,12 @@ function CoordinateTab() {
         <div style={cardStyle}>
           <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 12px", color: "#111" }}>Coordinates of Points</h3>
           <div style={{ display: "grid", gridTemplateColumns: "52px 1fr 1fr 1fr 32px", gap: 6, alignItems: "center", marginBottom: 6 }}>
-            <span />{["x","y","z"].map(l=><span key={l} style={{ fontSize: 11, color: "#999", textAlign: "center" }}>{l}</span>)}<span />
+            <span />{["x", "y", "z"].map(l => <span key={l} style={{ fontSize: 11, color: "#999", textAlign: "center" }}>{l}</span>)}<span />
           </div>
           {points.map((p, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "52px 1fr 1fr 1fr 32px", gap: 6, alignItems: "center", marginBottom: 6 }}>
               <span style={{ fontSize: 13, color: "#555" }}>Point {p.label}</span>
-              {["x","y","z"].map(field => (
+              {["x", "y", "z"].map(field => (
                 <input key={field} style={inputStyle} placeholder={field} value={p[field]} onChange={e => updatePoint(i, field, e.target.value)} />
               ))}
               <button onClick={() => removePoint(i)} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: 7, width: 30, height: 30, cursor: "pointer", fontSize: 16, fontWeight: 700 }}>–</button>
@@ -529,36 +689,20 @@ function CoordinateTab() {
 
       {result && (
         <div style={cardStyle}>
-          <button onClick={() => setShowSolution(s => !s)} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 600, color: "#111", padding: 0, marginBottom: showSolution ? 16 : 0 }}>
-            <span style={{ fontSize: 13 }}>{showSolution ? "▼" : "▶"}</span> Solution
+          <button
+            onClick={() => setShowSolution(s => !s)}
+            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 600, color: "#111", padding: 0, marginBottom: showSolution ? 20 : 0, width: "100%" }}
+          >
+            <span style={{
+              background: "#1848a0", color: "#fff", borderRadius: 8, padding: "2px 10px",
+              fontSize: 12, fontWeight: 700
+            }}>
+              {showSolution ? "▲ Hide" : "▼ Show"}
+            </span>
+            <span>Step-by-Step Solution</span>
           </button>
-          {showSolution && (
-            <>
-              {result.details.map((d, i) => (
-                <div key={i} style={{ background: "#f5f7ff", borderRadius: 10, border: "1px solid #dde3f5", padding: "10px 14px", marginBottom: 10 }}>
-                  <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 5, color: "#1848a0" }}>Force {d.i} ({d.mag} kN, {d.from} → {d.to})</div>
-                  <div style={{ fontSize: 12, color: "#555", display: "flex", gap: 16, flexWrap: "wrap" }}>
-                    <span>Length = {d.len.toFixed(3)}</span>
-                    <span>F<sub>x</sub> = {d.Fx.toFixed(3)} kN</span>
-                    <span>F<sub>y</sub> = {d.Fy.toFixed(3)} kN</span>
-                    <span>F<sub>z</sub> = {d.Fz.toFixed(3)} kN</span>
-                  </div>
-                </div>
-              ))}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 12 }}>
-                {[["ΣFx", result.Rx], ["ΣFy", result.Ry], ["ΣFz", result.Rz]].map(([l, v]) => (
-                  <div key={l} style={{ background: "#f5f5f5", borderRadius: 10, padding: "10px", textAlign: "center" }}>
-                    <div style={{ fontSize: 11, color: "#888", marginBottom: 4 }}>{l} (kN)</div>
-                    <div style={{ fontSize: 18, fontWeight: 600 }}>{v.toFixed(3)}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ background: "#e8f0fe", borderRadius: 12, padding: "14px", textAlign: "center" }}>
-                <div style={{ fontSize: 12, color: "#555", marginBottom: 4 }}>Resultant R</div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: "#1848a0" }}>{result.R.toFixed(3)} kN</div>
-              </div>
-            </>
-          )}
+
+          {showSolution && <CoordStepSolution result={result} />}
         </div>
       )}
     </div>
@@ -567,11 +711,11 @@ function CoordinateTab() {
 
 /* ===================== MAIN COMPONENT WITH TABS ===================== */
 export default function Solver3D() {
-  const [activeTab, setActiveTab] = useState("angles");
+  const [activeTab, setActiveTab] = useState("coordinate");
 
   const tabBtnStyle = (id) => ({
     flex: 1,
-    background: activeTab === id ? (id === "angles" ? "#1848a0" : "#008409") : "#f0f0f0",
+    background: activeTab === id ? (id === "angles" ? "#008409" : "#1848a0") : "#f0f0f0",
     color: activeTab === id ? "#fff" : "#555",
     border: "none",
     borderRadius: 10,
@@ -587,27 +731,15 @@ export default function Solver3D() {
   return (
     <div style={{ minHeight: "100vh", background: "#f3f4f8", fontFamily: "Georgia, 'Times New Roman', serif", padding: "28px 16px 48px" }}>
       <div style={{ maxWidth: 860, margin: "0 auto" }}>
-
-        {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <h1 style={{ fontSize: 26, fontWeight: 700, color: "#111", margin: 0 }}>3D Resultant Force Calculator</h1>
-          <p style={{ color: "#888", fontSize: 13, marginTop: 6 }}>Real-Time Free Body Diagram</p>
         </div>
-
-        {/* Tab switcher */}
         <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
-          <button style={tabBtnStyle("angles")} onClick={() => setActiveTab("angles")}>
-            3D Resultant (Angles)
-          </button>
-          <button style={tabBtnStyle("coordinate")} onClick={() => setActiveTab("coordinate")}>
-            3D Coordinate
-          </button>
+          <button style={tabBtnStyle("coordinate")} onClick={() => setActiveTab("coordinate")}>3D Coordinate</button>
+          <button style={tabBtnStyle("angles")} onClick={() => setActiveTab("angles")}>3D Resultant (Angles)</button>
         </div>
-
-        {/* Tab content */}
         {activeTab === "angles" && <AnglesTab />}
         {activeTab === "coordinate" && <CoordinateTab />}
-
       </div>
     </div>
   );
