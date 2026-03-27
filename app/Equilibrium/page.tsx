@@ -342,15 +342,16 @@ export default function Equilibrium() {
             </h1>
 
             <div className="mb-8">
-              <h2 style={{ color: "#1848a0", fontSize: 18, fontWeight: 600, textAlign: "center", marginBottom: 8 }}>
-                Real-Time Free Body Diagram
-              </h2>
+              <h2 style={{ fontSize: 18, fontWeight: 600, textAlign: "center", marginBottom: 8 }}>Beam Analysis Calculator</h2>
+              <p style={{ color: "#888", fontSize: 13, marginTop: 6, textAlign: "center" }}>Real-Time Free Body Diagram</p>
+              <FBD forces={forces} setForces={setForces} />
               <p style={{ color: "#888", fontSize: 13, marginTop: 6, textAlign: "center" }}>
                 Drag arrows to change angles
               </p>
-              
-              <FBD forces={forces} setForces={setForces} />
             </div>
+
+
+
 
             <p className="w-full max-w-xl text-sm text-gray-700 mb-4 text-left">
               <span className="font-semibold">Note:</span> The angle is measured from the positive x-axis, counterclockwise.
@@ -370,21 +371,19 @@ export default function Equilibrium() {
                         onChange={(e) => handleInputChange(i, "magnitude", e.target.value)}
                         disabled={f.magnitudeUnknown}
                         placeholder={f.magnitudeUnknown ? "Unknown" : ""}
-                        className={`w-full rounded-xl border p-3 pr-14 ${
-                          f.magnitudeUnknown
+                        className={`w-full rounded-xl border p-3 pr-14 ${f.magnitudeUnknown
                             ? "bg-blue-50 border-[#1848a0] text-[#1848a0] font-semibold placeholder-[#1848a0] cursor-not-allowed"
                             : "border-gray-300"
-                        }`}
+                          }`}
                       />
                       <button
                         type="button"
                         onClick={() => toggleUnknown(i, "magnitude")}
                         title={f.magnitudeUnknown ? "Clear unknown" : "Mark as unknown"}
-                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl border text-lg font-semibold transition duration-200 ${
-                          f.magnitudeUnknown
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl border text-lg font-semibold transition duration-200 ${f.magnitudeUnknown
                             ? "bg-[#1848a0] text-white border-[#1848a0]"
                             : "bg-white text-[#1848a0] border-gray-300 hover:bg-blue-50"
-                        }`}
+                          }`}
                       >
                         ?
                       </button>
@@ -401,21 +400,19 @@ export default function Equilibrium() {
                         onChange={(e) => handleInputChange(i, "angle", e.target.value)}
                         disabled={f.angleUnknown}
                         placeholder={f.angleUnknown ? "Unknown" : ""}
-                        className={`w-full rounded-xl border p-3 pr-12 ${
-                          f.angleUnknown
+                        className={`w-full rounded-xl border p-3 pr-12 ${f.angleUnknown
                             ? "bg-blue-50 border-[#1848a0] text-[#1848a0] font-semibold placeholder-[#1848a0] cursor-not-allowed"
                             : "border-gray-300"
-                        }`}
+                          }`}
                       />
                       <button
                         type="button"
                         onClick={() => toggleUnknown(i, "angle")}
                         title={f.angleUnknown ? "Clear unknown" : "Mark as unknown"}
-                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl border text-lg font-semibold transition duration-200 ${
-                          f.angleUnknown
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl border text-lg font-semibold transition duration-200 ${f.angleUnknown
                             ? "bg-[#1848a0] text-white border-[#1848a0]"
                             : "bg-white text-[#1848a0] border-gray-300 hover:bg-blue-50"
-                        }`}
+                          }`}
                       >
                         ?
                       </button>

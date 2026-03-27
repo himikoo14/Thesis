@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import Solver3D from "../3D-solver/page";
+import Solver3D from "../solver/page";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 
@@ -395,7 +395,7 @@ export default function Solver2D() {
 
             {/* FBD Live Preview */}
             <div className="mb-8">
-              <h2 className="text-[20px] font-semibold text-center mb-2">Real-Time Free Body Diagram</h2>
+              <h2 className="text-[20px] font-semibold text-center mb-2,">Real-Time Free Body Diagram</h2>
               <FBD forces={forces} setForces={setForces} />
             </div>
 
@@ -421,7 +421,7 @@ export default function Solver2D() {
                           handleInputChange(i, "magnitude", e.target.value)
                         }
                         placeholder="Magnitude (kN)"
-                        className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2"
+                        className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2"
                       />
                     </div>
                     <div className="flex-1">
@@ -435,7 +435,7 @@ export default function Solver2D() {
                           handleInputChange(i, "angle", e.target.value)
                         }
                         placeholder="Angle (deg)"
-                        className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2"
+                        className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2"
                       />
                     </div>
                     {forces.length > 1 && (
@@ -466,22 +466,22 @@ export default function Solver2D() {
                 <h2 className="text-[20px] font-semibold">Resultant Force (kN)</h2>
                 <div>
                   <label className="block font-medium text-[18px]">Horizontal component (Fx)</label>
-                  <input type="text" value={`${result.sumFx.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2" />
+                  <input type="text" value={`${result.sumFx.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
                 </div>
 
                 <div>
                   <label className="block font-medium text-[18px]">Vertical component (Fy)</label>
-                  <input type="text" value={`${result.sumFy.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2" />
+                  <input type="text" value={`${result.sumFy.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
                 </div>
 
                 <div>
                   <label className="block font-medium text-[18px]">Magnitude of resultant force (R)</label>
-                  <input type="text" value={`${result.R.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2" />
+                  <input type="text" value={`${result.R.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
                 </div>
 
                 <div>
                   <label className="block font-medium text-[18px]">Direction of resultant force (θ)</label>
-                  <input type="text" value={`${result.theta.toFixed(2)}°`} readOnly className="w-full mt-1 rounded-lg border-gray-300 text-[18px] p-2" />
+                  <input type="text" value={`${result.theta.toFixed(2)}°`} readOnly className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
                 </div>
               </div>
             )}
