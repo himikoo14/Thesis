@@ -6,6 +6,8 @@ import Footer from "../../components/Footer";
 import Solver3D from "../solver/page";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 /* ===================== Force System Logic ===================== */
 class ForceSystem2D {
@@ -344,6 +346,7 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
 
 /* ===================== MAIN COMPONENT ===================== */
 export default function Solver2D() {
+  const solutionRef = useRef<HTMLDivElement | null>(null);
   const [activeTab, setActiveTab] = useState<"2d" | "3d">("2d");
   const [forces, setForces] = useState<ForceInput[]>([{ magnitude: "", angle: "" }]);
 
@@ -367,6 +370,35 @@ export default function Solver2D() {
     setResult(system.stepByStepSolution());
   };
 
+const exportPDF = async () => {
+  try {
+    if (!solutionRef.current) {
+      alert("Please calculate the solution first.");
+      return;
+    }
+
+    const canvas = await html2canvas(solutionRef.current, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const pageWidth = 210;
+    const imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+    pdf.addImage(imgData, "PNG", 0, 10, pageWidth, imgHeight);
+
+    pdf.save("resultant-force-solution.pdf");
+
+  } catch (err) {
+    console.error("PDF generation failed:", err);
+    alert("PDF export failed.");
+  }
+};
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900 text-[18px]">
       <Header />
@@ -478,66 +510,79 @@ export default function Solver2D() {
               </button>
             </div>
 
-            {/* Output */}
-            {result && (
-              <div className="w-full max-w-xl mt-6 bg-white rounded-2xl shadow p-6 space-y-4">
-                <h2 className="text-[20px] font-semibold">Resultant Force (kN)</h2>
-                <div>
-                  <label className="block font-medium text-[18px]">Horizontal component (Fx)</label>
-                  <input type="text" value={`${result.sumFx.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
-                </div>
+{/* Output */}
+{result && (
+  <div
+    ref={solutionRef}
+    className="w-full max-w-xl mt-6 bg-white rounded-2xl shadow p-6"
+  >
+    <h2 className="text-[20px] font-semibold">Resultant Force (kN)</h2>
+    <div>
+      <label className="block font-medium text-[18px]">Horizontal component (Fx)</label>
+      <input type="text" value={`${result.sumFx.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
+    </div>
 
-                <div>
-                  <label className="block font-medium text-[18px]">Vertical component (Fy)</label>
-                  <input type="text" value={`${result.sumFy.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
-                </div>
+    <div>
+      <label className="block font-medium text-[18px]">Vertical component (Fy)</label>
+      <input type="text" value={`${result.sumFy.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
+    </div>
 
-                <div>
-                  <label className="block font-medium text-[18px]">Magnitude of resultant force (R)</label>
-                  <input type="text" value={`${result.R.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
-                </div>
+    <div>
+      <label className="block font-medium text-[18px]">Magnitude of resultant force (R)</label>
+      <input type="text" value={`${result.R.toFixed(3)} kN`} readOnly className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
+    </div>
 
-                <div>
-                  <label className="block font-medium text-[18px]">Direction of resultant force (θ)</label>
-                  <input type="text" value={`${result.theta.toFixed(2)}°`} readOnly className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
-                </div>
-              </div>
-            )}
+    <div>
+      <label className="block font-medium text-[18px]">Direction of resultant force (θ)</label>
+      <input type="text" value={`${result.theta.toFixed(2)}°`} readOnly className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
+    </div>
 
-            {/* Step-by-Step Solution */}
-            {result && (
-              <div className="w-full max-w-xl mt-6 bg-white rounded-2xl shadow p-6">
-                <h2 className="text-[20px] font-semibold mb-2">Step-by-Step Solution</h2>
+    <div className="mt-6 text-center">
+      <button
+        onClick={exportPDF}
+        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
+      >
+        Download Solution PDF
+      </button>
+    </div>
+  </div>
+)}
 
+{/* Step-by-Step Solution */}
+{result && (
+  <div className="w-full max-w-xl mt-6 bg-white rounded-2xl shadow p-6">
+    <h2 className="text-[20px] font-semibold mb-2">Step-by-Step Solution</h2>
 
-                <div className="space-y-4">
-                  {result.steps.map((line, i) =>
-                    line.startsWith("Step") ? (
-                      <p key={i} className="font-medium text-[18px]">
-                        {line}
-                      </p>
-                    ) : (
-                      <div key={i} className="text-[18px]">
-                        <BlockMath>{line}</BlockMath>
-                      </div>
-                    )
-                  )}
-                </div>
+    <div className="space-y-4">
+      {result.steps.map((line, i) =>
+        line.startsWith("Step") ? (
+          <p key={i} className="font-medium text-[18px]">
+            {line}
+          </p>
+        ) : (
+          <div key={i} className="text-[18px]">
+            <BlockMath>{line}</BlockMath>
+          </div>
+        )
+      )}
+    </div>
 
-                {/* ⭐⭐⭐⭐⭐ ADDED — Step 4 Resultant FBD with all forces ⭐⭐⭐⭐⭐ */}
-                <div className="mt-8">
-                  <p className="font-medium text-[18px] mb-2">
-                    Step 4: Final Free Body Diagram (All Forces + Resultant)
-                  </p>
-                  <ResultantFBD forces={forces} result={result} />
-                </div>
-              </div>
-            )}
+    {/* ⭐⭐⭐⭐⭐ ADDED — Step 4 Resultant FBD with all forces ⭐⭐⭐⭐⭐ */}
+    <div className="mt-8">
+      <p className="font-medium text-[18px] mb-2">
+        Step 4: Final Free Body Diagram (All Forces + Resultant)
+      </p>
+      <ResultantFBD forces={forces} result={result} />
+    </div>
+  </div>
+)}
           </>
         )}
 
         {activeTab === "3d" && <Solver3D />}
+
       </main>
+
 
       <Footer />
     </div>
