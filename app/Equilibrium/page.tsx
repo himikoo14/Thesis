@@ -342,7 +342,6 @@ export default function Equilibrium() {
             </h1>
 
             <div className="mb-8">
-              <h2 style={{ fontSize: 18, fontWeight: 600, textAlign: "center", marginBottom: 8 }}>Beam Analysis Calculator</h2>
               <p style={{ color: "#888", fontSize: 13, marginTop: 6, textAlign: "center" }}>Real-Time Free Body Diagram</p>
               <FBD forces={forces} setForces={setForces} />
               <p style={{ color: "#888", fontSize: 13, marginTop: 6, textAlign: "center" }}>

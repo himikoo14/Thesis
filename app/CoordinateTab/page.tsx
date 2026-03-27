@@ -150,7 +150,6 @@ function KTX({ tex }: { tex: string }) {
 /* ================================================================
    SOLUTION BUILDER  — mirrors PDF exactly
 ================================================================ */
-type SolLine = { t: "h"; text: string } | { t: "m"; tex: string };
 
 function n(v: number, d = 2): string {
   return parseFloat(v.toFixed(d)).toString();
@@ -163,111 +162,75 @@ function vec(x: number, y: number, z: number, d = 2): string {
   return s;
 }
 
-function buildSolution(details: any[], Rx: number, Ry: number, Rz: number, R: number): SolLine[] {
-  const out: SolLine[] = [];
-  const H = (text: string) => out.push({ t: "h", text });
-  const M = (tex: string)  => out.push({ t: "m", tex  });
+function buildSolution(details: any[], Rx: number, Ry: number, Rz: number, R: number): string[] {
+  const steps: string[] = [];
 
-  // 1. Position Vectors
-  H("1. Position Vectors");
-  details.forEach(d => {
-    const diffTeX =
-      `(${n(d.bx,0)}-${n(d.ax,0)})\\hat{i} + ` +
-      `(${n(d.by,0)}-${n(d.ay,0)})\\hat{j} + ` +
-      `(${n(d.bz,0)}-${n(d.az,0)})\\hat{k}`;
-    M(`\\vec{r}_{${d.from}${d.to}} = \\vec{r}_{${d.to}} - \\vec{r}_{${d.from}} = ${diffTeX} = ${vec(d.dx, d.dy, d.dz, 0)}`);
-  });
+steps.push("Step 1: Determine position vectors");
 
-  // 2. Magnitudes
-  H("2. Magnitudes");
-  details.forEach(d => {
-    M(
-      `|\\vec{r}_{${d.from}${d.to}}| = ` +
-      `\\sqrt{(${n(d.dx,0)})^2+(${n(d.dy,0)})^2+(${n(d.dz,0)})^2} = ` +
-      `\\sqrt{${d.dx*d.dx}+${d.dy*d.dy}+${d.dz*d.dz}} = ${n(d.len, 2)}`
-    );
-  });
+details.forEach(d=>{
+  steps.push(
+    `\\vec r_{${d.from}${d.to}} =
+    (${d.bx}-${d.ax})\\hat i +
+    (${d.by}-${d.ay})\\hat j +
+    (${d.bz}-${d.az})\\hat k`
+  );
+});
 
-  // 3. Unit Vectors
-  H("3. Unit Vectors");
-  details.forEach(d => {
-    const L = n(d.len, 2);
-    const fi = `\\dfrac{${n(d.dx,0)}}{${L}}`;
-    const fj = d.dy < 0 ? ` - \\dfrac{${n(Math.abs(d.dy),0)}}{${L}}` : ` + \\dfrac{${n(d.dy,0)}}{${L}}`;
-    const fk = d.dz < 0 ? ` - \\dfrac{${n(Math.abs(d.dz),0)}}{${L}}` : ` + \\dfrac{${n(d.dz,0)}}{${L}}`;
-    M(`\\hat{u}_{${d.from}${d.to}} = \\dfrac{${vec(d.dx,d.dy,d.dz,0)}}{${L}} = ${fi}\\,\\hat{i}${fj}\\,\\hat{j}${fk}\\,\\hat{k}`);
-  });
+steps.push("Step 2: Magnitudes");
 
-  // 4. Force Vectors
-  H("4. Force Vectors");
-  details.forEach(d => {
-    const L = n(d.len, 2);
-    const fi = `\\dfrac{${n(d.dx,0)}}{${L}}`;
-    const fj = d.dy < 0 ? ` - \\dfrac{${n(Math.abs(d.dy),0)}}{${L}}` : ` + \\dfrac{${n(d.dy,0)}}{${L}}`;
-    const fk = d.dz < 0 ? ` - \\dfrac{${n(Math.abs(d.dz),0)}}{${L}}` : ` + \\dfrac{${n(d.dz,0)}}{${L}}`;
-    M(
-      `\\vec{F}_{${d.to}} = ${n(d.mag,0)}` +
-      `\\left(${fi}\\,\\hat{i}${fj}\\,\\hat{j}${fk}\\,\\hat{k}\\right) = ` +
-      `${vec(d.Fx, d.Fy, d.Fz, 2)}`
-    );
-  });
+details.forEach(d=>{
+  steps.push(
+    `|\\vec r_{${d.from}${d.to}}|=
+    \\sqrt{${d.dx}^2+${d.dy}^2+${d.dz}^2}
+    =${d.len.toFixed(2)}`
+  );
+});
 
-  // 5. Resultant
-  H("5. Resultant");
-  const iG = details.map(d => n(d.Fx, 2)).join(" + ");
-  const jG = details.map(d => n(d.Fy, 2)).join(" + ");
-  const kG = details.map(d => n(d.Fz, 2)).join(" + ");
-  M(`\\vec{R} = (${iG})\\hat{i} + (${jG})\\hat{j} + (${kG})\\hat{k}`);
-  M(`\\vec{R} = ${vec(Rx, Ry, Rz, 2)}`);
-  M(`R = \\sqrt{(${n(Rx,2)})^2+(${n(Ry,2)})^2+(${n(Rz,2)})^2} = \\sqrt{${n(Rx*Rx,2)}+${n(Ry*Ry,2)}+${n(Rz*Rz,2)}} = ${n(R,2)}\\text{ N}`);
+steps.push("Step 3: Unit vectors");
 
-  // 6. Direction Angles
-  if (R > 0.001) {
-    H("6. Direction Angles");
-    const α = Math.acos(Rx / R) * 180 / Math.PI;
-    const β = Math.acos(Ry / R) * 180 / Math.PI;
-    const γ = Math.acos(Rz / R) * 180 / Math.PI;
-    M(`\\cos\\alpha = \\dfrac{R_x}{R}, \\qquad \\cos\\beta = \\dfrac{R_y}{R}, \\qquad \\cos\\gamma = \\dfrac{R_z}{R}`);
-    M(`\\cos\\alpha = \\dfrac{${n(Rx,2)}}{${n(R,2)}}, \\qquad \\cos\\beta = \\dfrac{${n(Ry,2)}}{${n(R,2)}}, \\qquad \\cos\\gamma = \\dfrac{${n(Rz,2)}}{${n(R,2)}}`);
-    M(`\\alpha = ${n(α,2)}^\\circ, \\qquad \\beta = ${n(β,2)}^\\circ, \\qquad \\gamma = ${n(γ,2)}^\\circ`);
-  }
+details.forEach(d=>{
+  steps.push(
+    `\\hat u_{${d.from}${d.to}}=
+    \\frac{${d.dx}\\hat i+${d.dy}\\hat j+${d.dz}\\hat k}
+    {${d.len.toFixed(2)}}`
+  );
+});
 
-  return out;
+steps.push("Step 4: Force vectors");
+
+details.forEach(d=>{
+  steps.push(
+    `\\vec F_{${d.to}}=${d.mag}
+    \\hat u_{${d.from}${d.to}}
+    =${d.Fx.toFixed(2)}\\hat i+
+    ${d.Fy.toFixed(2)}\\hat j+
+    ${d.Fz.toFixed(2)}\\hat k`
+  );
+});
+
+steps.push("Step 5: Resultant");
+
+steps.push(
+  `\\vec R=
+  ${Rx.toFixed(2)}\\hat i+
+  ${Ry.toFixed(2)}\\hat j+
+  ${Rz.toFixed(2)}\\hat k`
+);
+
+steps.push(
+  `R=
+  \\sqrt{${Rx.toFixed(2)}^2+
+  ${Ry.toFixed(2)}^2+
+  ${Rz.toFixed(2)}^2}
+  =${R.toFixed(2)}`
+);
+
+return steps;
 }
 
 /* ================================================================
    SOLUTION PANEL
 ================================================================ */
-function SolutionPanel({ result }: { result: any }) {
-  const katexOk = useKatex();
-  return (
-    <div style={{ marginTop: 4 }}>
-      {/* Summary banner */}
-      <div style={{ background: "linear-gradient(135deg, #1848a0 0%, #0e7490 100%)", borderRadius: 12, padding: "18px 20px", marginBottom: 20, textAlign: "center", color: "#fff" }}>
-        <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 4 }}>Resultant Force</div>
-        <div style={{ fontSize: 32, fontWeight: 700 }}>R = {result.R.toFixed(2)} N</div>
-        <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 10, fontSize: 13, opacity: 0.9 }}>
-          <span>ΣFx = {result.Rx.toFixed(2)} N</span>
-          <span>ΣFy = {result.Ry.toFixed(2)} N</span>
-          <span>ΣFz = {result.Rz.toFixed(2)} N</span>
-        </div>
-      </div>
-      {/* PDF-style lines */}
-      {result.solLines.map((ln: SolLine, i: number) => {
-        if (ln.t === "h") return (
-          <p key={i} style={{ fontWeight: 700, fontSize: 15, color: "#1848a0", margin: "22px 0 6px", paddingBottom: 5, borderBottom: "2px solid #c8d8ff" }}>
-            {ln.text}
-          </p>
-        );
-        if (ln.t === "m") {
-          if (katexOk) return <KTX key={i} tex={ln.tex} />;
-          return <pre key={i} style={{ fontSize: 12, color: "#555", overflowX: "auto" }}>{ln.tex}</pre>;
-        }
-        return null;
-      })}
-    </div>
-  );
-}
 
 /* ================================================================
    MAIN EXPORT
@@ -310,7 +273,7 @@ export default function CoordinateTab() {
       details.push({ i: i+1, mag, from: points[f.from].label, to: points[f.to].label, ax, ay, az, bx, by, bz, dx, dy, dz, Fx, Fy, Fz, len });
     });
     const R = Math.sqrt(Rx*Rx + Ry*Ry + Rz*Rz);
-    setResult({ details, Rx, Ry, Rz, R, solLines: buildSolution(details, Rx, Ry, Rz, R) });
+    setResult({ details, Rx, Ry, Rz, R, steps: buildSolution(details, Rx, Ry, Rz, R) });
     setShowSolution(true);
   };
 
@@ -398,7 +361,23 @@ export default function CoordinateTab() {
             </span>
             <span>Step-by-Step Solution</span>
           </button>
-          {showSolution && <SolutionPanel result={result} />}
+          {showSolution && (
+  <div style={{ lineHeight: 1.8 }}>
+    {result.steps.map((line: string, i: number) =>
+      line.startsWith("Step") ? (
+        <p key={i} style={{
+          fontWeight: 600,
+          fontSize: 16,
+          marginTop: 14
+        }}>
+          {line}
+        </p>
+      ) : (
+        <KTX key={i} tex={line}/>
+      )
+    )}
+  </div>
+)}
         </div>
       )}
     </div>

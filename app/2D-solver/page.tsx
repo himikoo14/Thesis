@@ -299,6 +299,7 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
         {vectors.map((v, i) => {
           const x = v.x * scale;
           const y = -v.y * scale; // invert for svg
+          const offset = 10;
           return (
             <g key={i}>
               <line
@@ -312,7 +313,13 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
                 className="cursor-pointer" // arrow line is now draggable
                 onMouseDown={() => setDragIndex(i)}
               />
-              <text x={x * 0.55} y={y * 0.55} fontSize="14" fill="black">
+              <text
+                x={x + (x / Math.hypot(x, y)) * offset}
+                y={y + (y / Math.hypot(x, y)) * offset}
+                fontSize="14"
+                fill="black"
+                fontWeight="bold"
+              >
                 F{i + 1}
               </text>
             </g>
@@ -395,7 +402,18 @@ export default function Solver2D() {
 
             {/* FBD Live Preview */}
             <div className="mb-8">
-              <h2 className="text-[20px] font-semibold text-center mb-2,">Real-Time Free Body Diagram</h2>
+              <p
+                style={{
+                  color: "#888",
+                  fontSize: 13,
+                  textAlign: "center",
+                  marginTop: 0,
+                  marginBottom: 12,
+                }}
+              >
+                Real-Time Free Body Diagram
+              </p>
+
               <FBD forces={forces} setForces={setForces} />
             </div>
 
