@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import Solver3D from "../3D-coordinate/page";
+import Solver3D from "../solver/page";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 
