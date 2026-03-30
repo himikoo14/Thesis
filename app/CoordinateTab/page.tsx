@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback, ReactNode } from "react";
 import * as THREE from "three";
 
 /* ================================================================
@@ -8,7 +8,6 @@ import * as THREE from "three";
 ================================================================ */
 function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) {
   const mountRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
   const dynamicGroupRef = useRef<THREE.Group | null>(null);
   const orbitRef = useRef({ theta: 0.7, phi: 1.1, r: 6, isDragging: false, prev: { x: 0, y: 0 } });
   const rafRef = useRef(0);
@@ -30,7 +29,6 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
     ([[[1,0,0], 0xe63946], [[0,1,0], 0x2a9d8f], [[0,0,1], 0x4361ee]] as [[number,number,number], number][]).forEach(([dir, color]) => {
       scene.add(new THREE.ArrowHelper(new THREE.Vector3(...dir), new THREE.Vector3(0, 0, 0), 1.8, color, 0.3, 0.18));
     });
-    sceneRef.current = scene;
 
     const dynGroup = new THREE.Group();
     scene.add(dynGroup);
@@ -117,7 +115,7 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
 }
 
 /* ================================================================
-   KATEX
+   KATEX (inline renderer for solution panel)
 ================================================================ */
 function useKatex() {
   const [ok, setOk] = useState(false);
@@ -137,100 +135,321 @@ function useKatex() {
 
 function KTX({ tex }: { tex: string }) {
   const el = useRef<HTMLDivElement>(null);
+  const katexReady = useKatex();
   useEffect(() => {
-    if (!el.current) return;
+    if (!el.current || !katexReady) return;
     const katex = (window as any).katex;
     if (!katex) return;
     try { katex.render(tex, el.current, { displayMode: true, throwOnError: false }); }
-    catch (_) { el.current.innerText = tex; }
-  }, [tex]);
+    catch (_) { if (el.current) el.current.innerText = tex; }
+  }, [tex, katexReady]);
   return <div ref={el} style={{ margin: "3px 0", overflowX: "auto" }} />;
 }
 
 /* ================================================================
-   SOLUTION BUILDER  — mirrors PDF exactly
+   STEP LINE TYPES  (from StepByStep.tsx)
 ================================================================ */
+type StepLine =
+  | { type: "heading"; text: string }
+  | { type: "math"; tex: string }
+  | { type: "text"; text: string }
+  | { type: "diagram"; label?: string; node: ReactNode };
 
-function n(v: number, d = 2): string {
-  return parseFloat(v.toFixed(d)).toString();
-}
-
-function vec(x: number, y: number, z: number, d = 2): string {
-  let s = `${n(x, d)}\\hat{i}`;
-  s += y < 0 ? ` - ${n(Math.abs(y), d)}\\hat{j}` : ` + ${n(y, d)}\\hat{j}`;
-  s += z < 0 ? ` - ${n(Math.abs(z), d)}\\hat{k}` : ` + ${n(z, d)}\\hat{k}`;
-  return s;
-}
-
-function buildSolution(details: any[], Rx: number, Ry: number, Rz: number, R: number): string[] {
-  const steps: string[] = [];
-
-steps.push("Step 1: Determine position vectors");
-
-details.forEach(d=>{
-  steps.push(
-    `\\vec r_{${d.from}${d.to}} =
-    (${d.bx}-${d.ax})\\hat i +
-    (${d.by}-${d.ay})\\hat j +
-    (${d.bz}-${d.az})\\hat k`
-  );
-});
-
-steps.push("Step 2: Magnitudes");
-
-details.forEach(d=>{
-  steps.push(
-    `|\\vec r_{${d.from}${d.to}}|=
-    \\sqrt{${d.dx}^2+${d.dy}^2+${d.dz}^2}
-    =${d.len.toFixed(2)}`
-  );
-});
-
-steps.push("Step 3: Unit vectors");
-
-details.forEach(d=>{
-  steps.push(
-    `\\hat u_{${d.from}${d.to}}=
-    \\frac{${d.dx}\\hat i+${d.dy}\\hat j+${d.dz}\\hat k}
-    {${d.len.toFixed(2)}}`
-  );
-});
-
-steps.push("Step 4: Force vectors");
-
-details.forEach(d=>{
-  steps.push(
-    `\\vec F_{${d.to}}=${d.mag}
-    \\hat u_{${d.from}${d.to}}
-    =${d.Fx.toFixed(2)}\\hat i+
-    ${d.Fy.toFixed(2)}\\hat j+
-    ${d.Fz.toFixed(2)}\\hat k`
-  );
-});
-
-steps.push("Step 5: Resultant");
-
-steps.push(
-  `\\vec R=
-  ${Rx.toFixed(2)}\\hat i+
-  ${Ry.toFixed(2)}\\hat j+
-  ${Rz.toFixed(2)}\\hat k`
-);
-
-steps.push(
-  `R=
-  \\sqrt{${Rx.toFixed(2)}^2+
-  ${Ry.toFixed(2)}^2+
-  ${Rz.toFixed(2)}^2}
-  =${R.toFixed(2)}`
-);
-
-return steps;
+/** Converts the legacy string[] from buildSolution into StepLine[] */
+function fromLegacySteps(steps: string[]): StepLine[] {
+  return steps.map((line) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("Step")) return { type: "heading", text: trimmed };
+    return { type: "math", tex: trimmed };
+  });
 }
 
 /* ================================================================
-   SOLUTION PANEL
+   STEP-BY-STEP SOLUTION RENDERER  (from StepByStep.tsx)
 ================================================================ */
+function StepByStepSolution({
+  steps,
+  title = "Step-by-Step Solution",
+  containerRef,
+}: {
+  steps: StepLine[];
+  title?: string;
+  containerRef?: React.RefObject<HTMLDivElement>;
+}) {
+  const card: React.CSSProperties = {
+    background: "#fff",
+    borderRadius: 14,
+    border: "1px solid #ebebeb",
+    padding: "18px 20px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+  };
+
+  return (
+    <div ref={containerRef} style={card}>
+      <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16, marginTop: 0 }}>{title}</h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {steps.map((line, i) => {
+          switch (line.type) {
+            case "heading":
+              return (
+                <p key={i} style={{ fontWeight: 600, fontSize: 16, marginTop: 10, marginBottom: 2, color: "#111" }}>
+                  {line.text}
+                </p>
+              );
+            case "math":
+              return <KTX key={i} tex={line.tex} />;
+            case "text":
+              return (
+                <p key={i} style={{ fontSize: 15, color: "#444", margin: 0 }}>
+                  {line.text}
+                </p>
+              );
+            case "diagram":
+              return (
+                <div key={i} style={{ marginTop: 16 }}>
+                  {line.label && <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 8 }}>{line.label}</p>}
+                  <div style={{ display: "flex", justifyContent: "center" }}>{line.node}</div>
+                </div>
+              );
+            default:
+              return null;
+          }
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   PDF EXPORT  (from ToPDF/Page.tsx — self-contained inline version)
+================================================================ */
+declare global {
+  interface Window {
+    jspdf: { jsPDF: new (opts: Record<string, unknown>) => any };
+    katex: any;
+  }
+}
+
+const JSPDF_URL = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+const MM_PER_PX = 0.264583;
+const RENDER_SCALE = 3;
+
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement("script");
+    s.src = src; s.onload = () => resolve(); s.onerror = () => reject(new Error(`Failed to load ${src}`));
+    document.head.appendChild(s);
+  });
+}
+
+function upgradeFracs(tex: string): string {
+  if (!tex.includes("\\frac") || tex.includes("\\displaystyle")) return tex;
+  return `{\\displaystyle ${tex.replace(/\\tfrac(?=\{)/g, "\\dfrac").replace(/(?<![dt])\\frac(?=\{)/g, "\\dfrac")}}`;
+}
+
+async function latexToPng(tex: string): Promise<{ dataUrl: string; wMm: number; hMm: number } | null> {
+  // Dynamically import html2canvas only when needed
+  const html2canvas = (await import("html2canvas")).default;
+  try {
+    const processedTex = upgradeFracs(tex);
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText = "position:absolute;left:-9999px;top:0;background:#ffffff;color:#000000;padding:0;margin:0;display:inline-block;";
+    const inner = document.createElement("span");
+    inner.style.cssText = "display:inline-block;padding:10px 14px;";
+    wrapper.appendChild(inner);
+    document.body.appendChild(wrapper);
+
+    window.katex.render(processedTex, inner, { displayMode: true, throwOnError: false, output: "html" });
+
+    const targetEl = (inner.querySelector(".katex-html") as HTMLElement) || (inner.querySelector(".katex") as HTMLElement) || inner;
+    const innerRect = targetEl.getBoundingClientRect();
+    const wrapRect = wrapper.getBoundingClientRect();
+    const offsetLeft = innerRect.left - wrapRect.left;
+
+    const canvas = await html2canvas(wrapper, { backgroundColor: "#ffffff", scale: RENDER_SCALE, useCORS: true, logging: false });
+    document.body.removeChild(wrapper);
+
+    const PAD = 18, EXTRA_LEFT = -8;
+    const sx = Math.max(0, Math.round(offsetLeft * RENDER_SCALE) - PAD - EXTRA_LEFT);
+    const sw = Math.round(innerRect.width * RENDER_SCALE) + PAD * 2 + EXTRA_LEFT;
+    const cropped = document.createElement("canvas");
+    cropped.width = sw; cropped.height = canvas.height;
+    const ctx = cropped.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(canvas, sx, 0, sw, canvas.height, 0, 0, sw, canvas.height);
+    return { dataUrl: cropped.toDataURL("image/png"), wMm: (cropped.width / RENDER_SCALE) * MM_PER_PX, hMm: (cropped.height / RENDER_SCALE) * MM_PER_PX };
+  } catch (e) {
+    console.warn("latexToPng failed:", tex, e);
+    return null;
+  }
+}
+
+async function writePDF(p: { steps: string[]; resultRows?: { label: string; value: string }[]; title: string; filename: string }) {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const PW = 210, PH = 297, M = 18, CW = PW - M * 2, MAXY = PH - 22;
+  let y = 0;
+
+  const guard = (need: number) => { if (y + need > MAXY) { pdf.addPage(); y = M; } };
+
+  const mathLine = async (tex: string) => {
+    const r = await latexToPng(tex);
+    if (!r) return;
+    const MAX_WIDTH = CW * 0.9;
+    let { wMm: width, hMm: height } = r;
+    if (width > MAX_WIDTH) { const sc = MAX_WIDTH / width; width *= sc; height *= sc; }
+    guard(height + 6);
+    pdf.addImage(r.dataUrl, "PNG", (PW - width) / 2, y, width, height);
+    y += height + 6;
+  };
+
+  // Header
+  pdf.setFillColor(24, 72, 160);
+  pdf.rect(0, 0, PW, 10, "F");
+  y = 18;
+  pdf.setFont("helvetica", "bold"); pdf.setFontSize(14); pdf.setTextColor(24, 72, 160);
+  pdf.text(p.title, M, y); y += 6;
+  pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(100, 116, 139);
+  pdf.text(`Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`, M, y); y += 5;
+  pdf.setDrawColor(220, 228, 245); pdf.setLineWidth(0.4); pdf.line(M, y, PW - M, y); y += 9;
+
+  pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(20, 20, 20);
+  pdf.text("Step-by-Step Solution", M, y); y += 10;
+
+  for (const raw of p.steps) {
+    const s = raw.trim();
+    if (s.startsWith("Step")) {
+      guard(10); y += 2;
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(11); pdf.setTextColor(24, 72, 160);
+      pdf.text(s, M, y); y += 14;
+      continue;
+    }
+    await mathLine(s); y += 2;
+  }
+
+  if (p.resultRows && p.resultRows.length > 0) {
+    guard(20 + p.resultRows.length * 11); y += 4;
+    pdf.setDrawColor(220, 228, 245); pdf.setLineWidth(0.4); pdf.line(M, y, PW - M, y); y += 8;
+    pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(20, 20, 20);
+    pdf.text("Results Summary", M, y); y += 9;
+    for (const { label: lbl, value } of p.resultRows) {
+      guard(11);
+      pdf.setFillColor(245, 248, 255); pdf.roundedRect(M, y - 5, CW, 9, 2, 2, "F");
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(11); pdf.setTextColor(50, 50, 50);
+      pdf.text(lbl, M + 4, y);
+      pdf.setFont("helvetica", "bold"); pdf.setTextColor(24, 72, 160);
+      pdf.text(value, PW - M - 4, y, { align: "right" }); y += 11;
+    }
+  }
+
+  const total = pdf.internal.getNumberOfPages();
+  for (let pg = 1; pg <= total; pg++) {
+    pdf.setPage(pg);
+    pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(148, 163, 184);
+    pdf.text(`Page ${pg} of ${total}`, PW - M, PH - 8, { align: "right" });
+    pdf.setFillColor(24, 72, 160); pdf.rect(0, PH - 4, PW, 4, "F");
+  }
+  pdf.save(p.filename);
+}
+
+function PDFExportButton({ steps, resultRows, title, filename }: {
+  steps: string[];
+  resultRows?: { label: string; value: string }[];
+  title: string;
+  filename: string;
+}) {
+  const [libReady, setLibReady] = useState(false);
+  const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
+
+  useEffect(() => {
+    loadScript(JSPDF_URL).then(() => setLibReady(true)).catch(console.error);
+  }, []);
+
+  const handleExport = useCallback(async () => {
+    if (!libReady || status === "generating") return;
+    setStatus("generating");
+    try {
+      await writePDF({ steps, resultRows, title, filename });
+      setStatus("done");
+      setTimeout(() => setStatus("idle"), 2500);
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
+    }
+  }, [libReady, status, steps, resultRows, title, filename]);
+
+  const off = !libReady || status === "generating";
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Generating PDF…",
+    done: "✅ Downloaded!",
+    error: "❌ Export failed — try again",
+  };
+
+  return (
+    <button
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+        width: "100%", padding: "13px 0", border: "none", borderRadius: 10,
+        fontSize: 15, fontWeight: 600, transition: "all 0.2s",
+        background: "linear-gradient(135deg, #0f2d6b, #1848a0)",
+        color: "#fff", boxShadow: "0 4px 14px rgba(24,72,160,0.25)",
+        marginBottom: 12, opacity: off ? 0.65 : 1, cursor: off ? "not-allowed" : "pointer",
+      }}
+      onClick={handleExport}
+      disabled={off}
+    >
+      {labels[status]}
+    </button>
+  );
+}
+
+/* ================================================================
+   SOLUTION BUILDER
+================================================================ */
+function buildSolution(details: any[], Rx: number, Ry: number, Rz: number, R: number): string[] {
+  const steps: string[] = [];
+
+  steps.push("Step 1: Determine position vectors");
+  details.forEach(d => {
+    steps.push(
+      `\\vec r_{${d.from}${d.to}} = (${d.bx}-${d.ax})\\hat i + (${d.by}-${d.ay})\\hat j + (${d.bz}-${d.az})\\hat k`
+    );
+  });
+
+  steps.push("Step 2: Magnitudes");
+  details.forEach(d => {
+    steps.push(
+      `|\\vec r_{${d.from}${d.to}}| = \\sqrt{${d.dx}^2+${d.dy}^2+${d.dz}^2} = ${d.len.toFixed(2)}`
+    );
+  });
+
+  steps.push("Step 3: Unit vectors");
+  details.forEach(d => {
+    steps.push(
+      `\\hat u_{${d.from}${d.to}} = \\frac{${d.dx}\\hat i+${d.dy}\\hat j+${d.dz}\\hat k}{${d.len.toFixed(2)}}`
+    );
+  });
+
+  steps.push("Step 4: Force vectors");
+  details.forEach(d => {
+    steps.push(
+      `\\vec F_{${d.to}} = ${d.mag}\\,\\hat u_{${d.from}${d.to}} = ${d.Fx.toFixed(2)}\\hat i + ${d.Fy.toFixed(2)}\\hat j + ${d.Fz.toFixed(2)}\\hat k`
+    );
+  });
+
+  steps.push("Step 5: Resultant");
+  steps.push(
+    `\\vec R = ${Rx.toFixed(2)}\\hat i + ${Ry.toFixed(2)}\\hat j + ${Rz.toFixed(2)}\\hat k`
+  );
+  steps.push(
+    `R = \\sqrt{(${Rx.toFixed(2)})^2+(${Ry.toFixed(2)})^2+(${Rz.toFixed(2)})^2} = ${R.toFixed(2)}`
+  );
+
+  return steps;
+}
 
 /* ================================================================
    MAIN EXPORT
@@ -258,7 +477,7 @@ export default function CoordinateTab() {
   const calculate = () => {
     let Rx = 0, Ry = 0, Rz = 0;
     const details: any[] = [];
-    forces.forEach((f, i) => {
+    forces.forEach((f) => {
       const mag = parseFloat(f.mag);
       if (!mag) return;
       const a = points[f.from], b = points[f.to];
@@ -270,10 +489,21 @@ export default function CoordinateTab() {
       if (!len) return;
       const Fx = mag*dx/len, Fy = mag*dy/len, Fz = mag*dz/len;
       Rx += Fx; Ry += Fy; Rz += Fz;
-      details.push({ i: i+1, mag, from: points[f.from].label, to: points[f.to].label, ax, ay, az, bx, by, bz, dx, dy, dz, Fx, Fy, Fz, len });
+      details.push({ mag, from: points[f.from].label, to: points[f.to].label, ax, ay, az, bx, by, bz, dx, dy, dz, Fx, Fy, Fz, len });
     });
     const R = Math.sqrt(Rx*Rx + Ry*Ry + Rz*Rz);
-    setResult({ details, Rx, Ry, Rz, R, steps: buildSolution(details, Rx, Ry, Rz, R) });
+    const rawSteps = buildSolution(details, Rx, Ry, Rz, R);
+    setResult({
+      details, Rx, Ry, Rz, R,
+      steps: rawSteps,
+      stepLines: fromLegacySteps(rawSteps),
+      resultRows: [
+        { label: "Resultant Rx", value: `${Rx.toFixed(3)} N` },
+        { label: "Resultant Ry", value: `${Ry.toFixed(3)} N` },
+        { label: "Resultant Rz", value: `${Rz.toFixed(3)} N` },
+        { label: "Magnitude |R|", value: `${R.toFixed(3)} N` },
+      ],
+    });
     setShowSolution(true);
   };
 
@@ -349,35 +579,54 @@ export default function CoordinateTab() {
         Calculate
       </button>
 
-      {/* Solution */}
+      {/* Solution — now uses StepByStepSolution + toggle + PDF export */}
       {result && (
-        <div style={card}>
-          <button
-            onClick={() => setShowSolution(s => !s)}
-            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 600, color: "#111", padding: 0, marginBottom: showSolution ? 20 : 0, width: "100%" }}
-          >
-            <span style={{ background: "#1848a0", color: "#fff", borderRadius: 8, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>
-              {showSolution ? "▲ Hide" : "▼ Show"}
-            </span>
-            <span>Step-by-Step Solution</span>
-          </button>
-          {showSolution && (
-  <div style={{ lineHeight: 1.8 }}>
-    {result.steps.map((line: string, i: number) =>
-      line.startsWith("Step") ? (
-        <p key={i} style={{
-          fontWeight: 600,
-          fontSize: 16,
-          marginTop: 14
-        }}>
-          {line}
-        </p>
-      ) : (
-        <KTX key={i} tex={line}/>
-      )
-    )}
-  </div>
-)}
+        <div>
+          {/* Toggle header */}
+          <div style={card}>
+            <button
+              onClick={() => setShowSolution(s => !s)}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 8,
+                fontSize: 16, fontWeight: 600, color: "#111",
+                padding: 0, width: "100%",
+              }}
+            >
+              <span style={{ background: "#1848a0", color: "#fff", borderRadius: 8, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>
+                {showSolution ? "▲ Hide" : "▼ Show"}
+              </span>
+              <span>Step-by-Step Solution</span>
+            </button>
+
+            {showSolution && (
+              <div style={{ marginTop: 20 }}>
+                {/* PDF export button */}
+                <PDFExportButton
+                  steps={result.steps}
+                  resultRows={result.resultRows}
+                  title="3D Cartesian Vector Method — Step-by-Step Solution"
+                  filename="coordinate-solution.pdf"
+                />
+
+                {/* Results summary strip */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+                  {result.resultRows.map((row: { label: string; value: string }, i: number) => (
+                    <div key={i} style={{ background: "#f5f8ff", borderRadius: 10, border: "1px solid #dce8ff", padding: "10px 14px" }}>
+                      <div style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>{row.label}</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "#1848a0" }}>{row.value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* StepByStepSolution renderer */}
+                <StepByStepSolution
+                  steps={result.stepLines}
+                  title=""
+                />
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

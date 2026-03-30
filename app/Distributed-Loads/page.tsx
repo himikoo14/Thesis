@@ -1,51 +1,56 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Header from "<Ian>/components/Header";
-import Footer from "<Ian>/components/Footer";
-import CircularInputs from "<Ian>/components/CircularInputs";
-import ShapeCanvas from "<Ian>/components/ShapeCanvas";
+import { useState, useEffect, useCallback } from "react";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+import CircularInputs from "../../components/CircularInputs";
+import ShapeCanvas from "../../components/ShapeCanvas";
 import { computeMOI } from "../../lib/MOIEngine";
 
-/* ===================== KATEX LOADER ===================== */
+/* ── KaTeX via CDN ─────────────────────────────────────────────────────────── */
 declare global {
-  interface Window { katex: any; }
+  interface Window {
+    katex: any;
+    jspdf: { jsPDF: new (opts: Record<string, unknown>) => any };
+  }
 }
 
-function KaTeX({ math, block = false }: { math: string; block?: boolean }) {
-  const [html, setHtml] = useState("");
-
+function useKatexScript() {
+  const [ok, setOk] = useState(false);
   useEffect(() => {
-    const render = () => {
-      if (window.katex) {
-        try {
-          setHtml(window.katex.renderToString(math, { displayMode: block, throwOnError: false }));
-        } catch {
-          setHtml(math);
-        }
-      }
-    };
-
-    if (window.katex) {
-      render();
-    } else {
+    if (window.katex) { setOk(true); return; }
+    if (!document.getElementById("katex-css")) {
       const link = document.createElement("link");
-      link.rel = "stylesheet";
+      link.id = "katex-css"; link.rel = "stylesheet";
       link.href = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css";
       document.head.appendChild(link);
-
-      const script = document.createElement("script");
-      script.src = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js";
-      script.onload = render;
-      document.head.appendChild(script);
     }
-  }, [math, block]);
-
-  if (block) return <div className="overflow-x-auto py-1" dangerouslySetInnerHTML={{ __html: html }} />;
-  return <span dangerouslySetInnerHTML={{ __html: html }} />;
+    if (!document.getElementById("katex-js")) {
+      const script = document.createElement("script");
+      script.id = "katex-js";
+      script.src = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js";
+      script.async = true;
+      script.onload = () => setOk(true);
+      document.head.appendChild(script);
+    } else {
+      const t = setInterval(() => { if (window.katex) { setOk(true); clearInterval(t); } }, 80);
+    }
+  }, []);
+  return ok;
 }
 
-/* ================= TYPES ================= */
+function KTX({ tex }: { tex: string }) {
+  const ref = useCallback((el: HTMLDivElement | null) => {
+    if (!el || !window.katex) return;
+    try { window.katex.render(tex, el, { displayMode: true, throwOnError: false }); }
+    catch { el.innerText = tex; }
+  }, [tex]);
+  const ready = useKatexScript();
+  if (!ready) return null;
+  return <div ref={ref} style={{ margin: "3px 0", overflowX: "auto" }} />;
+}
+
+/* ===================== TYPES ===================== */
 type XY = { x: string; y: string };
 type ShapeType =
   | "Polygon" | "Circle"
@@ -71,22 +76,249 @@ type MOIResult = {
   final: { Ix: number; Iy: number };
 };
 
-/* ===================== SOLUTION STEP TYPES ===================== */
-type StepLine = { label?: string; latex: string };
-type SolutionStep = { title: string; lines: StepLine[] };
+type StepLine =
+  | { kind: "heading";    text: string }
+  | { kind: "subheading"; text: string }
+  | { kind: "text";       text: string }
+  | { kind: "eq";         tex: string }
+  | { kind: "result";     tex: string }
+  | { kind: "spacer" };
+
+/* ===================== STEP RENDERER ===================== */
+function MOIStepRenderer({ lines }: { lines: StepLine[] }) {
+  return (
+    <div style={{ lineHeight: 1.8 }}>
+      {lines.map((line, idx) => {
+        switch (line.kind) {
+          case "heading":
+            return (
+              <p key={idx} style={{ fontWeight: 700, fontSize: 16, color: "#1848a0", marginTop: 16, marginBottom: 2 }}>
+                {line.text}
+              </p>
+            );
+          case "subheading":
+            return (
+              <p key={idx} style={{ fontWeight: 600, fontSize: 14, color: "#374151", marginTop: 10, marginBottom: 2 }}>
+                {line.text}
+              </p>
+            );
+          case "text":
+            return (
+              <p key={idx} style={{ color: "#555", margin: "2px 0", fontSize: 14 }}>
+                {line.text}
+              </p>
+            );
+          case "eq":
+            return <KTX key={idx} tex={line.tex} />;
+          case "result":
+            return (
+              <div key={idx} style={{ background: "#f0f4ff", borderLeft: "3px solid #1848a0", borderRadius: 6, padding: "4px 12px", margin: "4px 0" }}>
+                <KTX tex={line.tex} />
+              </div>
+            );
+          case "spacer":
+            return <div key={idx} style={{ height: 8 }} />;
+          default:
+            return null;
+        }
+      })}
+    </div>
+  );
+}
+
+/* ===================== PDF EXPORT ===================== */
+const JSPDF_URL = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+const MM_PER_PX = 0.264583;
+const RENDER_SCALE = 3;
+
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement("script");
+    s.src = src; s.onload = () => resolve(); s.onerror = () => reject(new Error(`Failed: ${src}`));
+    document.head.appendChild(s);
+  });
+}
+
+function upgradeFracs(tex: string): string {
+  if (!tex.includes("\\frac") || tex.includes("\\displaystyle")) return tex;
+  return `{\\displaystyle ${tex.replace(/\\tfrac(?=\{)/g, "\\dfrac").replace(/(?<![dt])\\frac(?=\{)/g, "\\dfrac")}}`;
+}
+
+async function latexToPng(tex: string): Promise<{ dataUrl: string; wMm: number; hMm: number } | null> {
+  const html2canvas = (await import("html2canvas")).default;
+  try {
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText = "position:absolute;left:-9999px;top:0;background:#ffffff;color:#000;display:inline-block;";
+    const inner = document.createElement("span");
+    inner.style.cssText = "display:inline-block;padding:10px 14px;";
+    wrapper.appendChild(inner);
+    document.body.appendChild(wrapper);
+    window.katex.render(upgradeFracs(tex), inner, { displayMode: true, throwOnError: false, output: "html" });
+    const targetEl = (inner.querySelector(".katex-html") as HTMLElement) || inner;
+    const innerRect = targetEl.getBoundingClientRect();
+    const wrapRect = wrapper.getBoundingClientRect();
+    const offsetLeft = innerRect.left - wrapRect.left;
+    const canvas = await html2canvas(wrapper, { backgroundColor: "#ffffff", scale: RENDER_SCALE, useCORS: true, logging: false });
+    document.body.removeChild(wrapper);
+    const PAD = 18, EL = -8;
+    const sx = Math.max(0, Math.round(offsetLeft * RENDER_SCALE) - PAD - EL);
+    const sw = Math.round(innerRect.width * RENDER_SCALE) + PAD * 2 + EL;
+    const cropped = document.createElement("canvas");
+    cropped.width = sw; cropped.height = canvas.height;
+    const ctx = cropped.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(canvas, sx, 0, sw, canvas.height, 0, 0, sw, canvas.height);
+    return { dataUrl: cropped.toDataURL("image/png"), wMm: (sw / RENDER_SCALE) * MM_PER_PX, hMm: (canvas.height / RENDER_SCALE) * MM_PER_PX };
+  } catch (e) { console.warn("latexToPng:", tex, e); return null; }
+}
+
+function flattenForPDF(lines: StepLine[]): string[] {
+  return lines.flatMap(line => {
+    switch (line.kind) {
+      case "heading":    return [line.text];
+      case "subheading": return [line.text];
+      case "text":       return [line.text];
+      case "eq":         return [line.tex];
+      case "result":     return [line.tex];
+      case "spacer":     return [];
+    }
+  });
+}
+
+async function writePDF(p: {
+  flatSteps: string[];
+  resultRows: { label: string; value: string }[];
+  title: string;
+  filename: string;
+}) {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const PW = 210, PH = 297, M = 18, CW = PW - M * 2, MAXY = PH - 22;
+  let y = 0;
+
+  const guard = (need: number) => { if (y + need > MAXY) { pdf.addPage(); y = M; } };
+  const mathLine = async (tex: string) => {
+    const r = await latexToPng(tex);
+    if (!r) return;
+    const MAX = CW * 0.9;
+    let { wMm: w, hMm: h } = r;
+    if (w > MAX) { h *= MAX / w; w = MAX; }
+    guard(h + 6);
+    pdf.addImage(r.dataUrl, "PNG", (PW - w) / 2, y, w, h);
+    y += h + 6;
+  };
+
+  // Header
+  pdf.setFillColor(24, 72, 160); pdf.rect(0, 0, PW, 10, "F");
+  y = 18;
+  pdf.setFont("helvetica", "bold"); pdf.setFontSize(14); pdf.setTextColor(24, 72, 160);
+  pdf.text(p.title, M, y); y += 6;
+  pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(100, 116, 139);
+  pdf.text(`Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`, M, y); y += 5;
+  pdf.setDrawColor(220, 228, 245); pdf.setLineWidth(0.4); pdf.line(M, y, PW - M, y); y += 9;
+  pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(20, 20, 20);
+  pdf.text("Step-by-Step Solution", M, y); y += 10;
+
+  for (const raw of p.flatSteps) {
+    const s = raw.trim();
+    if (!s) continue;
+
+    // Step headings and Final Result — blue bold
+    if (s.startsWith("Step") || s === "Final Result") {
+      guard(12); y += 2;
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(11); pdf.setTextColor(24, 72, 160);
+      pdf.text(s, M, y); y += 14; continue;
+    }
+    // LaTeX
+    if (s.includes("\\")) { await mathLine(s); y += 2; continue; }
+    // Plain text / subheading
+    guard(8);
+    pdf.setFont("helvetica", "normal"); pdf.setFontSize(10); pdf.setTextColor(50, 50, 50);
+    const wrapped = pdf.splitTextToSize(s, CW);
+    pdf.text(wrapped, M, y); y += wrapped.length * 6 + 2;
+  }
+
+  // Results summary
+  if (p.resultRows.length > 0) {
+    guard(24 + p.resultRows.length * 11); y += 4;
+    pdf.setDrawColor(220, 228, 245); pdf.setLineWidth(0.4); pdf.line(M, y, PW - M, y); y += 8;
+    pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(20, 20, 20);
+    pdf.text("Results Summary", M, y); y += 9;
+    for (const { label: lbl, value } of p.resultRows) {
+      guard(11);
+      pdf.setFillColor(245, 248, 255); pdf.roundedRect(M, y - 5, CW, 9, 2, 2, "F");
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(11); pdf.setTextColor(50, 50, 50);
+      pdf.text(lbl, M + 4, y);
+      pdf.setFont("helvetica", "bold"); pdf.setTextColor(24, 72, 160);
+      pdf.text(value, PW - M - 4, y, { align: "right" }); y += 11;
+    }
+  }
+
+  // Footer
+  const total = pdf.internal.getNumberOfPages();
+  for (let pg = 1; pg <= total; pg++) {
+    pdf.setPage(pg);
+    pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(148, 163, 184);
+    pdf.text(`Page ${pg} of ${total}`, PW - M, PH - 8, { align: "right" });
+    pdf.setFillColor(24, 72, 160); pdf.rect(0, PH - 4, PW, 4, "F");
+  }
+  pdf.save(p.filename);
+}
+
+function PDFExportButton({ lines, resultRows, title, filename }: {
+  lines: StepLine[];
+  resultRows: { label: string; value: string }[];
+  title: string;
+  filename: string;
+}) {
+  const [libReady, setLibReady] = useState(false);
+  const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
+
+  useEffect(() => { loadScript(JSPDF_URL).then(() => setLibReady(true)).catch(console.error); }, []);
+
+  const handleExport = useCallback(async () => {
+    if (!libReady || status === "generating") return;
+    setStatus("generating");
+    try {
+      await writePDF({ flatSteps: flattenForPDF(lines), resultRows, title, filename });
+      setStatus("done"); setTimeout(() => setStatus("idle"), 2500);
+    } catch (err) {
+      console.error(err); setStatus("error"); setTimeout(() => setStatus("idle"), 3000);
+    }
+  }, [libReady, status, lines, resultRows, title, filename]);
+
+  const off = !libReady || status === "generating";
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Generating PDF…",
+    done: "✅ Downloaded!",
+    error: "❌ Export failed — try again",
+  };
+
+  return (
+    <button
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+        width: "100%", padding: "12px 0", border: "none", borderRadius: 10,
+        fontSize: 14, fontWeight: 600, transition: "all 0.2s",
+        background: "linear-gradient(135deg, #0f2d6b, #1848a0)",
+        color: "#fff", boxShadow: "0 4px 14px rgba(24,72,160,0.25)",
+        marginBottom: 14, opacity: off ? 0.65 : 1, cursor: off ? "not-allowed" : "pointer",
+      }}
+      onClick={handleExport} disabled={off}
+    >
+      {labels[status]}
+    </button>
+  );
+}
 
 /* ===================== HELPERS ===================== */
-const fmt = (n: number, d = 4) => Number(n.toFixed(d));
 const fmtS = (n: number, d = 4) => n.toFixed(d);
 
 /* ===================== ORDER NODES BY SIDES ===================== */
-function orderNodesBySides(
-  nodes: XY[],
-  sides: { a: number; b: number }[]
-): XY[] {
+function orderNodesBySides(nodes: XY[], sides: { a: number; b: number }[]): XY[] {
   if (sides.length === 0) return nodes;
-
-  // Build adjacency list
   const adj: Map<number, number[]> = new Map();
   sides.forEach(({ a, b }) => {
     if (!adj.has(a)) adj.set(a, []);
@@ -94,12 +326,9 @@ function orderNodesBySides(
     adj.get(a)!.push(b);
     adj.get(b)!.push(a);
   });
-
-  // Walk the polygon boundary starting from first side
   const ordered: number[] = [];
   const visited = new Set<number>();
   let current = sides[0].a;
-
   while (ordered.length < sides.length) {
     ordered.push(current);
     visited.add(current);
@@ -108,91 +337,91 @@ function orderNodesBySides(
     if (next === undefined) break;
     current = next;
   }
-
   return ordered.map(i => nodes[i]);
 }
 
-/* ===================== BUILD KATEX STEPS ===================== */
-function buildKaTeXSteps(
+/* ===================== BUILD STEP LINES ===================== */
+function buildStepLines(
   computed: MOIResult,
-  shapes: ShapeData[],
   axisType: "Centroidal" | "Custom",
   axisX: string,
   axisY: string
-): SolutionStep[] {
-  const steps: SolutionStep[] = [];
+): StepLine[] {
+  const lines: StepLine[] = [];
+  const { totalArea, centroidX, centroidY } = computed.centroid;
+  const { Ix: IxC, Iy: IyC } = computed.final;
 
-  // ---- Step 1: Individual Shape Properties ----
-  const s1: SolutionStep = { title: "Step 1: Individual Shape Properties", lines: [] };
-  if (computed.step1 && computed.step1.length > 0) {
+  const H  = (text: string) => lines.push({ kind: "heading",    text });
+  const SH = (text: string) => lines.push({ kind: "subheading", text });
+  const T  = (text: string) => lines.push({ kind: "text",       text });
+  const E  = (tex: string)  => lines.push({ kind: "eq",         tex });
+  const R  = (tex: string)  => lines.push({ kind: "result",     tex });
+  const SP = ()              => lines.push({ kind: "spacer" });
+
+  /* ── Step 1 ── */
+  H("Step 1: Individual Shape Properties");
+  if (computed.step1?.length > 0) {
     computed.step1.forEach((shape: any, i: number) => {
       const sign = shape.hollow === "Hollow" ? "-" : "+";
-      const label = `Shape ${i + 1}${shape.hollow === "Hollow" ? " (Hollow — subtracted)" : " (Solid)"}`;
-      s1.lines.push({ label, latex: `A_{${i + 1}} = ${sign}${fmtS(Math.abs(shape.area), 4)} \\text{ units}^2` });
-      s1.lines.push({ latex: `\\bar{x}_{${i + 1}} = ${fmtS(shape.cx, 4)}, \\quad \\bar{y}_{${i + 1}} = ${fmtS(shape.cy, 4)}` });
-      s1.lines.push({ latex: `I_{x,${i + 1}} = ${fmtS(shape.Ix_own, 4)}, \\quad I_{y,${i + 1}} = ${fmtS(shape.Iy_own, 4)}` });
+      SH(`Shape ${i + 1}${shape.hollow === "Hollow" ? " (Hollow — subtracted)" : " (Solid)"}`);
+      E(`A_{${i + 1}} = ${sign}${fmtS(Math.abs(shape.area), 4)} \\text{ units}^2`);
+      E(`\\bar{x}_{${i + 1}} = ${fmtS(shape.cx, 4)}, \\quad \\bar{y}_{${i + 1}} = ${fmtS(shape.cy, 4)}`);
+      E(`I_{x,${i + 1}} = ${fmtS(shape.Ix_own, 4)}, \\quad I_{y,${i + 1}} = ${fmtS(shape.Iy_own, 4)}`);
+      SP();
     });
   } else {
-    s1.lines.push({ latex: "\\text{No shape data available.}" });
+    T("No shape data available.");
   }
-  steps.push(s1);
 
-  // ---- Step 2: Centroid ----
-  const s2: SolutionStep = { title: "Step 2: Composite Centroid", lines: [] };
-  const { totalArea, centroidX, centroidY } = computed.centroid;
+  /* ── Step 2 ── */
+  H("Step 2: Composite Centroid");
 
-  const aTerms = computed.step1?.map((sh: any, i: number) =>
+  const aTerms = computed.step1?.map((sh: any) =>
     sh.hollow === "Hollow" ? `(-${fmtS(Math.abs(sh.area), 3)})` : fmtS(sh.area, 3)
   ).join(" + ") || "0";
 
-  const axTerms = computed.step1?.map((sh: any, i: number) =>
+  const axTerms = computed.step1?.map((sh: any) =>
     sh.hollow === "Hollow"
       ? `(-${fmtS(Math.abs(sh.area), 3)})(${fmtS(sh.cx, 3)})`
       : `(${fmtS(sh.area, 3)})(${fmtS(sh.cx, 3)})`
   ).join(" + ") || "0";
 
-  const ayTerms = computed.step1?.map((sh: any, i: number) =>
+  const ayTerms = computed.step1?.map((sh: any) =>
     sh.hollow === "Hollow"
       ? `(-${fmtS(Math.abs(sh.area), 3)})(${fmtS(sh.cy, 3)})`
       : `(${fmtS(sh.area, 3)})(${fmtS(sh.cy, 3)})`
   ).join(" + ") || "0";
 
-  s2.lines.push({ label: "Total Area", latex: `\\Sigma A = ${aTerms} = ${fmtS(totalArea, 4)} \\text{ units}^2` });
-  s2.lines.push({ label: "Centroid X̄", latex: `\\bar{X} = \\frac{\\Sigma A_i \\bar{x}_i}{\\Sigma A} = \\frac{${axTerms}}{${fmtS(totalArea, 3)}} = ${fmtS(centroidX, 4)}` });
-  s2.lines.push({ label: "Centroid Ȳ", latex: `\\bar{Y} = \\frac{\\Sigma A_i \\bar{y}_i}{\\Sigma A} = \\frac{${ayTerms}}{${fmtS(totalArea, 3)}} = ${fmtS(centroidY, 4)}` });
-  steps.push(s2);
+  E(`\\Sigma A = ${aTerms} = ${fmtS(totalArea, 4)} \\text{ units}^2`);
+  E(`\\bar{X} = \\dfrac{\\Sigma A_i \\bar{x}_i}{\\Sigma A} = \\dfrac{${axTerms}}{${fmtS(totalArea, 3)}} = ${fmtS(centroidX, 4)}`);
+  R(`\\bar{Y} = \\dfrac{\\Sigma A_i \\bar{y}_i}{\\Sigma A} = \\dfrac{${ayTerms}}{${fmtS(totalArea, 3)}} = ${fmtS(centroidY, 4)}`);
+  SP();
 
-  // ---- Step 3: Parallel Axis Theorem ----
-  const s3: SolutionStep = { title: "Step 3: Parallel Axis Theorem (Transfer to Centroid)", lines: [] };
-  s3.lines.push({ latex: `I_{x} = \\Sigma\\left(I_{x,i} + A_i \\, d_{y,i}^2\\right), \\quad I_{y} = \\Sigma\\left(I_{y,i} + A_i \\, d_{x,i}^2\\right)` });
+  /* ── Step 3 ── */
+  H("Step 3: Parallel Axis Theorem (Transfer to Centroid)");
+  E(`I_{x} = \\Sigma\\left(I_{x,i} + A_i \\, d_{y,i}^2\\right), \\quad I_{y} = \\Sigma\\left(I_{y,i} + A_i \\, d_{x,i}^2\\right)`);
+  SP();
 
-  if (computed.step3 && computed.step3.length > 0) {
+  if (computed.step3?.length > 0) {
     computed.step3.forEach((sh: any, i: number) => {
       const dy = sh.dy ?? (sh.cy - centroidY);
       const dx = sh.dx ?? (sh.cx - centroidX);
       const A = sh.area;
-      s3.lines.push({
-        label: `Shape ${i + 1}`,
-        latex: `d_{x,${i + 1}} = ${fmtS(dx, 4)}, \\; d_{y,${i + 1}} = ${fmtS(dy, 4)}`
-      });
-      s3.lines.push({
-        latex: `I_{x,${i + 1}}' = ${fmtS(sh.Ix_own ?? 0, 4)} + (${fmtS(Math.abs(A), 3)})(${fmtS(dy, 4)})^2 = ${fmtS((sh.Ix_transferred ?? sh.Ix_own ?? 0), 4)}`
-      });
-      s3.lines.push({
-        latex: `I_{y,${i + 1}}' = ${fmtS(sh.Iy_own ?? 0, 4)} + (${fmtS(Math.abs(A), 3)})(${fmtS(dx, 4)})^2 = ${fmtS((sh.Iy_transferred ?? sh.Iy_own ?? 0), 4)}`
-      });
+      SH(`Shape ${i + 1}`);
+      E(`d_{x,${i + 1}} = ${fmtS(dx, 4)}, \\; d_{y,${i + 1}} = ${fmtS(dy, 4)}`);
+      E(`I_{x,${i + 1}}' = ${fmtS(sh.Ix_own ?? 0, 4)} + (${fmtS(Math.abs(A), 3)})(${fmtS(dy, 4)})^2 = ${fmtS(sh.Ix_transferred ?? sh.Ix_own ?? 0, 4)}`);
+      E(`I_{y,${i + 1}}' = ${fmtS(sh.Iy_own ?? 0, 4)} + (${fmtS(Math.abs(A), 3)})(${fmtS(dx, 4)})^2 = ${fmtS(sh.Iy_transferred ?? sh.Iy_own ?? 0, 4)}`);
+      SP();
     });
   }
-  steps.push(s3);
 
-  // ---- Step 4: Composite MOI About Centroid ----
-  const s4: SolutionStep = { title: "Step 4: Composite MOI About Centroidal Axis", lines: [] };
-  const { Ix: IxC, Iy: IyC } = computed.final;
-  s4.lines.push({ label: "Centroidal Ix", latex: `I_{x,\\text{centroid}} = \\Sigma I_{x,i}' = ${fmtS(IxC, 4)} \\text{ units}^4` });
-  s4.lines.push({ label: "Centroidal Iy", latex: `I_{y,\\text{centroid}} = \\Sigma I_{y,i}' = ${fmtS(IyC, 4)} \\text{ units}^4` });
-  steps.push(s4);
+  /* ── Step 4 ── */
+  H("Step 4: Composite MOI About Centroidal Axis");
+  E(`I_{x,\\text{centroid}} = \\Sigma I_{x,i}' = ${fmtS(IxC, 4)} \\text{ units}^4`);
+  R(`I_{y,\\text{centroid}} = \\Sigma I_{y,i}' = ${fmtS(IyC, 4)} \\text{ units}^4`);
+  SP();
 
-  // ---- Step 5 (optional): Transfer to Custom Axis ----
+  /* ── Step 5 (custom axis) ── */
   if (axisType === "Custom") {
     const customX = Number(axisX);
     const customY = Number(axisY);
@@ -201,34 +430,31 @@ function buildKaTeXSteps(
     const IxFinal = IxC + totalArea * dy * dy;
     const IyFinal = IyC + totalArea * dx * dx;
 
-    const s5: SolutionStep = {
-      title: `Step 5: Transfer to Custom Axis (${customX}, ${customY})`,
-      lines: [],
-    };
-    s5.lines.push({ latex: `d_x = \\bar{X} - x_{\\text{axis}} = ${fmtS(centroidX, 4)} - ${fmtS(customX, 4)} = ${fmtS(dx, 4)}` });
-    s5.lines.push({ latex: `d_y = \\bar{Y} - y_{\\text{axis}} = ${fmtS(centroidY, 4)} - ${fmtS(customY, 4)} = ${fmtS(dy, 4)}` });
-    s5.lines.push({ label: "Transfer Ix", latex: `I_x = I_{x,c} + A d_y^2 = ${fmtS(IxC, 4)} + (${fmtS(totalArea, 3)})(${fmtS(dy, 4)})^2 = ${fmtS(IxFinal, 4)}` });
-    s5.lines.push({ label: "Transfer Iy", latex: `I_y = I_{y,c} + A d_x^2 = ${fmtS(IyC, 4)} + (${fmtS(totalArea, 3)})(${fmtS(dx, 4)})^2 = ${fmtS(IyFinal, 4)}` });
-    steps.push(s5);
+    H(`Step 5: Transfer to Custom Axis (${customX}, ${customY})`);
+    E(`d_x = \\bar{X} - x_{\\text{axis}} = ${fmtS(centroidX, 4)} - ${fmtS(customX, 4)} = ${fmtS(dx, 4)}`);
+    E(`d_y = \\bar{Y} - y_{\\text{axis}} = ${fmtS(centroidY, 4)} - ${fmtS(customY, 4)} = ${fmtS(dy, 4)}`);
+    E(`I_x = I_{x,c} + A d_y^2 = ${fmtS(IxC, 4)} + (${fmtS(totalArea, 3)})(${fmtS(dy, 4)})^2 = ${fmtS(IxFinal, 4)}`);
+    R(`I_y = I_{y,c} + A d_x^2 = ${fmtS(IyC, 4)} + (${fmtS(totalArea, 3)})(${fmtS(dx, 4)})^2 = ${fmtS(IyFinal, 4)}`);
+    SP();
   }
 
-  // ---- Final Summary ----
-  const sFinal: SolutionStep = { title: "Final Result", lines: [] };
-  sFinal.lines.push({ label: "Centroid", latex: `\\bar{X} = ${fmtS(centroidX, 4)}, \\quad \\bar{Y} = ${fmtS(centroidY, 4)}` });
+  /* ── Final Result ── */
+  H("Final Result");
+  R(`\\bar{X} = ${fmtS(centroidX, 4)}, \\quad \\bar{Y} = ${fmtS(centroidY, 4)}`);
+
   if (axisType === "Custom") {
     const dx = centroidX - Number(axisX);
     const dy = centroidY - Number(axisY);
     const IxFinal = IxC + totalArea * dy * dy;
     const IyFinal = IyC + totalArea * dx * dx;
-    sFinal.lines.push({ label: "Custom Axis Ix", latex: `I_x = ${fmtS(IxFinal, 4)} \\text{ units}^4` });
-    sFinal.lines.push({ label: "Custom Axis Iy", latex: `I_y = ${fmtS(IyFinal, 4)} \\text{ units}^4` });
+    R(`I_x = ${fmtS(IxFinal, 4)} \\text{ units}^4`);
+    R(`I_y = ${fmtS(IyFinal, 4)} \\text{ units}^4`);
   } else {
-    sFinal.lines.push({ label: "Centroidal Ix", latex: `I_x = ${fmtS(IxC, 4)} \\text{ units}^4` });
-    sFinal.lines.push({ label: "Centroidal Iy", latex: `I_y = ${fmtS(IyC, 4)} \\text{ units}^4` });
+    R(`I_x = ${fmtS(IxC, 4)} \\text{ units}^4`);
+    R(`I_y = ${fmtS(IyC, 4)} \\text{ units}^4`);
   }
-  steps.push(sFinal);
 
-  return steps;
+  return lines;
 }
 
 /* ===================== COMPONENT ===================== */
@@ -244,22 +470,15 @@ export default function DistributedLoadPage() {
     radius: "", x: "", y: "",
   }]);
 
-  const [result, setResult] = useState<any>(null);
-  const [katexSteps, setKatexSteps] = useState<SolutionStep[]>([]);
+  const [result, setResult]       = useState<any>(null);
+  const [stepLines, setStepLines] = useState<StepLine[]>([]);
 
-  const formatNumber = (num: number) => {
-    const rounded = Number(num.toFixed(3));
-    return Number.isInteger(rounded) ? rounded : rounded;
-  };
+  const formatNumber = (num: number) => Number(num.toFixed(3));
 
   const calculateResultant = () => {
-    // ✅ Order polygon nodes by sides before computing
     const orderedShapes = shapes.map(shape => {
       if (shape.type !== "Polygon") return shape;
-      return {
-        ...shape,
-        nodes: orderNodesBySides(shape.nodes, shape.sides),
-      };
+      return { ...shape, nodes: orderNodesBySides(shape.nodes, shape.sides) };
     });
 
     const computed = computeMOI(orderedShapes) as MOIResult;
@@ -273,8 +492,8 @@ export default function DistributedLoadPage() {
       const customY = Number(axisY);
       const dx = computed.centroid.centroidX - customX;
       const dy = computed.centroid.centroidY - customY;
-      Ix = Ix + computed.centroid.totalArea * dy * dy;
-      Iy = Iy + computed.centroid.totalArea * dx * dx;
+      Ix += computed.centroid.totalArea * dy * dy;
+      Iy += computed.centroid.totalArea * dx * dx;
     }
 
     const finalResult = {
@@ -284,7 +503,7 @@ export default function DistributedLoadPage() {
     };
 
     setResult(finalResult);
-    setKatexSteps(buildKaTeXSteps(finalResult, shapes, axisType, axisX, axisY));
+    setStepLines(buildStepLines(finalResult, axisType, axisX, axisY));
   };
 
   const handleAddShape = () => setShapes(prev => [...prev, {
@@ -312,6 +531,20 @@ export default function DistributedLoadPage() {
     return label;
   };
 
+  /* ── Result rows for PDF summary table ── */
+  const resultRows = result ? [
+    { label: "Total Area",      value: `${formatNumber(result.centroid.totalArea)} units²` },
+    { label: "Centroid X̄",     value: `${formatNumber(result.centroid.centroidX)}` },
+    { label: "Centroid Ȳ",     value: `${formatNumber(result.centroid.centroidY)}` },
+    { label: "Ix (centroidal)", value: `${formatNumber(result.centroidMOI.Ix)} units⁴` },
+    { label: "Iy (centroidal)", value: `${formatNumber(result.centroidMOI.Iy)} units⁴` },
+    ...(axisType === "Custom" ? [
+      { label: "Ix (custom axis)", value: `${formatNumber(result.final.Ix)} units⁴` },
+      { label: "Iy (custom axis)", value: `${formatNumber(result.final.Iy)} units⁴` },
+    ] : []),
+  ] : [];
+
+  /* ===================== JSX ===================== */
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 text-gray-900">
       <Header />
@@ -507,32 +740,21 @@ export default function DistributedLoadPage() {
           </div>
         </div>
 
-        {/* ===================== KATEX SOLUTION ===================== */}
-        {katexSteps.length > 0 && (
-          <div className="mt-10 bg-white rounded-xl shadow border border-gray-100 p-6">
-            <h2 className="text-2xl font-bold text-blue-900 mb-6">Step-by-Step Solution</h2>
-
-            {katexSteps.map((step, si) => (
-              <div key={si} className="mb-8">
-                <h3 className="text-base font-semibold text-gray-800 mb-3 pb-1 border-b border-gray-200">
-                  {step.title}
-                </h3>
-                <div className="space-y-3">
-                  {step.lines.map((line, li) => (
-                    <div key={li} className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4">
-                      {line.label && (
-                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide sm:w-36 shrink-0 pt-1">
-                          {line.label}
-                        </span>
-                      )}
-                      <div className="bg-gray-50 rounded-lg px-4 py-2 flex-1 overflow-x-auto">
-                        <KaTeX math={line.latex} block />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+        {/* ══════════════ SOLUTION DISPLAY ══════════════ */}
+        {result && stepLines.length > 0 && (
+          <div className="mt-10 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="px-5 py-3 border-b border-gray-100">
+              <h3 className="text-[15px] font-semibold text-gray-800 tracking-wide">Step-by-Step Solution</h3>
+            </div>
+            <div className="px-6 py-5">
+              <PDFExportButton
+                lines={stepLines}
+                resultRows={resultRows}
+                title="Moment of Inertia — Step-by-Step Solution"
+                filename="moi-solution.pdf"
+              />
+              <MOIStepRenderer lines={stepLines} />
+            </div>
           </div>
         )}
 
