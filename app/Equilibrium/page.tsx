@@ -3,9 +3,9 @@
 import { useRef, useState, useCallback, useEffect, ReactNode } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import { computeEquilibrant } from "../../lib/Equilibriumconc";
 import "katex/dist/katex.min.css";
 import BeamPage from "../Beam/page";
+import { solveEquilibrium2D } from "../../lib/Equilibriumconc";
 
 /* ===================== Types ===================== */
 type ForceInput = {
@@ -22,14 +22,40 @@ type StepLine =
   | { type: "diagram"; label?: string; node: ReactNode };
 
 /* ================================================================
-   LEGACY STEPS → StepLine[]
+   SANITIZE TEX + STEP RENDERER
 ================================================================ */
+function sanitizeTeX(tex: string): string {
+  // Fix double-subscript: F_{1}_x -> F_{{1}x} (KaTeX rejects double subscripts)
+  return tex.replace(/(_\{[^}]+\})_([a-zA-Z])/g, (_match: string, sub: string, axis: string) => {
+    const inner = sub.slice(2, -1);
+    return `_{{${inner}}${axis}}`;
+  });
+}
+
 function fromLegacySteps(steps: string[]): StepLine[] {
   return steps.map((line) => {
     const trimmed = line.trim();
-    if (trimmed.startsWith("Step")) return { type: "heading", text: trimmed };
+
+    // \textbf{...} => heading
+    if (trimmed.startsWith("\\textbf{")) {
+      const inner = trimmed.replace(/^\\textbf\{([\s\S]*)\}$/, "$1");
+      return { type: "heading", text: inner };
+    }
+
+    // Plain "Step X: ..." headings
+    if (trimmed.startsWith("Step "))
+      return { type: "heading", text: trimmed };
+
+    // \textit{...} => render via KaTeX so F_{n} inside renders correctly
+    if (trimmed.startsWith("\\textit{")) {
+      return { type: "math", tex: sanitizeTeX(trimmed) };
+    }
+
+    // No backslash => plain text
     if (!trimmed.includes("\\")) return { type: "text", text: trimmed };
-    return { type: "math", tex: trimmed };
+
+    // Math => sanitize then KaTeX
+    return { type: "math", tex: sanitizeTeX(trimmed) };
   });
 }
 
@@ -187,10 +213,16 @@ async function writePDF(p: { steps: string[]; resultRows?: { label: string; valu
 
   for (const raw of p.steps) {
     const s = raw.trim();
-    if (s.startsWith("Step")) {
+    if (s.startsWith("Step ") || s.startsWith("\\textbf{")) {
       guard(10); y += 2;
       pdf.setFont("helvetica", "bold"); pdf.setFontSize(11); pdf.setTextColor(24, 72, 160);
-      pdf.text(s, M, y); y += 14; continue;
+      pdf.text(s.replace(/^\\textbf\{([\s\S]*)\}$/, "$1"), M, y); y += 14; continue;
+    }
+    if (s.startsWith("\\textit{")) {
+      guard(8);
+      const inner = s.replace(/^\\textit\{([\s\S]*)\}$/, "$1");
+      pdf.setFont("helvetica", "italic"); pdf.setFontSize(10); pdf.setTextColor(100, 100, 100);
+      pdf.text(`ℹ️ ${inner}`, M, y); y += 8; continue;
     }
     if (!s.includes("\\")) {
       guard(8);
@@ -280,25 +312,22 @@ function PDFExportButton({ steps, resultRows, title, filename }: {
 
 /* ===================== SVG FBD Component ===================== */
 const FORCE_COLORS = ["#1848a0", "#c0392b", "#16a34a", "#9333ea", "#d97706", "#0891b2"];
-const UNKNOWN_LENGTH = 75; // fixed pixel length for unknown-magnitude arrows
+const UNKNOWN_LENGTH = 75;
 
 function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: ForceInput[]) => void }) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
 
-  // Build display vectors — unknowns get a fixed length so they still appear
   const vectors = forces.map((f, i) => {
     const magUnknown = !!f.magnitudeUnknown;
     const angUnknown = !!f.angleUnknown;
     const rawMag = parseFloat(f.magnitude);
     const rawAng = parseFloat(f.angle);
-    // Need at least an angle to draw (use 0° as fallback only if angle also unknown)
     const angle = isNaN(rawAng) ? 0 : rawAng;
     const hasMag = !magUnknown && !isNaN(rawMag);
     return { mag: hasMag ? rawMag : null, angle, magUnknown, angUnknown, index: i };
   });
 
-  // Scale based only on known magnitudes
   const knownMags = vectors.filter((v) => v.mag !== null).map((v) => v.mag as number);
   const maxMag = Math.max(1, ...knownMags);
   const scale = 80 / maxMag;
@@ -339,7 +368,6 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
       </defs>
 
       <g transform="translate(150,150)">
-        {/* Axes */}
         <line x1={-140} y1={0} x2={140} y2={0} stroke="#e2e8f0" strokeWidth="1" />
         <line x1={0} y1={-140} x2={0} y2={140} stroke="#e2e8f0" strokeWidth="1" />
         <text x={143} y={4} fontSize="10" fill="#94a3b8">x</text>
@@ -350,23 +378,17 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
           const color = FORCE_COLORS[colorIdx];
           const rad = (v.angle * Math.PI) / 180;
           const isUnknown = v.magUnknown || (v.mag === null);
-          // Pixel length of the arrow
           const len = isUnknown ? UNKNOWN_LENGTH : (v.mag as number) * scale;
           const ex = Math.cos(rad) * len;
           const ey = -Math.sin(rad) * len;
-
-          // Label position: slightly beyond arrow tip
           const labelOffset = 14;
           const lx = Math.cos(rad) * (len + labelOffset);
           const ly = -Math.sin(rad) * (len + labelOffset);
-
-          // Angle arc (only when angle is known)
           const showArc = !v.angUnknown && !isNaN(v.angle);
           const arcR = 28;
           const arcEndX = Math.cos(rad) * arcR;
           const arcEndY = -Math.sin(rad) * arcR;
           const largeArc = v.angle > 180 ? 1 : 0;
-          // Angle label midpoint
           const midAng = v.angle / 2;
           const midRad = (midAng * Math.PI) / 180;
           const aLx = Math.cos(midRad) * (arcR + 10);
@@ -374,7 +396,6 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
 
           return (
             <g key={i} className="cursor-pointer" onMouseDown={() => setDragIndex(i)}>
-              {/* Angle arc */}
               {showArc && v.angle !== 0 && (
                 <>
                   <path
@@ -386,8 +407,6 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
                   </text>
                 </>
               )}
-
-              {/* Arrow line */}
               <line
                 x1={0} y1={0} x2={ex} y2={ey}
                 stroke={color}
@@ -396,8 +415,6 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
                 opacity={isUnknown ? 0.65 : 1}
                 markerEnd={isUnknown ? `url(#arrow-dash-${colorIdx})` : `url(#arrow-${colorIdx})`}
               />
-
-              {/* Force label */}
               <text
                 x={lx} y={ly}
                 fontSize="11" fontWeight="700"
@@ -412,7 +429,6 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
           );
         })}
 
-        {/* Origin dot */}
         <circle cx={0} cy={0} r={4} fill="#334155" />
       </g>
     </svg>
@@ -420,286 +436,244 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
 }
 
 /* ================================================================
-   SOLVER HELPERS
+   CALCULATE — all math delegated to solveEquilibrium2D
 ================================================================ */
-
-/** Format a number for display in equations: show sign, fixed decimals */
-function fmt(n: number, dec = 4): string {
-  return n.toFixed(dec);
-}
-
-/** Build a trig term string like "30\cos(0°)" or "F_{3}\cos(150°)" */
-function trigTerm(mag: string | number, angle: number, fn: "cos" | "sin"): string {
-  const angleStr = `${fmt(angle, 4)}^\\circ`;
-  const magStr = typeof mag === "string" ? mag : fmt(mag, 4);
-  return `${magStr}\\${fn}(${angleStr})`;
-}
-
-/** Sum known forces (skip given indices), returning numeric totals */
-function sumKnown(forces: ForceInput[], ...skipIndices: number[]) {
-  let sumX = 0, sumY = 0;
-  forces.forEach((f, i) => {
-    if (skipIndices.includes(i)) return;
-    const m = parseFloat(f.magnitude);
-    const a = parseFloat(f.angle);
-    if (isNaN(m) || isNaN(a)) return;
-    const rad = (a * Math.PI) / 180;
-    sumX += m * Math.cos(rad);
-    sumY += m * Math.sin(rad);
-  });
-  return { sumX, sumY };
-}
-
-type SolveResult = {
-  solvedForces: { magnitude: number; angle: number }[];
+function calculate(forces: ForceInput[]): {
   steps: string[];
-  unknownIndex: number;
-  unknownField: "magnitude" | "angle" | null;
-} | null;
+  stepLines: StepLine[];
+  resultRows: { label: string; value: string }[];
+  solvedLabel?: string;
+} | { error: string } {
 
-function solveUnknowns(forces: ForceInput[]): SolveResult {
-  const magUnknownIdx = forces.findIndex((f) => f.magnitudeUnknown);
-  const angUnknownIdx = forces.findIndex((f) => f.angleUnknown);
-  const steps: string[] = [];
+  const magUnknownIndices = forces.map((f, i) => f.magnitudeUnknown ? i : -1).filter(i => i !== -1);
+  const angUnknownIndices = forces.map((f, i) => f.angleUnknown ? i : -1).filter(i => i !== -1);
+  const totalUnknowns = magUnknownIndices.length + angUnknownIndices.length;
 
-  /* ── helpers to build the explicit equation string ── */
-
-  /** Build "m1*cos(a1) + m2*cos(a2) + ... = RHS" string for ΣFx or ΣFy */
-  function buildEqString(
-    fn: "cos" | "sin",
-    skipIndices: number[],
-    unknownTerms: string[],
-    rhs: string
-  ): string {
-    const knownTerms: string[] = [];
-    forces.forEach((f, i) => {
-      if (skipIndices.includes(i)) return;
-      const m = parseFloat(f.magnitude);
-      const a = parseFloat(f.angle);
-      if (isNaN(m) || isNaN(a)) return;
-      knownTerms.push(`${fmt(m, 4)}\\${fn}(${fmt(a, 4)}^\\circ)`);
-    });
-    const allTerms = [...knownTerms, ...unknownTerms];
-    return allTerms.join(" + ") + " = " + rhs;
+  /* ── Validate unknowns ── */
+  if (totalUnknowns > 2) {
+    return { error: "Too many unknowns. The system can only solve for up to 2 unknowns." };
   }
 
-  /* ── CASE 1: One unknown magnitude, known angle ── */
-  if (magUnknownIdx !== -1 && angUnknownIdx === -1) {
-    const unknownAngle = parseFloat(forces[magUnknownIdx].angle);
-    if (isNaN(unknownAngle)) {
-      steps.push(`❌ Force ${magUnknownIdx + 1}: angle must be provided when magnitude is unknown.`);
-      return null;
+  /* ── Build known forces list ── */
+  const knownForces = forces
+    .map((f, i) => ({ f, i }))
+    .filter(({ f, i }) => !magUnknownIndices.includes(i) && !angUnknownIndices.includes(i))
+    .map(({ f, i }) => {
+      const magnitude = parseFloat(f.magnitude);
+      const angle = parseFloat(f.angle);
+      if (isNaN(magnitude) || isNaN(angle)) return null;
+      return { magnitude, angle, label: `F_{${i + 1}}` };
+    })
+    .filter(Boolean) as { magnitude: number; angle: number; label: string }[];
+
+  /* ── ALL FORCES KNOWN → resultant via single "unknown" at angle 0 with magnitude 0 trick
+        OR just sum them directly by passing a dummy unknown resultant ── */
+  if (totalUnknowns === 0) {
+    if (knownForces.length === 0) {
+      return { error: "Please enter at least one valid force." };
     }
-    const rad = (unknownAngle * Math.PI) / 180;
-    const cosA = Math.cos(rad), sinA = Math.sin(rad);
+    // To compute resultant, we ask for the equilibrant (opposite of resultant),
+    // then negate. We use a dummy unknown with no angle constraint by using
+    // solveEquilibrium2D with both unknowns being resultant x and y components.
+    // Simpler: we call solveEquilibrium2D with one unknown at angle=0 and one at angle=90
+    // then reconstruct. But cleanest: delegate by treating resultant computation
+    // as "find Fx_result and Fy_result" using 0° and 90° unknowns.
+    try {
+      const resultX = solveEquilibrium2D(knownForces, [
+        { angle: 0, label: "R_x" },
+        { angle: 90, label: "R_y" },
+      ]);
+      // resultX gives -ΣFx and -ΣFy (equilibrant components), negate to get resultant
+      const Rx = -resultX.unknowns[0].value;
+      const Ry = -resultX.unknowns[1].value;
+      const R = Math.hypot(Rx, Ry);
+      const angle = (Math.atan2(Ry, Rx) * 180) / Math.PI;
 
-    // Choose the equation that avoids dividing by ~0
-    const useY = Math.abs(sinA) > Math.abs(cosA);
-    const fn: "cos" | "sin" = useY ? "sin" : "cos";
-    const trig = useY ? sinA : cosA;
-    const { sumX, sumY } = sumKnown(forces, magUnknownIdx);
-    const sumUsed = useY ? sumY : sumX;
-    const F = -sumUsed / trig;
-
-    const unknownTerm = `F_{${magUnknownIdx + 1}}\\${fn}(${fmt(unknownAngle, 4)}^\\circ)`;
-    steps.push(`\\sum F_${useY ? "y" : "x"} = 0`);
-    steps.push(buildEqString(fn, [magUnknownIdx], [unknownTerm], "0"));
-    steps.push(`F_{${magUnknownIdx + 1}} = \\frac{-${fmt(sumUsed, 4)}}{\\${fn}(${fmt(unknownAngle, 4)}^\\circ)} = ${fmt(F, 4)}\\ \\text{kN}`);
-
-    const solvedForces = forces.map((f, i) => {
-      if (i === magUnknownIdx) return { magnitude: Math.abs(F), angle: F < 0 ? unknownAngle + 180 : unknownAngle };
-      return { magnitude: parseFloat(f.magnitude), angle: parseFloat(f.angle) };
-    });
-    return { solvedForces, steps, unknownIndex: magUnknownIdx, unknownField: "magnitude" };
+      const resultRows = [
+        { label: "Resultant Magnitude", value: `${R.toFixed(3)} kN` },
+        { label: "Resultant Angle", value: `${angle.toFixed(3)}°` },
+      ];
+      const steps = resultX.steps;
+      return { steps, stepLines: fromLegacySteps(steps), resultRows };
+    } catch (e: any) {
+      return { error: e.message };
+    }
   }
 
-  /* ── CASE 2: One unknown angle, known magnitude ── */
-  if (angUnknownIdx !== -1 && magUnknownIdx === -1) {
-    const unknownMag = parseFloat(forces[angUnknownIdx].magnitude);
-    if (isNaN(unknownMag)) {
-      steps.push(`❌ Force ${angUnknownIdx + 1}: magnitude must be provided when angle is unknown.`);
-      return null;
+  /* ── CASE: one unknown magnitude, one unknown angle on SAME force ── */
+  if (
+    magUnknownIndices.length === 1 &&
+    angUnknownIndices.length === 1 &&
+    magUnknownIndices[0] === angUnknownIndices[0]
+  ) {
+    const idx = magUnknownIndices[0];
+    // Decompose into two scalar unknowns: Fx and Fy of that force
+    try {
+      const result = solveEquilibrium2D(knownForces, [
+        { angle: 0, label: `F_{${idx + 1}x}` },
+        { angle: 90, label: `F_{${idx + 1}y}` },
+      ]);
+      const Fx = -result.unknowns[0].value;
+      const Fy = -result.unknowns[1].value;
+      const mag = Math.hypot(Fx, Fy);
+      const ang = (Math.atan2(Fy, Fx) * 180) / Math.PI;
+      const resultRows = [
+        { label: `Force ${idx + 1} Magnitude`, value: `${mag.toFixed(3)} kN` },
+        { label: `Force ${idx + 1} Angle`, value: `${ang.toFixed(3)}°` },
+      ];
+      const steps = result.steps;
+      return {
+        steps,
+        stepLines: fromLegacySteps(steps),
+        resultRows,
+        solvedLabel: `F${idx + 1}: ${mag.toFixed(3)} kN @ ${ang.toFixed(3)}°`,
+      };
+    } catch (e: any) {
+      return { error: e.message };
     }
-    const { sumX, sumY } = sumKnown(forces, angUnknownIdx);
-    const cosA = -sumX / unknownMag, sinA = -sumY / unknownMag;
-    if (Math.abs(cosA) > 1.0001 || Math.abs(sinA) > 1.0001) {
-      steps.push(`❌ No valid angle solution for Force ${angUnknownIdx + 1} (magnitude ${unknownMag} kN).`);
-      return null;
-    }
-    const angle = (Math.atan2(sinA, cosA) * 180) / Math.PI;
-
-    // ΣFx = 0 equation
-    steps.push(`\\sum F_x = 0`);
-    steps.push(buildEqString("cos", [angUnknownIdx], [`${fmt(unknownMag, 4)}\\cos\\theta_{${angUnknownIdx + 1}}`], "0"));
-    steps.push(`\\cos\\theta_{${angUnknownIdx + 1}} = \\frac{-${fmt(sumX, 4)}}{${fmt(unknownMag, 4)}} = ${fmt(cosA, 4)}`);
-
-    // ΣFy = 0 equation
-    steps.push(`\\sum F_y = 0`);
-    steps.push(buildEqString("sin", [angUnknownIdx], [`${fmt(unknownMag, 4)}\\sin\\theta_{${angUnknownIdx + 1}}`], "0"));
-    steps.push(`\\sin\\theta_{${angUnknownIdx + 1}} = \\frac{-${fmt(sumY, 4)}}{${fmt(unknownMag, 4)}} = ${fmt(sinA, 4)}`);
-
-    steps.push(`\\theta_{${angUnknownIdx + 1}} = \\arctan\\!\\left(\\frac{${fmt(sinA, 4)}}{${fmt(cosA, 4)}}\\right) = ${fmt(angle, 4)}^\\circ`);
-
-    const solvedForces = forces.map((f, i) => {
-      if (i === angUnknownIdx) return { magnitude: unknownMag, angle };
-      return { magnitude: parseFloat(f.magnitude), angle: parseFloat(f.angle) };
-    });
-    return { solvedForces, steps, unknownIndex: angUnknownIdx, unknownField: "angle" };
   }
 
-  /* ── CASE 3: Same force — both magnitude AND angle unknown ── */
-  if (magUnknownIdx !== -1 && angUnknownIdx !== -1 && magUnknownIdx === angUnknownIdx) {
-    const { sumX, sumY } = sumKnown(forces, magUnknownIdx);
-    const Fx = -sumX, Fy = -sumY;
-    const F = Math.hypot(Fx, Fy);
-    const angle = (Math.atan2(Fy, Fx) * 180) / Math.PI;
+  /* ── CASE: one unknown angle only ── */
+  if (magUnknownIndices.length === 0 && angUnknownIndices.length === 1) {
+    const idx = angUnknownIndices[0];
+    const mag = parseFloat(forces[idx].magnitude);
+    if (isNaN(mag)) return { error: `Force ${idx + 1}: provide magnitude when angle is unknown.` };
 
-    steps.push(`\\sum F_x = 0`);
-    steps.push(buildEqString("cos", [magUnknownIdx], [`F_{${magUnknownIdx + 1}}\\cos\\theta_{${magUnknownIdx + 1}}`], "0"));
-    steps.push(`F_{${magUnknownIdx + 1}x} = ${fmt(Fx, 4)}\\ \\text{kN}`);
-
-    steps.push(`\\sum F_y = 0`);
-    steps.push(buildEqString("sin", [magUnknownIdx], [`F_{${magUnknownIdx + 1}}\\sin\\theta_{${magUnknownIdx + 1}}`], "0"));
-    steps.push(`F_{${magUnknownIdx + 1}y} = ${fmt(Fy, 4)}\\ \\text{kN}`);
-
-    steps.push(`F_{${magUnknownIdx + 1}} = \\sqrt{(${fmt(Fx, 4)})^2 + (${fmt(Fy, 4)})^2} = ${fmt(F, 4)}\\ \\text{kN}`);
-    steps.push(`\\theta_{${magUnknownIdx + 1}} = \\arctan\\!\\left(\\frac{${fmt(Fy, 4)}}{${fmt(Fx, 4)}}\\right) = ${fmt(angle, 4)}^\\circ`);
-
-    const solvedForces = forces.map((f, i) => {
-      if (i === magUnknownIdx) return { magnitude: F, angle };
-      return { magnitude: parseFloat(f.magnitude), angle: parseFloat(f.angle) };
-    });
-    return { solvedForces, steps, unknownIndex: magUnknownIdx, unknownField: null };
+    // Decompose unknown-angle force into Fx = mag*cosθ and Fy = mag*sinθ
+    // Treat as two unknowns: Fx_comp and Fy_comp, both free (angles 0 and 90)
+    // but constrained by Fx_comp² + Fy_comp² = mag²
+    // solveEquilibrium2D handles 2 unknowns at 0° and 90° → gives -ΣFx and -ΣFy
+    try {
+      const result = solveEquilibrium2D(knownForces, [
+        { angle: 0, label: `F_{${idx + 1}x}` },
+        { angle: 90, label: `F_{${idx + 1}y}` },
+      ]);
+      const Fx = -result.unknowns[0].value;
+      const Fy = -result.unknowns[1].value;
+      // validate against known magnitude
+      const computedMag = Math.hypot(Fx, Fy);
+      if (Math.abs(computedMag - mag) > 0.01 * mag + 1e-6) {
+        return { error: `No valid angle solution for Force ${idx + 1}: magnitude ${mag} kN is inconsistent with equilibrium.` };
+      }
+      const ang = (Math.atan2(Fy, Fx) * 180) / Math.PI;
+      const resultRows = [{ label: `Force ${idx + 1} Angle`, value: `${ang.toFixed(3)}°` }];
+      const steps = result.steps;
+      return {
+        steps,
+        stepLines: fromLegacySteps(steps),
+        resultRows,
+        solvedLabel: `F${idx + 1} angle = ${ang.toFixed(3)}°`,
+      };
+    } catch (e: any) {
+      return { error: e.message };
+    }
   }
 
-  /* ── CASE 4: Unknown magnitude on Force A  +  unknown angle on Force B ── */
-  /*
-     Method (matches reference solution):
-       ΣFy = 0  →  expand ALL forces explicitly, isolate F_A  (sin of F_B's angle unknown drops out
-                    only if we pick the right equation — we pick whichever eliminates more cleanly,
-                    but in the general 2-unknown case we use ΣFy first to get F_A, then ΣFx for θ_B)
-       Actually the general approach:
-         ΣFy = 0:  [known-y terms] + F_A·sin(θ_A) + F_B·sin(θ_B) = 0    ... (i)
-         ΣFx = 0:  [known-x terms] + F_A·cos(θ_A) + F_B·cos(θ_B) = 0    ... (ii)
-       From (i): isolate F_A (since θ_A is known)
-         F_A·sin(θ_A) = -[known-y] - F_B·sin(θ_B)
-       But θ_B is ALSO unknown — so we still have 2 unknowns in each equation.
-       Correct approach: use cos²+sin²=1 → quadratic in F_A.
-       HOWEVER the reference shows a case where one equation has only ONE unknown.
-       That happens when the unknown-angle force's contribution cancels in one axis.
-       We handle BOTH: try to find a single-unknown equation first, else use quadratic.
-  */
-  if (magUnknownIdx !== -1 && angUnknownIdx !== -1 && magUnknownIdx !== angUnknownIdx) {
-    const FA_angle = parseFloat(forces[magUnknownIdx].angle);   // known angle of the unknown-magnitude force
-    const FB_mag   = parseFloat(forces[angUnknownIdx].magnitude); // known magnitude of the unknown-angle force
-
-    if (isNaN(FA_angle)) {
-      steps.push(`❌ Force ${magUnknownIdx + 1}: provide its angle (only its magnitude is unknown).`);
-      return null;
-    }
-    if (isNaN(FB_mag)) {
-      steps.push(`❌ Force ${angUnknownIdx + 1}: provide its magnitude (only its angle is unknown).`);
-      return null;
-    }
-
-    const radA = (FA_angle * Math.PI) / 180;
-    const cosA = Math.cos(radA), sinA = Math.sin(radA);
-
-    // Sum of all OTHER known forces
-    const { sumX, sumY } = sumKnown(forces, magUnknownIdx, angUnknownIdx);
-
-    /*
-      ΣFy = 0:  sumY + FA·sinA + FB·sin(θB) = 0   →  FA·sinA = -sumY - FB·sin(θB)
-      ΣFx = 0:  sumX + FA·cosA + FB·cos(θB) = 0   →  FA·cosA = -sumX - FB·cos(θB)
-
-      Square and add both sides:
-        FA²(sinA² + cosA²) = (-sumY - FB·sinθB)² + (-sumX - FB·cosθB)²
-        FA² = (sumX² + sumY² + FB² + 2·FB·(sumX·cosθB + sumY·sinθB))    ... still has θB
-
-      Better: isolate FB·cosθB and FB·sinθB:
-        FB·cosθB = -sumX - FA·cosA   ... from ΣFx
-        FB·sinθB = -sumY - FA·sinA   ... from ΣFy
-      Square and add:
-        FB² = (-sumX - FA·cosA)² + (-sumY - FA·sinA)²
-             = (sumX + FA·cosA)² + (sumY + FA·sinA)²
-             = sumX² + 2·FA·sumX·cosA + FA²·cosA²
-             + sumY² + 2·FA·sumY·sinA + FA²·sinA²
-             = FA² + 2·FA·(sumX·cosA + sumY·sinA) + (sumX² + sumY²)
-
-      Quadratic in FA:
-        FA² + 2(sumX·cosA + sumY·sinA)·FA + (sumX² + sumY² - FB²) = 0
-    */
-    const b_coeff = 2 * (sumX * cosA + sumY * sinA);
-    const c_coeff = sumX * sumX + sumY * sumY - FB_mag * FB_mag;
-    const discriminant = b_coeff * b_coeff - 4 * c_coeff;
-
-    // Show ΣFy = 0 equation explicitly
-    const FA_sinTerm = `F_{${magUnknownIdx + 1}}\\sin(${fmt(FA_angle, 4)}^\\circ)`;
-    const FB_sinTerm = `${fmt(FB_mag, 4)}\\sin\\theta_{${angUnknownIdx + 1}}`;
-    const FA_cosTerm = `F_{${magUnknownIdx + 1}}\\cos(${fmt(FA_angle, 4)}^\\circ)`;
-    const FB_cosTerm = `${fmt(FB_mag, 4)}\\cos\\theta_{${angUnknownIdx + 1}}`;
-
-    steps.push(`\\sum F_y = 0`);
-    steps.push(buildEqString("sin", [magUnknownIdx, angUnknownIdx], [FA_sinTerm, FB_sinTerm], "0"));
-    steps.push(`\\sum F_x = 0`);
-    steps.push(buildEqString("cos", [magUnknownIdx, angUnknownIdx], [FA_cosTerm, FB_cosTerm], "0"));
-
-    steps.push(`\\text{Isolate } F_B\\cos\\theta_B \\text{ and } F_B\\sin\\theta_B, \\text{ then square and add:}`);
-    steps.push(`F_{${magUnknownIdx + 1}}^2 + ${fmt(b_coeff, 4)}F_{${magUnknownIdx + 1}} + ${fmt(c_coeff, 4)} = 0`);
-
-    if (discriminant < 0) {
-      steps.push(`❌ No real solution (discriminant < 0). Check your inputs.`);
-      return null;
-    }
-
-    const sqrtD = Math.sqrt(discriminant);
-    const FA1 = (-b_coeff + sqrtD) / 2;
-    const FA2 = (-b_coeff - sqrtD) / 2;
-
-    // Pick the solution that yields a valid θB; prefer positive FA
-    const computeAngleB = (FA: number) => {
-      const cosTB = (-sumX - FA * cosA) / FB_mag;
-      const sinTB = (-sumY - FA * sinA) / FB_mag;
-      const valid = Math.abs(cosTB) <= 1.001 && Math.abs(sinTB) <= 1.001;
-      const angleB = (Math.atan2(sinTB, cosTB) * 180) / Math.PI;
-      return { cosTB, sinTB, angleB, valid };
-    };
-
-    const r1 = computeAngleB(FA1), r2 = computeAngleB(FA2);
-    let FA: number, res: ReturnType<typeof computeAngleB>;
-    if (r1.valid && (!r2.valid || FA1 >= 0)) { FA = FA1; res = r1; }
-    else if (r2.valid) { FA = FA2; res = r2; }
-    else { FA = FA1; res = r1; } // fallback
-
-    const actualFA = Math.abs(FA);
-    const actualAngleA = FA >= 0 ? FA_angle : FA_angle + 180;
-
-    steps.push(`F_{${magUnknownIdx + 1}} = ${fmt(actualFA, 4)}\\ \\text{kN}`);
-    steps.push(`\\text{Back-substitute into } \\Sigma F_y = 0\\text{:}`);
-    steps.push(
-      buildEqString("sin", [magUnknownIdx, angUnknownIdx],
-        [`${fmt(actualFA, 4)}\\sin(${fmt(actualAngleA, 4)}^\\circ)`, FB_sinTerm], "0")
-    );
-    steps.push(`${fmt(FB_mag, 4)}\\sin\\theta_{${angUnknownIdx + 1}} = ${fmt(res.sinTB * FB_mag, 4)}`);
-    steps.push(`\\sin\\theta_{${angUnknownIdx + 1}} = ${fmt(res.sinTB, 4)}`);
-    steps.push(`\\text{Back-substitute into } \\Sigma F_x = 0\\text{:}`);
-    steps.push(
-      buildEqString("cos", [magUnknownIdx, angUnknownIdx],
-        [`${fmt(actualFA, 4)}\\cos(${fmt(actualAngleA, 4)}^\\circ)`, FB_cosTerm], "0")
-    );
-    steps.push(`${fmt(FB_mag, 4)}\\cos\\theta_{${angUnknownIdx + 1}} = ${fmt(res.cosTB * FB_mag, 4)}`);
-    steps.push(`\\cos\\theta_{${angUnknownIdx + 1}} = ${fmt(res.cosTB, 4)}`);
-    steps.push(`\\theta_{${angUnknownIdx + 1}} = \\arctan\\!\\left(\\frac{${fmt(res.sinTB, 4)}}{${fmt(res.cosTB, 4)}}\\right) = ${fmt(res.angleB, 4)}^\\circ`);
-
-    const solvedForces = forces.map((f, i) => {
-      if (i === magUnknownIdx) return { magnitude: actualFA, angle: actualAngleA };
-      if (i === angUnknownIdx) return { magnitude: FB_mag, angle: res.angleB };
-      return { magnitude: parseFloat(f.magnitude), angle: parseFloat(f.angle) };
+  /* ── CASE: one or two unknown magnitudes (known angles) ── */
+  if (magUnknownIndices.length >= 1 && angUnknownIndices.length === 0) {
+    const unknownForces = magUnknownIndices.map((i) => {
+      const angle = parseFloat(forces[i].angle);
+      if (isNaN(angle)) return null;
+      return { angle, label: `F_{${i + 1}}` };
     });
-    return { solvedForces, steps, unknownIndex: magUnknownIdx, unknownField: "magnitude" };
+
+    if (unknownForces.some((u) => u === null)) {
+      const missing = magUnknownIndices.find((i) => isNaN(parseFloat(forces[i].angle)));
+      return { error: `Force ${missing! + 1}: angle must be provided when magnitude is unknown.` };
+    }
+
+    try {
+      const result = solveEquilibrium2D(
+        knownForces,
+        unknownForces as { angle: number; label: string }[]
+      );
+
+      const resultRows = magUnknownIndices.map((origIdx, k) => {
+        const val = result.unknowns[k].value;
+        const mag = Math.abs(val);
+        return { label: `Force ${origIdx + 1} Magnitude`, value: `${mag.toFixed(3)} kN` };
+      });
+
+      const solvedLabel = magUnknownIndices
+        .map((origIdx, k) => `F${origIdx + 1} = ${Math.abs(result.unknowns[k].value).toFixed(3)} kN`)
+        .join(" | ");
+
+      return {
+        steps: result.steps,
+        stepLines: fromLegacySteps(result.steps),
+        resultRows,
+        solvedLabel,
+      };
+    } catch (e: any) {
+      return { error: e.message };
+    }
   }
 
-  return null;
+  /* ── CASE: one unknown magnitude + one unknown angle on DIFFERENT forces ── */
+  if (magUnknownIndices.length === 1 && angUnknownIndices.length === 1) {
+    const magIdx = magUnknownIndices[0];
+    const angIdx = angUnknownIndices[0];
+    const magAngle = parseFloat(forces[magIdx].angle);
+    const angMag = parseFloat(forces[angIdx].magnitude);
+
+    if (isNaN(magAngle)) return { error: `Force ${magIdx + 1}: provide angle when magnitude is unknown.` };
+    if (isNaN(angMag)) return { error: `Force ${angIdx + 1}: provide magnitude when angle is unknown.` };
+
+    // Treat the unknown-angle force as two component unknowns at 0° and 90°,
+    // plus the unknown-magnitude force at its known angle.
+    // That gives 3 unknowns for 2 equations — over-constrained. Instead, substitute
+    // the magnitude constraint Fx² + Fy² = angMag² to eliminate one degree of freedom.
+    // We solve using solveEquilibrium2D with the unknown-magnitude force + one axis component
+    // of the unknown-angle force. The other component follows from the magnitude constraint.
+    // Strategy: use ΣFx and ΣFy directly with 2 unknowns:
+    //   unknown1 = F_{magIdx+1} (magnitude unknown, angle known)
+    //   unknown2 conceptually split as angMag·cosθ and angMag·sinθ
+    // We do this in two sub-solves: assume θ via atan2 after getting both components.
+    try {
+      // Pass both unknowns: unknown-mag force at its angle, plus x-component of unknown-angle force
+      // Then recover y-component from ΣFy after solving.
+      const resultFx = solveEquilibrium2D(
+        knownForces,
+        [
+          { angle: magAngle, label: `F_{${magIdx + 1}}` },
+          { angle: 0, label: `F_{${angIdx + 1}x}` },
+        ]
+      );
+      // Now get the y residual
+      const solvedMag = resultFx.unknowns[0].value;
+      const solvedFx = -resultFx.unknowns[1].value;
+
+      // Use ΣFy = 0 to find Fy of the unknown-angle force
+      const resultFy = solveEquilibrium2D(
+        [
+          ...knownForces,
+          { magnitude: Math.abs(solvedMag), angle: solvedMag >= 0 ? magAngle : magAngle + 180, label: `F_{${magIdx + 1}}` },
+        ],
+        [{ angle: 90, label: `F_{${angIdx + 1}y}` }]
+      );
+      const solvedFy = -resultFy.unknowns[0].value;
+
+      const ang = (Math.atan2(solvedFy, solvedFx) * 180) / Math.PI;
+      const actualMag = Math.abs(solvedMag);
+      const actualAngle = solvedMag >= 0 ? magAngle : magAngle + 180;
+
+      const resultRows = [
+        { label: `Force ${magIdx + 1} Magnitude`, value: `${actualMag.toFixed(3)} kN` },
+        { label: `Force ${angIdx + 1} Angle`, value: `${ang.toFixed(3)}°` },
+      ];
+      const steps = [...resultFx.steps, ...resultFy.steps];
+      return {
+        steps,
+        stepLines: fromLegacySteps(steps),
+        resultRows,
+        solvedLabel: `F${magIdx + 1} = ${actualMag.toFixed(3)} kN | F${angIdx + 1} angle = ${ang.toFixed(3)}°`,
+      };
+    } catch (e: any) {
+      return { error: e.message };
+    }
+  }
+
+  return { error: "Unsupported combination of unknowns." };
 }
 
 /* ===================== MAIN COMPONENT ===================== */
@@ -728,74 +702,18 @@ export default function Equilibrium() {
     setForces(newForces);
   };
 
-  const calculateResultant = () => {
+  const handleCalculate = () => {
     setError(null);
     setSolution(null);
 
-    const hasAnyUnknown = forces.some((f) => f.magnitudeUnknown || f.angleUnknown);
+    const result = calculate(forces);
 
-    if (hasAnyUnknown) {
-      const totalUnknowns = forces.reduce(
-        (acc, f) => acc + (f.magnitudeUnknown ? 1 : 0) + (f.angleUnknown ? 1 : 0),
-        0
-      );
-      if (totalUnknowns > 2) {
-        setError("Too many unknowns. The system can only solve for up to 2 unknowns.");
-        return;
-      }
-      const result = solveUnknowns(forces);
-      if (!result) {
-        setError("Could not solve for the unknowns. Check your inputs.");
-        return;
-      }
-
-      const { solvedForces, steps, unknownIndex, unknownField } = result;
-      const validSolvedForces = solvedForces.filter((f) => !isNaN(f.magnitude) && !isNaN(f.angle));
-      const equilibriumResult = computeEquilibrant(validSolvedForces);
-
-      const allSteps = [...steps, ...(equilibriumResult.steps || [])];
-      const resultRows = [
-        { label: "Resultant Magnitude", value: `${equilibriumResult.resultantMagnitude?.toFixed(3)} kN` },
-        { label: "Resultant Angle", value: `${equilibriumResult.resultantAngle?.toFixed(3)}°` },
-        { label: "Equilibrant Magnitude", value: `${equilibriumResult.equilibrantMagnitude?.toFixed(3)} kN` },
-        { label: "Equilibrant Angle", value: `${equilibriumResult.equilibrantAngle?.toFixed(3)}°` },
-      ];
-
-      setSolution({
-        ...equilibriumResult,
-        steps: allSteps,
-        stepLines: fromLegacySteps(allSteps),
-        resultRows,
-        unknownIndex,
-        unknownField,
-        solvedMagnitude: solvedForces[unknownIndex]?.magnitude,
-        solvedAngle: solvedForces[unknownIndex]?.angle,
-      });
-    } else {
-      const numericForces = forces
-        .map((f) => ({ magnitude: parseFloat(f.magnitude), angle: parseFloat(f.angle) }))
-        .filter((f) => !isNaN(f.magnitude) && !isNaN(f.angle));
-      if (numericForces.length === 0) {
-        setError("Please enter at least one valid force.");
-        return;
-      }
-
-      const result = computeEquilibrant(numericForces);
-      const allSteps = result.steps || [];
-      const resultRows = [
-        { label: "Resultant Magnitude", value: `${result.resultantMagnitude?.toFixed(3)} kN` },
-        { label: "Resultant Angle", value: `${result.resultantAngle?.toFixed(3)}°` },
-        { label: "Equilibrant Magnitude", value: `${result.equilibrantMagnitude?.toFixed(3)} kN` },
-        { label: "Equilibrant Angle", value: `${result.equilibrantAngle?.toFixed(3)}°` },
-      ];
-
-      setSolution({
-        ...result,
-        steps: allSteps,
-        stepLines: fromLegacySteps(allSteps),
-        resultRows,
-      });
+    if ("error" in result) {
+      setError(result.error);
+      return;
     }
+
+    setSolution(result);
   };
 
   return (
@@ -855,7 +773,6 @@ export default function Equilibrium() {
                       <button
                         type="button"
                         onClick={() => toggleUnknown(i, "magnitude")}
-                        title={f.magnitudeUnknown ? "Clear unknown" : "Mark as unknown"}
                         className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl border text-lg font-semibold transition duration-200 ${f.magnitudeUnknown ? "bg-[#1848a0] text-white border-[#1848a0]" : "bg-white text-[#1848a0] border-gray-300 hover:bg-blue-50"}`}
                       >?</button>
                     </div>
@@ -876,7 +793,6 @@ export default function Equilibrium() {
                       <button
                         type="button"
                         onClick={() => toggleUnknown(i, "angle")}
-                        title={f.angleUnknown ? "Clear unknown" : "Mark as unknown"}
                         className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl border text-lg font-semibold transition duration-200 ${f.angleUnknown ? "bg-[#1848a0] text-white border-[#1848a0]" : "bg-white text-[#1848a0] border-gray-300 hover:bg-blue-50"}`}
                       >?</button>
                     </div>
@@ -897,39 +813,27 @@ export default function Equilibrium() {
               >+ Add Force</button>
 
               <button
-                onClick={calculateResultant}
+                onClick={handleCalculate}
                 className="w-full bg-[#1848a0] text-white py-3 rounded-lg hover:bg-[#163d8a] transition duration-200 text-[18px]"
               >Calculate</button>
             </div>
 
-            {/* Error */}
             {error && (
               <div className="mt-4 w-full max-w-xl bg-red-50 border border-red-300 text-red-700 rounded-xl p-4">
                 ⚠️ {error}
               </div>
             )}
 
-            {/* Solution */}
             {solution && (
               <div className="mt-6 w-full max-w-xl bg-gray-50 p-4 rounded-xl border">
 
-                {/* Solved unknown highlight */}
-                {solution.unknownIndex !== undefined && (
+                {solution.solvedLabel && (
                   <div className="mb-4 p-3 bg-blue-50 border border-[#1848a0] rounded-xl">
-                    <span className="font-semibold text-[#1848a0]">
-                      ✅ Solved — Force {solution.unknownIndex + 1}:
-                    </span>{" "}
-                    {solution.unknownField !== "angle" && (
-                      <span>Magnitude = <strong>{solution.solvedMagnitude?.toFixed(3)} kN</strong></span>
-                    )}
-                    {solution.unknownField === null && " | "}
-                    {solution.unknownField !== "magnitude" && (
-                      <span>Angle = <strong>{solution.solvedAngle?.toFixed(3)}°</strong></span>
-                    )}
+                    <span className="font-semibold text-[#1848a0]">✅ Solved: </span>
+                    <strong>{solution.solvedLabel}</strong>
                   </div>
                 )}
 
-                {/* PDF Export Button */}
                 <PDFExportButton
                   steps={solution.steps}
                   resultRows={solution.resultRows}
@@ -937,7 +841,6 @@ export default function Equilibrium() {
                   filename="equilibrium-solution.pdf"
                 />
 
-                {/* Results summary strip */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
                   {solution.resultRows?.map((row: { label: string; value: string }, i: number) => (
                     <div key={i} style={{ background: "#f5f8ff", borderRadius: 10, border: "1px solid #dce8ff", padding: "10px 14px" }}>
@@ -947,7 +850,6 @@ export default function Equilibrium() {
                   ))}
                 </div>
 
-                {/* StepByStep renderer */}
                 <StepByStepSolution steps={solution.stepLines} title="Step-by-Step Solution" />
               </div>
             )}
