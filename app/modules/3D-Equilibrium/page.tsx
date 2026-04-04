@@ -3,7 +3,15 @@
 import Header from "<Ian>/components/Header";
 import Footer from "<Ian>/components/Footer";
 
+import { BlockMath, InlineMath } from "react-katex";
+import "katex/dist/katex.min.css";
+
 // ─── Types ───────────────────────────────────────────────────────────────────
+
+interface FormulaBlockProps {
+    label: string;
+    formula: string;
+}
 
 interface StepProps {
     number: number;
@@ -11,18 +19,18 @@ interface StepProps {
     children: React.ReactNode;
 }
 
-interface ArrowItemProps {
-    label: string;
-}
-
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function ArrowItem({ label }: ArrowItemProps) {
+function FormulaBlock({ label, formula }: FormulaBlockProps) {
     return (
-        <li className="flex items-center gap-2">
-            <span className="text-[#1848a0] font-bold">{"→"}</span>
-            {label}
-        </li>
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 my-3 text-center">
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">
+                {label}
+            </p>
+            <div className="text-[18px]">
+                <BlockMath>{formula}</BlockMath>
+            </div>
+        </div>
     );
 }
 
@@ -35,7 +43,7 @@ function Step({ number, title, children }: StepProps) {
                 </div>
                 <h2 className="text-[20px] font-semibold">{title}</h2>
             </div>
-            <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3">
+            <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10">
                 {children}
             </div>
         </div>
@@ -44,7 +52,7 @@ function Step({ number, title, children }: StepProps) {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-export default function Resultant3D() {
+export default function ThreeDEquilibrium() {
     return (
         <div className="relative flex flex-col min-h-screen bg-gray-50 text-gray-900 text-[18px]">
             {/* Background grid */}
@@ -52,9 +60,9 @@ export default function Resultant3D() {
                 className="absolute inset-0 pointer-events-none"
                 style={{
                     backgroundImage: `
-            linear-gradient(rgba(24,72,160,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(24,72,160,0.03) 1px, transparent 1px)
-          `,
+      linear-gradient(rgba(24,72,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(24,72,160,0.03) 1px, transparent 1px)
+    `,
                     backgroundSize: "40px 40px",
                 }}
             />
@@ -62,175 +70,172 @@ export default function Resultant3D() {
 
             <main className="flex-grow flex flex-col items-center px-4 py-10">
                 <h1 className="text-[32px] font-bold mb-2 text-center">
-                    Resultant of Concurrent Forces in 3D
+                    3D Equilibrium Problems
                 </h1>
                 <p className="text-gray-500 mb-8 text-center">
-                    Procedure for Solving the Resultant Force in 3D
+                    Equilibrium of a Rigid Body in Three Dimensions
                 </p>
 
                 {/* Intro Card */}
                 <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0]">
-                    <p className="mb-3">
-                        A{" "}
-                        <span className="font-semibold text-[#1848a0]">resultant force</span>{" "}
-                        is a single force that produces the same external effect as a system
-                        of forces acting simultaneously on a particle.
+                    <p className="mb-2">
+                        A body is said to be in{" "}
+                        <span className="font-semibold text-[#1848a0]">equilibrium</span> when
+                        the resultant of all external forces and the resultant moment acting on
+                        it are zero.
                     </p>
                     <p className="mb-3">
-                        In{" "}
+                        For a{" "}
                         <span className="font-semibold text-[#1848a0]">
-                            three-dimensional problems
+                            Three-Dimensional System
                         </span>
-                        , forces are commonly directed along lines in space and must be
-                        expressed using vector notation before they can be combined.
+                        , six equilibrium equations must be satisfied:
                     </p>
+                    <div className="flex flex-col gap-3">
+                        <FormulaBlock
+                            label="Force Equations"
+                            formula="\sum F_x = 0,\quad \sum F_y = 0,\quad \sum F_z = 0"
+                        />
+                        <FormulaBlock
+                            label="Moment Equations"
+                            formula="\sum M_x = 0,\quad \sum M_y = 0,\quad \sum M_z = 0"
+                        />
+                    </div>
                 </div>
 
                 {/* Steps */}
                 <div className="w-full max-w-xl">
 
                     {/* Step 1 */}
-                    <Step number={1} title="Express Points in Cartesian Form">
+                    <Step number={1} title="Draw the Free Body Diagram (FBD)">
                         <p>
-                            Identify and write the coordinates of all relevant points in the{" "}
+                            Isolate the body and show all{" "}
                             <span className="font-semibold text-[#1848a0]">
-                                Cartesian coordinate system
-                            </span>
-                            .
+                                external forces and moments
+                            </span>{" "}
+                            acting in the x, y, and z directions.
                         </p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic">
-                            A(x₁, y₁, z₁),&nbsp;&nbsp; B(x₂, y₂, z₂)
-                        </div>
                     </Step>
 
                     {/* Step 2 */}
-                    <Step number={2} title="Determine the Position Vector">
+                    <Step number={2} title="Choose a Coordinate System">
                         <p>
-                            Form the{" "}
-                            <span className="font-semibold text-[#1848a0]">
-                                position vector
-                            </span>{" "}
-                            from point A to point B by subtracting their coordinates.
-                        </p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic">
-                            r&#x20D7;<sub>AB</sub> = (x₂ − x₁)i + (y₂ − y₁)j + (z₂ − z₁)k
-                        </div>
-                        <p className="text-gray-500 text-[15px]">
-                            This vector defines the direction of the force.
+                            Define the{" "}
+                            <span className="font-semibold text-[#1848a0]">x, y, and z axes</span>.
+                            Align axes conveniently along edges, cables, or symmetry when possible.
                         </p>
                     </Step>
 
                     {/* Step 3 */}
-                    <Step number={3} title="Compute the Magnitude of the Position Vector">
+                    <Step number={3} title="Express Forces as Vectors">
+                        <p>Represent forces using unit vectors in component form:</p>
+                        <FormulaBlock
+                            label="Force Vector"
+                            formula="\mathbf{F} = F_x\,\mathbf{i} + F_y\,\mathbf{j} + F_z\,\mathbf{k}"
+                        />
                         <p>
-                            Determine the length of the position vector using the{" "}
-                            <span className="font-semibold text-[#1848a0]">
-                                3D distance formula
-                            </span>
-                            .
+                            For forces along a line, use a{" "}
+                            <span className="font-semibold text-[#1848a0]">unit vector</span>{" "}
+                            <InlineMath>{"\\mathbf{u}"}</InlineMath>:
                         </p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic">
-                            |r&#x20D7;<sub>AB</sub>| = √[ (x₂−x₁)² + (y₂−y₁)² + (z₂−z₁)² ]
-                        </div>
+                        <FormulaBlock
+                            label="Force Along a Line"
+                            formula="\mathbf{F} = F \cdot \mathbf{u}"
+                        />
                     </Step>
 
                     {/* Step 4 */}
-                    <Step number={4} title="Determine the Unit Vector">
+                    <Step number={4} title="Compute Moments Using Cross Product">
                         <p>
-                            Obtain the{" "}
-                            <span className="font-semibold text-[#1848a0]">unit vector</span>{" "}
-                            by dividing the position vector by its magnitude.
+                            Calculate the moment of each force about the reference point using the
+                            cross product:
                         </p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic">
-                            û<sub>AB</sub> = r&#x20D7;<sub>AB</sub> / |r&#x20D7;<sub>AB</sub>|
-                        </div>
-                        <p className="text-gray-500 text-[15px]">
-                            The unit vector represents direction only.
+                        <FormulaBlock
+                            label="Moment Formula"
+                            formula="\mathbf{M} = \mathbf{r} \times \mathbf{F}"
+                        />
+                        <p>
+                            where{" "}
+                            <span className="font-semibold text-[#1848a0]">
+                                <InlineMath>{"\\mathbf{r}"}</InlineMath>
+                            </span>{" "}
+                            is the position vector from the reference point to the point of force
+                            application.
                         </p>
                     </Step>
 
                     {/* Step 5 */}
-                    <Step number={5} title="Express the Force Vector">
-                        <p>
-                            Multiply the magnitude of the force by its{" "}
-                            <span className="font-semibold text-[#1848a0]">unit vector</span>{" "}
-                            to obtain the force in Cartesian form.
-                        </p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic">
-                            F&#x20D7; = F · û
+                    <Step number={5} title="Apply Equilibrium Equations">
+                        <p>Set the sum of all forces and moments to zero:</p>
+                        <div className="grid grid-cols-2 gap-3 mt-1">
+                            <FormulaBlock
+                                label="Force Equilibrium"
+                                formula="\sum \mathbf{F} = 0"
+                            />
+                            <FormulaBlock
+                                label="Moment Equilibrium"
+                                formula="\sum \mathbf{M} = 0"
+                            />
                         </div>
+                        <p>Expanding into scalar equations:</p>
+                        <FormulaBlock
+                            label="Six Scalar Equations"
+                            formula="\sum F_x = 0,\; \sum F_y = 0,\; \sum F_z = 0 \\ \sum M_x = 0,\; \sum M_y = 0,\; \sum M_z = 0"
+                        />
                     </Step>
 
                     {/* Step 6 */}
-                    <Step number={6} title="Compute the Resultant Force and its Magnitude">
+                    <Step number={6} title="Solve for Unknowns">
                         <p>
-                            Add all force vectors{" "}
+                            Solve the system of equations for all unknown{" "}
                             <span className="font-semibold text-[#1848a0]">
-                                component-wise
-                            </span>{" "}
-                            to obtain the resultant.
+                                forces, reactions, or tensions
+                            </span>
+                            .
                         </p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic">
-                            R&#x20D7; = ΣF&#x20D7;
-                        </div>
-                        <p>The magnitude of the resultant is given by:</p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic">
-                            R = √( Rx² + Ry² + Rz² )
-                        </div>
                     </Step>
 
                     {/* Step 7 */}
-                    <Step number={7} title="Determine the Coordinate Direction Angles">
-                        <p>
-                            Compute the{" "}
-                            <span className="font-semibold text-[#1848a0]">
-                                angles
-                            </span>{" "}
-                            between the resultant vector and the coordinate axes.
-                        </p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic space-y-1">
-                            <p>cos α = Rx / R</p>
-                            <p>cos β = Ry / R</p>
-                            <p>cos γ = Rz / R</p>
-                        </div>
-                    </Step>
-
-                    {/* Step 8 */}
-                    <Step number={8} title="Express the Final Answer">
-                        <p>
-                            Present the resultant in{" "}
-                            <span className="font-semibold text-[#1848a0]">vector form</span>
-                            , together with its magnitude and direction.
-                        </p>
+                    <Step number={7} title="Check Results">
                         <ul className="list-none space-y-1 mt-1">
                             {[
-                                "Resultant vector",
-                                "Magnitude",
-                                "Direction angles",
+                                "Verify vector directions and signs",
+                                "Ensure unit consistency",
+                                "Substitute back into all six equations to confirm equilibrium",
                             ].map((item) => (
-                                <ArrowItem key={item} label={item} />
+                                <li key={item} className="flex items-center gap-2">
+                                    <span className="text-[#1848a0] font-bold">{"→"}</span>
+                                    {item}
+                                </li>
                             ))}
                         </ul>
                     </Step>
 
-                    {/* Example Card */}
-                    <div className="mb-6">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#1848a0] text-white flex items-center justify-center font-bold text-[16px]">
-                                📝
-                            </div>
-                            <h2 className="text-[20px] font-semibold">Example</h2>
-                        </div>
-                        <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3">
-                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-[15px] text-gray-600 italic space-y-2">
-                                <p>R&#x20D7; = 460i − 40j − 1080k N</p>
-                                <p>R = √(460² + (−40)² + (−1080)²) = <strong>1174.56 N</strong></p>
-                                <p>α = 66.94°,&nbsp; β = 91.95°,&nbsp; γ = 156.85°</p>
-                            </div>
+                </div>
+
+                {/* Key Notes Card */}
+                <div className="w-full max-w-xl mt-2">
+                    <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                        <span className="text-xl">⚠️</span>
+                        <div className="space-y-1">
+                            <p className="font-semibold">Key Notes (Important for Exams)</p>
+                            <ul className="list-none space-y-1 mt-1">
+                                {[
+                                    "Six independent equations are available in 3D equilibrium",
+                                    "If unknowns exceed six, the system is statically indeterminate",
+                                    "Always use a clear 3D Free Body Diagram (FBD)",
+                                    "Use position vectors and cross product for moments",
+                                ].map((note) => (
+                                    <li key={note} className="flex items-start gap-2">
+                                        <span className="text-yellow-600 font-bold mt-0.5">{"→"}</span>
+                                        {note}
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     </div>
-
                 </div>
+
             </main>
 
             <Footer />

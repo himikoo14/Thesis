@@ -35,7 +35,7 @@ function Step({ number, title, children }: StepProps) {
                 </div>
                 <h2 className="text-[20px] font-semibold">{title}</h2>
             </div>
-            <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3">
+            <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10">
                 {children}
             </div>
         </div>
@@ -242,7 +242,7 @@ export default function MethodOfJoints() {
                             </div>
                             <h2 className="text-[20px] font-semibold">Key Notes (Important for Exams)</h2>
                         </div>
-                        <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3">
+                        <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10">
                             <ul className="list-none space-y-2">
                                 {[
                                     "Assume all member forces are in tension (pulling away from the joint)",
@@ -264,7 +264,7 @@ export default function MethodOfJoints() {
                             </div>
                             <h2 className="text-[20px] font-semibold">Common Mistakes</h2>
                         </div>
-                        <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3">
+                        <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10">
                             <ul className="list-none space-y-2">
                                 {[
                                     "Starting at a joint with more than two unknowns",

@@ -121,14 +121,14 @@ export function solveBeam(input: BeamInput): BeamResult {
 
   const equivLoads: EquivalentLoad[] = distributedLoads.map((d, i) => {
     const eq = equivalentPointLoad(d);
-    const L = (d.end - d.start).toFixed(3);
+    const L = fmt(d.end - d.start);
     steps.push(
       `\\text{DL ${i + 1}: } w_1=${d.startMag}\\,\\tfrac{\\text{kN}}{\\text{m}},\\; w_2=${d.endMag}\\,\\tfrac{\\text{kN}}{\\text{m}},\\; L=${L}\\,\\text{m}`
     );
     steps.push(`
       \\begin{align*}
-      F_{eq${i + 1}} &= ${eq.magnitude.toFixed(3)}\\,\\text{kN} \\\\
-      \\bar{x}_{${i + 1}} &= ${eq.location.toFixed(3)}\\,\\text{m from left end}
+F_{eq${i + 1}} &= ${fmt(eq.magnitude)}\\,\\text{kN} \\\\
+\\bar{x}_{${i + 1}} &= ${fmt(eq.location)}\\,\\text{m from left end}
       \\end{align*}
     `);
     return eq;
@@ -151,13 +151,13 @@ export function solveBeam(input: BeamInput): BeamResult {
 
   steps.push(`
     \\begin{align*}
-    \\Sigma F_{ext} &= ${allLoads.map(l => `${l.F.toFixed(3)}`).join(" + ")} \\\\
-                   &= ${totalLoad.toFixed(3)}\\,\\text{kN}
+    \\Sigma F_{ext} &= ${allLoads.map(l => `${fmt(l.F)}`).join(" + ")} \\\\
+                   &= ${fmt(totalLoad)}\\,\\text{kN}
     \\end{align*}
   `);
 
   /* ---- 3. Reactions via equilibrium ---- */
-  steps.push("Step 3: Apply equilibrium equations (\\(\\Sigma M = 0\\), \\(\\Sigma F_y = 0\\)):");
+  steps.push("Step 3: Apply equilibrium equations (ΣM = 0, ΣFy = 0):");
 
   // ΣM_A = 0  →  solve for R_B
   // Sum of moments of all loads about A, then divide by span
@@ -168,9 +168,10 @@ export function solveBeam(input: BeamInput): BeamResult {
   steps.push(`
     \\begin{align*}
     \\Sigma M_A &= 0 \\\\
-    R_B &= \\frac{\\sum F_i (x_i - x_A)}{x_B - x_A} = \\frac{${momentAboutA.toFixed(3)}}{${span.toFixed(3)}} = ${RB.toFixed(3)}\\,\\text{kN} \\\\[6pt]
-    \\Sigma F_y &= 0 \\\\
-    R_A &= \\Sigma F_{ext} - R_B = ${totalLoad.toFixed(3)} - ${RB.toFixed(3)} = ${RA.toFixed(3)}\\,\\text{kN}
+    R_B &= \\frac{\\sum F_i (x_i - x_A)}{x_B - x_A} = 
+\\frac{${fmt(momentAboutA)}}{${fmt(span)}} = ${fmt(RB)}\\,\\text{kN} \\\\[6pt]
+\\Sigma F_y &= 0 \\\\
+R_A &= \\Sigma F_{ext} - R_B = ${fmt(totalLoad)} - ${fmt(RB)} = ${fmt(RA)}\\,\\text{kN}
     \\end{align*}
   `);
 
@@ -254,8 +255,8 @@ export function solveBeam(input: BeamInput): BeamResult {
 
   steps.push(`
     \\begin{align*}
-    V_{max} &= ${maxShear.toFixed(3)}\\,\\text{kN} \\\\
-    M_{max} &= ${maxMomentPoint.m.toFixed(3)}\\,\\text{kN·m at } x = ${maxMomentPoint.x.toFixed(3)}\\,\\text{m}
+V_{max} &= ${fmt(maxShear)}\\,\\text{kN} \\\\
+M_{max} &= ${fmt(maxMomentPoint.m)}\\,\\text{kN}\\cdot\\text{m at } x = ${fmt(maxMomentPoint.x)}\\,\\text{m}
     \\end{align*}
   `);
 
@@ -270,3 +271,7 @@ export function solveBeam(input: BeamInput): BeamResult {
     steps,
   };
 }
+const fmt = (n: number): string => {
+  if (Math.abs(n - Math.round(n)) < 1e-9) return Math.round(n).toString();
+  return n.toFixed(2);
+};

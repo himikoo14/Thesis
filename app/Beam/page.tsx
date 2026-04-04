@@ -23,11 +23,12 @@ function fromLegacySteps(steps: string[]): StepLine[] {
   return steps.map((line) => {
     const trimmed = line.trim();
     if (trimmed.startsWith("Step")) return { type: "heading", text: trimmed };
-    if (!trimmed.includes("\\")) return { type: "text", text: trimmed };
+    if (!trimmed.includes("\\") || trimmed.includes("kN\\cdot") || trimmed.startsWith("Max")) {
+      return { type: "text", text: trimmed.replace(/\\cdotp?/g, "·") };
+    }
     return { type: "math", tex: trimmed };
   });
 }
-
 /* ================================================================
    KATEX INLINE RENDERER
 ================================================================ */
@@ -321,8 +322,14 @@ function BeamFBD({ beamLength, supports, pointLoads, distributedLoads, result }:
   return (
     <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
       <defs>
-        <marker id="arrowDown" markerWidth="8" markerHeight="8" refX="4" refY="8" orient="auto">
+        <marker id="arrowDown" markerWidth="8" markerHeight="8" refX="4" refY="0" orient="90">
           <polygon points="0,0 8,0 4,8" fill="#1848a0" />
+        </marker>
+        <marker id="arrowDownGreen" markerWidth="8" markerHeight="8" refX="4" refY="0" orient="90">
+          <polygon points="0,0 8,0 4,8" fill="#059669" />
+        </marker>
+        <marker id="arrowRight" markerWidth="8" markerHeight="8" refX="0" refY="4" orient="auto">
+          <polygon points="0,0 0,8 8,4" fill="#9ca3af" />
         </marker>
         <marker id="arrowUp" markerWidth="8" markerHeight="8" refX="4" refY="0" orient="auto">
           <polygon points="0,8 8,8 4,0" fill="#009900" />
@@ -334,40 +341,72 @@ function BeamFBD({ beamLength, supports, pointLoads, distributedLoads, result }:
         const ws = parseFloat(d.startMag), we = parseFloat(d.endMag);
         if (isNaN(xs) || isNaN(xe) || isNaN(ws) || isNaN(we) || xe <= xs) return null;
         const x1 = toX(xs), x2 = toX(xe);
-        const hs = arrowH(ws), he = arrowH(we);
-        const topY1 = beamY - hs, topY2 = beamY - he;
+        const hs = arrowH(Math.abs(ws));
+        const he = arrowH(Math.abs(we));
+        const topYs = beamY - hs;
+        const topYe = beamY - he;
         const numLines = Math.max(2, Math.round((x2 - x1) / 18));
         const lines = [];
         for (let j = 0; j <= numLines; j++) {
           const t = j / numLines;
           const lx = x1 + t * (x2 - x1);
-          const topY = topY1 + t * (topY2 - topY1);
-          lines.push(<line key={j} x1={lx} y1={topY} x2={lx} y2={beamY} stroke="#1848a0" strokeWidth="1.5" markerEnd="url(#arrowDown)" />);
+          const topY = topYs + t * (topYe - topYs);
+          lines.push(
+            <g key={j}>
+              <line x1={lx} y1={topY} x2={lx} y2={beamY - 6} stroke="#1848a0" strokeWidth="1.5" />
+              <polygon points={`${lx - 4},${beamY - 6} ${lx + 4},${beamY - 6} ${lx},${beamY}`} fill="#1848a0" />
+            </g>
+          );
         }
         return (
           <g key={i}>
-            <polygon points={`${x1},${topY1} ${x2},${topY2} ${x2},${beamY} ${x1},${beamY}`} fill="#1848a055" stroke="#1848a0" strokeWidth="1.5" />
             {lines}
-            <line x1={x1} y1={topY1} x2={x2} y2={topY2} stroke="#1848a0" strokeWidth="2" />
-            <text x={(x1 + x2) / 2} y={Math.min(topY1, topY2) - 6} textAnchor="middle" fontSize="11" fill="#1848a0" fontFamily="monospace">{ws}–{we} kN/m</text>
+            <line x1={x1} y1={topYs} x2={x2} y2={topYe} stroke="#1848a0" strokeWidth="2.5" />
+            {ws === we ? (
+              <text x={(x1 + x2) / 2} y={Math.min(topYs, topYe) - 6} textAnchor="middle" fontSize="11" fill="#1848a0" fontFamily="monospace">{ws} kN/m</text>
+            ) : (
+              <>
+                <text x={x1} y={topYs - 6} textAnchor="start" fontSize="11" fill="#1848a0" fontFamily="monospace">{ws} kN/m</text>
+                <text x={x2} y={topYe - 6} textAnchor="end" fontSize="11" fill="#1848a0" fontFamily="monospace">{we} kN/m</text>
+              </>
+            )}
           </g>
         );
       })}
-
       {pointLoads.map((p, i) => {
         const m = parseFloat(p.magnitude), x = parseFloat(p.location);
         if (isNaN(m) || isNaN(x) || m === 0) return null;
-        const h = arrowH(m), px = toX(x);
+        const px = toX(x);
+
+        // Check if this point load overlaps any distributed load
+        const overlapDist = distributedLoads.find(d => {
+          const xs = parseFloat(d.start), xe = parseFloat(d.end);
+          const ws = parseFloat(d.startMag), we = parseFloat(d.endMag);
+          if (isNaN(xs) || isNaN(xe) || isNaN(ws) || isNaN(we) || xe <= xs) return false;
+          return x >= xs && x <= xe;
+        });
+
+        let baseY = beamY;
+        if (overlapDist) {
+          const ws = parseFloat(overlapDist.startMag), we = parseFloat(overlapDist.endMag);
+          baseY = beamY - arrowH(Math.max(Math.abs(ws), Math.abs(we)));
+        }
+
+        const h = arrowH(m);
+        const labelGap = overlapDist ? 20 : 0; // extra space above dist load top line
         return (
           <g key={i}>
-            <line x1={px} y1={beamY - h} x2={px} y2={beamY} stroke="#1848a0" strokeWidth="2.5" markerEnd="url(#arrowDown)" />
-            <text x={px} y={beamY - h - 6} textAnchor="middle" fontSize="12" fill="#1848a0" fontWeight="bold" fontFamily="monospace">{m} kN</text>
+            <line x1={px} y1={baseY - h - labelGap} x2={px} y2={baseY - 7 - labelGap} stroke="#059669" strokeWidth="2.5" />
+            <polygon points={`${px - 5},${baseY - 7 - labelGap} ${px + 5},${baseY - 7 - labelGap} ${px},${baseY - labelGap}`} fill="#059669" />
+            <text x={px} y={baseY - h - labelGap - 6} textAnchor="middle" fontSize="12" fill="#059669" fontWeight="bold" fontFamily="monospace">{m} kN</text>
           </g>
         );
       })}
 
       <rect x={padL} y={beamY} width={drawW} height={beamH} fill="#d1d5db" stroke="#374151" strokeWidth="2" rx="2" />
-      <line x1={padL} y1={beamY + beamH + 22} x2={padL + drawW} y2={beamY + beamH + 22} stroke="#9ca3af" strokeWidth="1" markerEnd="url(#arrowDown)" markerStart="url(#arrowUp)" />
+      <line x1={padL} y1={beamY + beamH + 22} x2={padL + drawW} y2={beamY + beamH + 22} stroke="#9ca3af" strokeWidth="1" />
+      <line x1={padL} y1={beamY + beamH + 16} x2={padL} y2={beamY + beamH + 28} stroke="#9ca3af" strokeWidth="1.5" />
+      <line x1={padL + drawW} y1={beamY + beamH + 16} x2={padL + drawW} y2={beamY + beamH + 28} stroke="#9ca3af" strokeWidth="1.5" />
       <text x={padL + drawW / 2} y={beamY + beamH + 36} textAnchor="middle" fontSize="12" fill="#6b7280" fontFamily="monospace">L = {L} m</text>
 
       {supports.map((s, i) => {
@@ -379,19 +418,18 @@ function BeamFBD({ beamLength, supports, pointLoads, distributedLoads, result }:
         const rh = reactionArrowH(rv);
         return (
           <g key={i}>
-            {result && (
-              <>
-                <line x1={sx} y1={sy + rh + 8} x2={sx} y2={sy + 2} stroke="#009900" strokeWidth="2.5" markerEnd="url(#arrowUp)" />
-                <text x={sx} y={sy + rh + 22} textAnchor="middle" fontSize="11" fill="#009900" fontWeight="bold" fontFamily="monospace">R={rv.toFixed(2)} kN</text>
-              </>
-            )}
             {s.type === "Pinned" && (
-              <polygon points={`${sx},${sy} ${sx - 12},${sy + 18} ${sx + 12},${sy + 18}`} fill="#fbbf24" stroke="#92400e" strokeWidth="1.5" />
+              <>
+                <polygon points={`${sx},${sy} ${sx - 12},${sy + 18} ${sx + 12},${sy + 18}`} fill="#6b7280" stroke="#374151" strokeWidth={1} />
+                <line x1={sx - 14} y1={sy + 18} x2={sx + 14} y2={sy + 18} stroke="#374151" strokeWidth={2} />
+              </>
             )}
             {s.type === "Roller" && (
               <>
-                <polygon points={`${sx},${sy} ${sx - 12},${sy + 18} ${sx + 12},${sy + 18}`} fill="#a5f3fc" stroke="#0e7490" strokeWidth="1.5" />
-                <circle cx={sx} cy={sy + 24} r={5} fill="none" stroke="#0e7490" strokeWidth="1.5" />
+                <polygon points={`${sx},${sy} ${sx - 12},${sy + 18} ${sx + 12},${sy + 18}`} fill="#9ca3af" stroke="#6b7280" strokeWidth={1} />
+                <circle cx={sx - 7} cy={sy + 21} r={3} fill="none" stroke="#6b7280" strokeWidth={1.5} />
+                <circle cx={sx} cy={sy + 21} r={3} fill="none" stroke="#6b7280" strokeWidth={1.5} />
+                <circle cx={sx + 7} cy={sy + 21} r={3} fill="none" stroke="#6b7280" strokeWidth={1.5} />
               </>
             )}
             <text x={sx} y={beamY + beamH + (result ? 18 : 0) + 52} textAnchor="middle" fontSize="11" fill="#374151" fontFamily="monospace">{x} m</text>
@@ -401,12 +439,6 @@ function BeamFBD({ beamLength, supports, pointLoads, distributedLoads, result }:
 
       <rect x={padL} y={8} width={10} height={10} fill="#1848a055" stroke="#1848a0" strokeWidth="1" />
       <text x={padL + 14} y={18} fontSize="11" fill="#1848a0" fontFamily="monospace">Applied Load</text>
-      {result && (
-        <>
-          <line x1={padL + 100} y1={18} x2={padL + 110} y2={8} stroke="#009900" strokeWidth="2" />
-          <text x={padL + 114} y={18} fontSize="11" fill="#009900" fontFamily="monospace">Reaction</text>
-        </>
-      )}
     </svg>
   );
 }
@@ -455,9 +487,9 @@ export default function BeamSolverUI() {
 
   /* ---------- RESULT ROWS for PDF / summary ---------- */
   const resultRows = result ? [
-    ...result.reactions.map(r => ({ label: `${r.type} at x = ${r.location} m`, value: `${r.vertical.toFixed(3)} kN` })),
-    { label: "Max Shear Force", value: `${result.maxShear.toFixed(3)} kN` },
-    { label: "Max Bending Moment", value: `${result.maxMoment.toFixed(3)} kN·m at x = ${result.maxMomentLocation.toFixed(3)} m` },
+    ...result.reactions.map(r => ({ label: `${r.type} at x = ${fmt(r.location)} m`, value: `${fmt(r.vertical)} kN` })),
+    { label: "Max Shear Force", value: `${fmt(result.maxShear)} kN` },
+    { label: "Max Bending Moment", value: `${fmt(result.maxMoment)} kN·m at x = ${fmt(result.maxMomentLocation)} m` },
   ] : [];
 
   /* ===================== JSX ===================== */
@@ -584,17 +616,19 @@ export default function BeamSolverUI() {
             {result.reactions.map((r, i) => (
               <div key={i} style={{ marginBottom: 10 }}>
                 <label style={labelStyle}>{r.type} at x = {r.location} m</label>
-                <input type="text" readOnly value={`R = ${r.vertical.toFixed(3)} kN (vertical)`} style={{ ...inputStyle, background: "#f9fafb", color: "#374151" }} />
+                <input type="text" readOnly value={`R = ${fmt(r.vertical)} kN`}
+                  style={{ ...inputStyle, background: "#f9fafb", color: "#374151" }} />
               </div>
             ))}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 16 }}>
               <div>
                 <label style={labelStyle}>Max Shear Force</label>
-                <input type="text" readOnly value={`${result.maxShear.toFixed(3)} kN`} style={{ ...inputStyle, background: "#f9fafb", color: "#374151" }} />
+                <input type="text" readOnly value={`${fmt(result.maxShear)} kN`}
+                  style={{ ...inputStyle, background: "#f9fafb", color: "#374151" }} />
               </div>
               <div>
                 <label style={labelStyle}>Max Bending Moment</label>
-                <input type="text" readOnly value={`${result.maxMoment.toFixed(3)} kN·m at x = ${result.maxMomentLocation.toFixed(3)} m`} style={{ ...inputStyle, background: "#f9fafb", color: "#374151" }} />
+                <input type="text" readOnly value={`${fmt(result.maxMoment)} kN·m at x = ${fmt(result.maxMomentLocation)} m`} style={{ ...inputStyle, background: "#f9fafb", color: "#374151" }} />
               </div>
             </div>
 
@@ -633,3 +667,9 @@ export default function BeamSolverUI() {
     </div>
   );
 }
+
+const fmt = (n: number): string => {
+  if (Math.abs(n - Math.round(n)) < 1e-9) return Math.round(n).toString();
+  return n.toFixed(2);
+};
+

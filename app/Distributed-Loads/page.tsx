@@ -314,7 +314,10 @@ function PDFExportButton({ lines, resultRows, title, filename }: {
 }
 
 /* ===================== HELPERS ===================== */
-const fmtS = (n: number, d = 4) => n.toFixed(d);
+const fmtS = (n: number, _d = 4) => {
+  const rounded = Math.round(n * 100) / 100;
+  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2);
+};
 
 /* ===================== ORDER NODES BY SIDES ===================== */
 function orderNodesBySides(nodes: XY[], sides: { a: number; b: number }[]): XY[] {
@@ -349,7 +352,7 @@ function buildStepLines(
 ): StepLine[] {
   const lines: StepLine[] = [];
   const { totalArea, centroidX, centroidY } = computed.centroid;
-  const { Ix: IxC, Iy: IyC } = computed.final;
+  const { Ix: IxC, Iy: IyC } = computed.centroidMOI ?? computed.final;
 
   const H  = (text: string) => lines.push({ kind: "heading",    text });
   const SH = (text: string) => lines.push({ kind: "subheading", text });
@@ -464,7 +467,7 @@ export default function DistributedLoadPage() {
   const [axisY, setAxisY] = useState("");
 
   const [shapes, setShapes] = useState<ShapeData[]>([{
-    type: "Polygon", hollow: "Hollow", isOpen: true,
+    type: "Polygon", hollow: "Solid", isOpen: true,
     nodes: [{ x: "", y: "" }, { x: "", y: "" }],
     sides: [{ a: 0, b: 1 }],
     radius: "", x: "", y: "",

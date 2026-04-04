@@ -45,7 +45,7 @@ function Step({ number, title, children }: StepProps) {
         </div>
         <h2 className="text-[20px] font-semibold">{title}</h2>
       </div>
-      <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3">
+      <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10">
         {children}
       </div>
     </div>
