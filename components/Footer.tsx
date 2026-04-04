@@ -17,7 +17,7 @@ export default function Footer({
 
 }: FooterProps) {
   return (
-    <footer className="bg-white border-t mt-auto">
+<footer className="bg-white border-t mt-auto relative z-50">
       <div className="max-w-7xl mx-auto px-6 py-4 text-center text-gray-700 text-[18px]">
         {/* Desktop: horizontal links with | separator */}
         <div className="hidden sm:flex justify-center flex-wrap gap-4">

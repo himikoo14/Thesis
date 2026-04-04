@@ -59,11 +59,11 @@ export default function ThreeDEquilibrium() {
             <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
-                    backgroundImage: `
-      linear-gradient(rgba(24,72,160,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(24,72,160,0.03) 1px, transparent 1px)
-    `,
-                    backgroundSize: "40px 40px",
+backgroundImage: `
+    linear-gradient(rgba(24,72,160,0.07) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(24,72,160,0.07) 2px, transparent 2px)
+`,
+                    backgroundSize: "80px 80px",
                 }}
             />
             <Header />
@@ -77,7 +77,7 @@ export default function ThreeDEquilibrium() {
                 </p>
 
                 {/* Intro Card */}
-                <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0]">
+                <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10">
                     <p className="mb-2">
                         A body is said to be in{" "}
                         <span className="font-semibold text-[#1848a0]">equilibrium</span> when

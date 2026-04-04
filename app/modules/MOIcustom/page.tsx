@@ -70,13 +70,13 @@ export default function MOICustom() {
     <div className="relative flex flex-col min-h-screen bg-gray-50 text-gray-900 text-[18px]">
       {/* Background grid */}
       <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(24,72,160,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(24,72,160,0.03) 1px, transparent 1px)
-          `,
-          backgroundSize: "40px 40px",
+                className="absolute inset-0 pointer-events-none"
+                style={{
+backgroundImage: `
+    linear-gradient(rgba(24,72,160,0.07) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(24,72,160,0.07) 2px, transparent 2px)
+`,
+                    backgroundSize: "80px 80px",
         }}
       />
       <Header />
@@ -90,7 +90,7 @@ export default function MOICustom() {
         </p>
 
         {/* Intro Card */}
-        <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0]">
+        <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10">
           <p className="mb-3">
             A{" "}
             <span className="font-semibold text-[#1848a0]">

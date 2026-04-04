@@ -4,7 +4,14 @@ import Footer from "../components/Footer";
 
 export default function HomePage() {
   return (
-    <main className="bg-gray-50 min-h-screen flex flex-col">
+    <main className="bg-gray-50 min-h-screen flex flex-col relative">
+<div
+    className="absolute inset-0 pointer-events-none"
+    style={{
+        backgroundImage: `radial-gradient(circle, rgba(24,72,160,0.15) 2px, transparent 2px)`,
+        backgroundSize: "40px 40px",
+    }}
+/>
       <Header />
 
       {/* Landing Page*/}
