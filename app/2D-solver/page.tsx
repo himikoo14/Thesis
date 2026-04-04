@@ -259,6 +259,13 @@ export default function Solver2D() {
       <Header />
 
       <main className="flex-grow flex flex-col items-center px-4 py-10">
+        <div
+    className="fixed inset-0 pointer-events-none"
+    style={{
+        backgroundImage: `radial-gradient(circle, rgba(24,72,160,0.15) 2px, transparent 2px)`,
+        backgroundSize: "40px 40px",
+    }}
+/>
 
         {/* ── TABS ── */}
         <div className="flex justify-center mb-6 gap-4">
@@ -277,7 +284,7 @@ export default function Solver2D() {
             <h1 className="text-[32px] font-bold mb-6">2D Resultant Force Calculator</h1>
 
             {/* ── Live FBD ── */}
-            <div className="mb-8">
+            <div className="mb-8 relative z-10">
               <p style={{ color: "#888", fontSize: 13, textAlign: "center", marginBottom: 12 }}>
                 Real-Time Free Body Diagram
               </p>
@@ -289,7 +296,7 @@ export default function Solver2D() {
             </p>
 
             {/* ── Inputs ── */}
-            <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 space-y-6">
+            <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 space-y-6 relative z-10">
               <h2 className="text-[20px] font-semibold">Force setup</h2>
               <div className="grid grid-cols-2 gap-4">
                 {forces.map((f, i) => (
@@ -299,14 +306,14 @@ export default function Solver2D() {
                       <input type="number" value={f.magnitude}
                         onChange={(e) => handleInputChange(i, "magnitude", e.target.value)}
                         placeholder="Magnitude (kN)"
-                        className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
+                        className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
                     </div>
                     <div className="flex-1">
                       <label className="block font-medium text-[18px]">Angle {i + 1} (°)</label>
                       <input type="number" value={f.angle}
                         onChange={(e) => handleInputChange(i, "angle", e.target.value)}
                         placeholder="Angle (deg)"
-                        className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
+                        className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
                     </div>
                     {forces.length > 1 && (
                       <button onClick={() => setForces(forces.filter((_, idx) => idx !== i))}
@@ -348,22 +355,22 @@ export default function Solver2D() {
                   <div>
                     <label className="block font-medium text-[18px]">Horizontal component (Fx)</label>
                     <input type="text" value={`${result.sumFx.toFixed(3)} kN`} readOnly
-                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
+                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
                   </div>
                   <div>
                     <label className="block font-medium text-[18px]">Vertical component (Fy)</label>
                     <input type="text" value={`${result.sumFy.toFixed(3)} kN`} readOnly
-                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
+                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
                   </div>
                   <div>
                     <label className="block font-medium text-[18px]">Magnitude of resultant force (R)</label>
                     <input type="text" value={`${result.R.toFixed(3)} kN`} readOnly
-                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
+                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
                   </div>
                   <div>
                     <label className="block font-medium text-[18px]">Direction of resultant force (θ)</label>
                     <input type="text" value={`${result.theta.toFixed(2)}°`} readOnly
-                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2" />
+                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
                   </div>
                 </div>
               </div>

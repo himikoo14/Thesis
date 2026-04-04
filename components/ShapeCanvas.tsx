@@ -142,7 +142,7 @@ export default function ShapeCanvas({ shapes }: Props) {
   // 🚨 If no valid points, render empty canvas
   if (points.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm w-full max-w-[360px] aspect-square mb-6 overflow-hidden mx-auto">
+      <div className="bg-white rounded-xl shadow-sm w-full max-w-[360px] aspect-square mb-6 overflow-hidden mx-auto relative z-10">
         <svg
           viewBox={`0 0 ${SIZE} ${SIZE}`}
           className="w-full h-full"
@@ -178,7 +178,7 @@ export default function ShapeCanvas({ shapes }: Props) {
   const GRID_COUNT = Math.floor((SIZE - 2 * PADDING) / GRID_STEP);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm w-full max-w-[360px] aspect-square mb-6 overflow-hidden mx-auto">
+    <div className="bg-white rounded-xl shadow-sm w-full max-w-[360px] aspect-square mb-6 overflow-hidden mx-auto relative z-10">
       <svg
         viewBox={`0 0 ${SIZE} ${SIZE}`}
         className="w-full h-full"

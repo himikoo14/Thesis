@@ -66,7 +66,7 @@ const FORCE_COLORS = [0x1848a0, 0xd63031, 0xe17055, 0x6c5ce7, 0x00b894, 0xfdcb6e
 
 function buildBaseScene() {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xfafafa);
+  scene.background = new THREE.Color(0xffffff);
   scene.add(new THREE.GridHelper(6, 12, 0xdddddd, 0xeeeeee));
   const axLen = 3;
   const mkAxis = (a: THREE.Vector3, b: THREE.Vector3, c: number) =>
@@ -147,8 +147,7 @@ function FBD3D({ forces }: { forces: any[] }) {
   }, [forces]);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: 300, background: "#f8f9fa", borderRadius: 8, border: "1px solid #dee2e6", overflow: "hidden" }}>
-      <div ref={mountRef} style={{ width: "100%", height: "100%", cursor: "grab" }} />
+<div style={{ position: "relative", width: "100%", height: 300, background: "white", borderRadius: 8, border: "1px solid #dee2e6", overflow: "hidden", marginTop: 8 }}>      <div ref={mountRef} style={{ width: "100%", height: "100%", cursor: "grab" }} />
       <div style={{ position: "absolute", top: 8, left: 10, fontSize: 11, color: "#666", pointerEvents: "none", fontFamily: "monospace" }}>
         <span style={{ color: "#ff4444" }}>■</span> X &nbsp;<span style={{ color: "#22bb44" }}>■</span> Y &nbsp;<span style={{ color: "#2266ff" }}>■</span> Z
       </div>

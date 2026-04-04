@@ -553,6 +553,13 @@ export default function DistributedLoadPage() {
       <Header />
 
       <main className="flex-grow max-w-7xl mx-auto px-6 py-10">
+<div
+    className="fixed inset-0 pointer-events-none"
+    style={{
+        backgroundImage: `radial-gradient(circle, rgba(24,72,160,0.15) 2px, transparent 2px)`,
+        backgroundSize: "40px 40px",
+    }}
+/>
         <h1 className="text-3xl font-bold mb-8 text-center">
           Moment of Inertia for Composite Shapes Calculator
         </h1>
@@ -568,7 +575,7 @@ export default function DistributedLoadPage() {
           <div className="flex flex-col w-[300px] shrink-0">
 
             {/* Reference Axis */}
-            <div className="bg-white rounded-xl shadow p-4">
+            <div className="bg-white rounded-xl shadow p-4 relative z-10">
               <h3 className="font-semibold mb-3">Reference Axis</h3>
               <select
                 value={axisType}
@@ -605,7 +612,7 @@ export default function DistributedLoadPage() {
 
             {/* Quick Results Panel */}
             {result && (
-              <div className="mt-6 bg-white rounded-xl shadow p-4">
+              <div className="mt-6 bg-white rounded-xl shadow p-4 relative z-10">
                 <h3 className="font-semibold mb-3 text-blue-900">Quick Results</h3>
                 <p className="text-sm mb-1"><span className="font-medium">Total Area:</span> {formatNumber(result.centroid.totalArea)}</p>
                 <p className="text-sm mb-1"><span className="font-medium">Centroid X̄:</span> {formatNumber(result.centroid.centroidX)}</p>
@@ -630,7 +637,7 @@ export default function DistributedLoadPage() {
             {shapes.map((shape, index) => {
               const isCircular = shape.type !== "Polygon";
               return (
-                <div key={index} className="bg-white rounded-xl shadow px-6 py-4 w-[340px]">
+                <div key={index} className="bg-white rounded-xl shadow px-6 py-4 w-[340px] relative z-10">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-semibold">Shape {index + 1}</h3>
                     <button onClick={() => handleRemoveShape(index)}
@@ -745,7 +752,7 @@ export default function DistributedLoadPage() {
 
         {/* ══════════════ SOLUTION DISPLAY ══════════════ */}
         {result && stepLines.length > 0 && (
-          <div className="mt-10 bg-white rounded-xl shadow-sm border border-gray-100">
+          <div className="mt-10 bg-white rounded-xl shadow-sm border border-gray-100 relative z-10">
             <div className="px-5 py-3 border-b border-gray-100">
               <h3 className="text-[15px] font-semibold text-gray-800 tracking-wide">Step-by-Step Solution</h3>
             </div>

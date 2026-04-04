@@ -882,9 +882,16 @@ export default function TrussSolverUI() {
 
   /* ===================== JSX ===================== */
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900">
+    <div className="relative flex flex-col min-h-screen bg-gray-50 text-gray-900">
       <Header />
-      <main className="flex-grow px-6 py-10 max-w-6xl mx-auto w-full">
+      <main className="flex-grow px-6 py-10 max-w-6xl mx-auto w-full relative">
+        <div
+    className="fixed inset-0 pointer-events-none"
+    style={{
+        backgroundImage: `radial-gradient(circle, rgba(24,72,160,0.15) 2px, transparent 2px)`,
+        backgroundSize: "40px 40px",
+    }}
+/>
         <h1 className="text-3xl font-bold text-center mb-2">Truss Calculator</h1>
         <h2 className="text-xl font-semibold text-center mb-6">Real-Time Free Body Diagram</h2>
 
@@ -896,7 +903,7 @@ export default function TrussSolverUI() {
         {/* Input Panels */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Supports */}
-          <div className="bg-white rounded-xl shadow p-4">
+          <div className="bg-white rounded-xl shadow p-4 relative z-10">
             <h3 className="text-xl font-semibold mb-2">Supports</h3>
             {supports.map((s, i) => (
               <div key={i} className="grid grid-cols-5 gap-2 items-end mb-2">
@@ -913,7 +920,7 @@ export default function TrussSolverUI() {
           </div>
 
           {/* Nodes */}
-          <div className="bg-white rounded-xl shadow p-4">
+          <div className="bg-white rounded-xl shadow p-4 relative z-10">
             <h3 className="text-xl font-semibold mb-2">Nodes</h3>
             {nodes.map((n, i) => (
               <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
@@ -927,7 +934,7 @@ export default function TrussSolverUI() {
           </div>
 
           {/* Members */}
-          <div className="bg-white rounded-xl shadow p-4">
+          <div className="bg-white rounded-xl shadow p-4 relative z-10">
             <h3 className="text-xl font-semibold mb-2">Members</h3>
             <div className="grid grid-cols-4 gap-2 items-end mb-2">
               <span className="text-[16px] font-medium text-gray-700"> </span>
@@ -951,7 +958,7 @@ export default function TrussSolverUI() {
           </div>
 
           {/* Forces */}
-          <div className="bg-white rounded-xl shadow p-4">
+          <div className="bg-white rounded-xl shadow p-4 relative z-10">
             <h3 className="text-xl font-semibold mb-2">Forces</h3>
             {forces.map((f, i) => (
               <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">

@@ -298,7 +298,7 @@ function BeamFBD({ beamLength, supports, pointLoads, distributedLoads, result }:
   const L = parseFloat(beamLength);
   if (!L || L <= 0) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "200px", width: "100%", textAlign: "center", color: "#9ca3af", fontSize: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "200px", width: "100%", textAlign: "center", color: "#9ca3af", fontSize: 14, background: "#ffffff", borderRadius: 12 }}>
         Enter a beam length to see the diagram
       </div>
     );
@@ -454,9 +454,9 @@ export default function BeamSolverUI() {
   const [error, setError] = useState<string | null>(null);
 
   /* ---------- STYLES ---------- */
-  const inputStyle: React.CSSProperties = { width: "100%", marginTop: 4, borderRadius: 8, border: "1px solid #d1d5db", fontSize: 16, padding: "8px 10px", outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
+  const inputStyle: React.CSSProperties = { width: "100%", marginTop: 4, borderRadius: 8, border: "1px solid #d1d5db", fontSize: 16, padding: "8px 10px", outline: "none", boxSizing: "border-box", fontFamily: "inherit", background: "#ffffff", boxShadow: "none" };
   const labelStyle: React.CSSProperties = { display: "block", fontWeight: 500, fontSize: 16 };
-  const cardStyle: React.CSSProperties = { background: "#fff", borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.08)", padding: 24 };
+  const cardStyle: React.CSSProperties = { background: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", padding: 24 };
   const greenButtonStyle: React.CSSProperties = { background: "#008409", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 15, cursor: "pointer", fontFamily: "inherit", marginTop: 8 };
   const redButtonStyle: React.CSSProperties = { background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, padding: "4px 12px", cursor: "pointer", fontSize: 18, fontFamily: "inherit", alignSelf: "end", marginBottom: 4 };
   const sectionHeadingStyle: React.CSSProperties = { fontSize: 18, fontWeight: 600, marginTop: 0, marginBottom: 16 };
@@ -494,7 +494,7 @@ export default function BeamSolverUI() {
 
   /* ===================== JSX ===================== */
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "#f3f4f6", fontFamily: "Georgia, 'Times New Roman', serif", color: "#111", alignItems: "center" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "transparent", fontFamily: "Georgia, 'Times New Roman', serif", color: "#111", alignItems: "center" }}>
       <div style={{ width: "100%", maxWidth: 760, padding: "0 16px 40px" }}>
 
         <h1 style={{ fontSize: 28, fontWeight: 700, textAlign: "center", marginTop: 28, marginBottom: 4 }}>Non-Concurrent Parallel Force System</h1>
@@ -502,15 +502,15 @@ export default function BeamSolverUI() {
         <p style={{ color: "#888", fontSize: 13, marginTop: 6, textAlign: "center" }}>Real-Time Free Body Diagram</p>
 
         {/* FBD */}
-        <div style={{ ...cardStyle, marginBottom: 24, padding: 16, border: "1px solid #e5e7eb", minHeight: 200 }}>
+        <div style={{ ...cardStyle, marginBottom: 24, padding: 16, border: "1px solid #e5e7eb", minHeight: 200, background: "#ffffff", position: "relative", zIndex: 1 }}>
           <BeamFBD beamLength={beamLength} supports={supports} pointLoads={pointLoads} distributedLoads={distributedLoads} result={result} />
         </div>
 
         {/* INPUT PANELS */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20, position: "relative", zIndex: 1 }}>
 
           {/* BEAM PROPERTIES */}
-          <div style={cardStyle}>
+          <div style={{ ...cardStyle, background: "#ffffff" }}>
             <h3 style={sectionHeadingStyle}>Beam Properties</h3>
             <label style={labelStyle}>Beam Length</label>
             <input type="number" placeholder="m" value={beamLength} onChange={(e) => { setBeamLength(e.target.value); setResult(null); }} style={inputStyle} />
@@ -538,7 +538,7 @@ export default function BeamSolverUI() {
           </div>
 
           {/* LOADS */}
-          <div style={cardStyle}>
+          <div style={{ ...cardStyle, background: "#ffffff" }}>
             <h3 style={sectionHeadingStyle}>Loads</h3>
 
             <p style={{ ...subHeadingStyle, marginTop: 0 }}>Point Loads</p>

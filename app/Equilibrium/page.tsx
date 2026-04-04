@@ -721,6 +721,13 @@ export default function Equilibrium() {
       <Header />
 
       <main className="flex-grow flex flex-col items-center px-4 pt-8 pb-10">
+        <div
+    className="fixed inset-0 pointer-events-none"
+    style={{
+        backgroundImage: `radial-gradient(circle, rgba(24,72,160,0.15) 2px, transparent 2px)`,
+        backgroundSize: "40px 40px",
+    }}
+/>
         {/* Tabs */}
         <div className="flex justify-center mb-6 gap-4">
           <button
@@ -743,7 +750,7 @@ export default function Equilibrium() {
               Concurrent Force System Calculator
             </h1>
 
-            <div className="mb-8">
+            <div className="mb-8 relative z-10">
               <p style={{ color: "#888", fontSize: 13, marginTop: 6, textAlign: "center" }}>Real-Time Free Body Diagram</p>
               <FBD forces={forces} setForces={setForces} />
               <p style={{ color: "#888", fontSize: 13, marginTop: 6, textAlign: "center" }}>Drag arrows to change angles</p>
@@ -753,7 +760,7 @@ export default function Equilibrium() {
               <span className="font-semibold">Note:</span> The angle is measured from the positive x-axis, counterclockwise.
             </p>
 
-            <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 space-y-6">
+            <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 space-y-6 relative z-10">
               <h2 className="text-[20px] font-semibold">Force Setup</h2>
 
               {forces.map((f, i) => (

@@ -22,7 +22,7 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
     el.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xfafafa);
+    scene.background = new THREE.Color(0xffffff);
     scene.add(new THREE.GridHelper(6, 12, 0xdddddd, 0xeeeeee));
     scene.add(new THREE.HemisphereLight(0xffffff, 0xe0e0e0, 1.2));
     scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.08, 24, 24), new THREE.MeshStandardMaterial({ color: 0x222222 })));
@@ -102,7 +102,7 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
   }, [points, forces]);
 
   return (
-    <div style={{ position: "relative", borderRadius: 14, overflow: "hidden", border: "1px solid #e8e8e8", background: "#fafafa" }}>
+    <div style={{ position: "relative", borderRadius: 14, overflow: "hidden", border: "1px solid #e8e8e8", background: "transparent" }}>
       <div ref={mountRef} style={{ width: "100%", height: 320, cursor: "grab" }} />
       <div style={{ position: "absolute", top: 10, left: 12, display: "flex", gap: 6, pointerEvents: "none" }}>
         {([["X","#e63946","#fff0f1"],["Y","#2a9d8f","#f0faf9"],["Z","#4361ee","#f0f2ff"]] as [string,string,string][]).map(([l,c,bg]) => (
@@ -507,12 +507,12 @@ export default function CoordinateTab() {
     setShowSolution(true);
   };
 
-  const inp:  React.CSSProperties = { background: "#f5f5f5", border: "1px solid #e0e0e0", borderRadius: 8, padding: "6px 8px", fontSize: 13, width: "100%", outline: "none" };
+  const inp:  React.CSSProperties = { background: "white", border: "1px solid #e0e0e0", borderRadius: 8, padding: "6px 8px", fontSize: 13, width: "100%", outline: "none" };
   const sel:  React.CSSProperties = { ...inp, width: "auto", minWidth: 90 };
   const card: React.CSSProperties = { background: "#fff", borderRadius: 14, border: "1px solid #ebebeb", padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" };
 
   return (
-    <div style={{ width: "100%" }}>
+    <div style={{ width: "100%", background: "transparent" }}>
 
       {/* 3D Canvas */}
       <div style={{ width: "100%", maxWidth: 580, margin: "0 auto 20px" }}>
@@ -546,7 +546,7 @@ export default function CoordinateTab() {
         <div style={card}>
           <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 12px" }}>Forces</h3>
           {forces.map((f, i) => (
-            <div key={i} style={{ background: "#f9f9f9", borderRadius: 10, border: "1px solid #ebebeb", padding: "10px 12px", marginBottom: 10 }}>
+            <div key={i} style={{ background: "white", borderRadius: 10, border: "1px solid #ebebeb", padding: "10px 12px", marginBottom: 10 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
                 <span style={{ fontSize: 13, color: "#555", flex: 1 }}>Magnitude (N):</span>
                 <input style={{ ...inp, width: 80 }} placeholder="N" value={f.mag} onChange={e => updateForce(i, "mag", e.target.value)} />
