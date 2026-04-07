@@ -26,10 +26,30 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
     scene.add(new THREE.GridHelper(6, 12, 0xdddddd, 0xeeeeee));
     scene.add(new THREE.HemisphereLight(0xffffff, 0xe0e0e0, 1.2));
     scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.08, 24, 24), new THREE.MeshStandardMaterial({ color: 0x222222 })));
-    ([[[1,0,0], 0xe63946], [[0,1,0], 0x2a9d8f], [[0,0,1], 0x4361ee]] as [[number,number,number], number][]).forEach(([dir, color]) => {
-      scene.add(new THREE.ArrowHelper(new THREE.Vector3(...dir), new THREE.Vector3(0, 0, 0), 1.8, color, 0.3, 0.18));
-    });
+    // Axis lines (no arrows)
+    const axes: [number[], number][] = [
+      [[1, 0, 0], 0xe63946],
+      [[0, 1, 0], 0x2a9d8f],
+      [[0, 0, 1], 0x4361ee],
+    ];
+    axes.forEach(([dir, color]) => {
+      const material = new THREE.LineBasicMaterial({ color });
+      const [dx, dy, dz] = dir;
 
+      const points = [
+        new THREE.Vector3(-dx * 2, -dy * 2, -dz * 2),
+        new THREE.Vector3(dx * 2, dy * 2, dz * 2)
+      ];
+
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, material);
+
+      scene.add(line);
+    });
+    // Axis arrows: direction stays the same in 3D space, but labels are remapped
+    // THREE.js X-axis [1,0,0] is now labeled "Y" (red)
+    // THREE.js Y-axis [0,1,0] is now labeled "Z" (teal)
+    // THREE.js Z-axis [0,0,1] is now labeled "X" (blue)
     const dynGroup = new THREE.Group();
     scene.add(dynGroup);
     dynamicGroupRef.current = dynGroup;
@@ -94,8 +114,8 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
       const a = points[f.from], b = points[f.to];
       if (!a || !b) return;
       const from = new THREE.Vector3(parseFloat(a.x) || 0, parseFloat(a.y) || 0, parseFloat(a.z) || 0);
-      const to   = new THREE.Vector3(parseFloat(b.x) || 0, parseFloat(b.y) || 0, parseFloat(b.z) || 0);
-      const len  = from.distanceTo(to);
+      const to = new THREE.Vector3(parseFloat(b.x) || 0, parseFloat(b.y) || 0, parseFloat(b.z) || 0);
+      const len = from.distanceTo(to);
       if (len < 0.001) return;
       group.add(new THREE.ArrowHelper(new THREE.Vector3().subVectors(to, from).normalize(), from, len, 0xf4a261, 0.25, 0.14));
     });
@@ -105,7 +125,8 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
     <div style={{ position: "relative", borderRadius: 14, overflow: "hidden", border: "1px solid #e8e8e8", background: "transparent" }}>
       <div ref={mountRef} style={{ width: "100%", height: 320, cursor: "grab" }} />
       <div style={{ position: "absolute", top: 10, left: 12, display: "flex", gap: 6, pointerEvents: "none" }}>
-        {([["X","#e63946","#fff0f1"],["Y","#2a9d8f","#f0faf9"],["Z","#4361ee","#f0f2ff"]] as [string,string,string][]).map(([l,c,bg]) => (
+        {/* Labels remapped: THREE X→Y (red), THREE Y→Z (teal), THREE Z→X (blue) */}
+        {([["X", "#e63946", "#fff0f1"], ["Y", "#2a9d8f", "#f0faf9"], ["Z", "#4361ee", "#f0f2ff"]] as [string, string, string][]).map(([l, c, bg]) => (
           <span key={l} style={{ background: bg, color: c, border: `1.5px solid ${c}33`, borderRadius: 6, padding: "2px 8px", fontSize: 13, fontWeight: 700 }}>{l}</span>
         ))}
       </div>
@@ -461,7 +482,7 @@ export default function CoordinateTab() {
   const [result, setResult] = useState<any>(null);
   const [showSolution, setShowSolution] = useState(false);
 
-  const addPoint    = () => setPoints(p => [...p, { label: ptLabel(p.length), x: "", y: "", z: "" }]);
+  const addPoint = () => setPoints(p => [...p, { label: ptLabel(p.length), x: "", y: "", z: "" }]);
   const removePoint = (i: number) => {
     if (points.length <= 2) return;
     setPoints(p => p.filter((_, j) => j !== i).map((v, j) => ({ ...v, label: ptLabel(j) })));
@@ -469,7 +490,7 @@ export default function CoordinateTab() {
   const updatePoint = (i: number, field: string, val: string) =>
     setPoints(p => p.map((v, j) => j === i ? { ...v, [field]: val } : v));
 
-  const addForce    = () => setForces(f => [...f, { mag: "", from: 0, to: Math.min(1, points.length - 1) }]);
+  const addForce = () => setForces(f => [...f, { mag: "", from: 0, to: Math.min(1, points.length - 1) }]);
   const removeForce = (i: number) => { if (forces.length <= 1) return; setForces(f => f.filter((_, j) => j !== i)); };
   const updateForce = (i: number, field: string, val: any) =>
     setForces(f => f.map((v, j) => j === i ? { ...v, [field]: val } : v));
@@ -482,16 +503,16 @@ export default function CoordinateTab() {
       if (!mag) return;
       const a = points[f.from], b = points[f.to];
       if (!a || !b) return;
-      const ax = parseFloat(a.x)||0, ay = parseFloat(a.y)||0, az = parseFloat(a.z)||0;
-      const bx = parseFloat(b.x)||0, by = parseFloat(b.y)||0, bz = parseFloat(b.z)||0;
-      const dx = bx-ax, dy = by-ay, dz = bz-az;
-      const len = Math.sqrt(dx*dx + dy*dy + dz*dz);
+      const ax = parseFloat(a.x) || 0, ay = parseFloat(a.y) || 0, az = parseFloat(a.z) || 0;
+      const bx = parseFloat(b.x) || 0, by = parseFloat(b.y) || 0, bz = parseFloat(b.z) || 0;
+      const dx = bx - ax, dy = by - ay, dz = bz - az;
+      const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
       if (!len) return;
-      const Fx = mag*dx/len, Fy = mag*dy/len, Fz = mag*dz/len;
+      const Fx = mag * dx / len, Fy = mag * dy / len, Fz = mag * dz / len;
       Rx += Fx; Ry += Fy; Rz += Fz;
       details.push({ mag, from: points[f.from].label, to: points[f.to].label, ax, ay, az, bx, by, bz, dx, dy, dz, Fx, Fy, Fz, len });
     });
-    const R = Math.sqrt(Rx*Rx + Ry*Ry + Rz*Rz);
+    const R = Math.sqrt(Rx * Rx + Ry * Ry + Rz * Rz);
     const rawSteps = buildSolution(details, Rx, Ry, Rz, R);
     setResult({
       details, Rx, Ry, Rz, R,
@@ -507,8 +528,8 @@ export default function CoordinateTab() {
     setShowSolution(true);
   };
 
-  const inp:  React.CSSProperties = { background: "white", border: "1px solid #e0e0e0", borderRadius: 8, padding: "6px 8px", fontSize: 13, width: "100%", outline: "none" };
-  const sel:  React.CSSProperties = { ...inp, width: "auto", minWidth: 90 };
+  const inp: React.CSSProperties = { background: "white", border: "1px solid #e0e0e0", borderRadius: 8, padding: "6px 8px", fontSize: 13, width: "100%", outline: "none" };
+  const sel: React.CSSProperties = { ...inp, width: "auto", minWidth: 90 };
   const card: React.CSSProperties = { background: "#fff", borderRadius: 14, border: "1px solid #ebebeb", padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" };
 
   return (
@@ -528,12 +549,12 @@ export default function CoordinateTab() {
         <div style={card}>
           <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 12px" }}>Coordinates of Points</h3>
           <div style={{ display: "grid", gridTemplateColumns: "52px 1fr 1fr 1fr 32px", gap: 6, marginBottom: 6 }}>
-            <span />{["x","y","z"].map(l => <span key={l} style={{ fontSize: 11, color: "#999", textAlign: "center" }}>{l}</span>)}<span />
+            <span />{["x", "y", "z"].map(l => <span key={l} style={{ fontSize: 11, color: "#999", textAlign: "center" }}>{l}</span>)}<span />
           </div>
           {points.map((p, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "52px 1fr 1fr 1fr 32px", gap: 6, alignItems: "center", marginBottom: 6 }}>
               <span style={{ fontSize: 13, color: "#555" }}>Point {p.label}</span>
-              {["x","y","z"].map(field => (
+              {["x", "y", "z"].map(field => (
                 <input key={field} style={inp} placeholder={field} value={(p as any)[field]} onChange={e => updatePoint(i, field, e.target.value)} />
               ))}
               <button onClick={() => removePoint(i)} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: 7, width: 30, height: 30, cursor: "pointer", fontWeight: 700 }}>–</button>
@@ -548,19 +569,19 @@ export default function CoordinateTab() {
           {forces.map((f, i) => (
             <div key={i} style={{ background: "white", borderRadius: 10, border: "1px solid #ebebeb", padding: "10px 12px", marginBottom: 10 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
-                <span style={{ fontSize: 13, color: "#555", flex: 1 }}>Magnitude (N):</span>
-                <input style={{ ...inp, width: 80 }} placeholder="N" value={f.mag} onChange={e => updateForce(i, "mag", e.target.value)} />
+                <span style={{ fontSize: 13, color: "#555", flex: 1 }}>Magnitude (kN):</span>
+                <input style={{ ...inp, width: 80 }} placeholder="kN" value={f.mag} onChange={e => updateForce(i, "mag", e.target.value)} />
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
                 <span style={{ fontSize: 13, color: "#555", flex: 1 }}>From:</span>
                 <select style={sel} value={f.from} onChange={e => updateForce(i, "from", +e.target.value)}>
-                  {points.map((p, j) => <option key={j} value={j}>Pt {p.label}</option>)}
+                  {points.map((p, j) => <option key={j} value={j}>Point {p.label}</option>)}
                 </select>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 13, color: "#555", flex: 1 }}>To:</span>
                 <select style={sel} value={f.to} onChange={e => updateForce(i, "to", +e.target.value)}>
-                  {points.map((p, j) => <option key={j} value={j}>Pt {p.label}</option>)}
+                  {points.map((p, j) => <option key={j} value={j}>Point {p.label}</option>)}
                 </select>
               </div>
               {forces.length > 1 && (

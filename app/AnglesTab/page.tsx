@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import * as THREE from "three";
-import { StepByStepPDFExport} from "../ToPDF/Page";
+import { StepByStepPDFExport } from "../ToPDF/Page";
 
 /* ================================================================
    FORCE SYSTEM LOGIC
@@ -140,14 +140,18 @@ function FBD3D({ forces }: { forces: any[] }) {
       const m = parseFloat(f.magnitude), az = parseFloat(f.azimuth), el = parseFloat(f.elevation);
       if (isNaN(m) || isNaN(az) || isNaN(el) || m === 0) return;
       const azR = az * Math.PI / 180, elR = el * Math.PI / 180;
-      const vec = new THREE.Vector3(m * Math.cos(elR) * Math.cos(azR), m * Math.sin(elR), m * Math.cos(elR) * Math.sin(azR));
+      const vec = new THREE.Vector3(
+        m * Math.cos(elR) * Math.cos(azR), // X
+        m * Math.cos(elR) * Math.sin(azR), // Y
+        m * Math.sin(elR)                  // Z
+      );
       const arr = new THREE.ArrowHelper(vec.clone().normalize(), new THREE.Vector3(0, 0, 0), m * scale, FORCE_COLORS[i % FORCE_COLORS.length], m * scale * 0.2, m * scale * 0.12);
       scene.add(arr); arrowsRef.current.push(arr);
     });
   }, [forces]);
 
   return (
-<div style={{ position: "relative", width: "100%", height: 300, background: "white", borderRadius: 8, border: "1px solid #dee2e6", overflow: "hidden", marginTop: 8 }}>      <div ref={mountRef} style={{ width: "100%", height: "100%", cursor: "grab" }} />
+    <div style={{ position: "relative", width: "100%", height: 300, background: "white", borderRadius: 8, border: "1px solid #dee2e6", overflow: "hidden", marginTop: 8 }}>      <div ref={mountRef} style={{ width: "100%", height: "100%", cursor: "grab" }} />
       <div style={{ position: "absolute", top: 8, left: 10, fontSize: 11, color: "#666", pointerEvents: "none", fontFamily: "monospace" }}>
         <span style={{ color: "#ff4444" }}>■</span> X &nbsp;<span style={{ color: "#22bb44" }}>■</span> Y &nbsp;<span style={{ color: "#2266ff" }}>■</span> Z
       </div>
@@ -179,7 +183,11 @@ function ResultantFBD3D({ forces, result }: { forces: any[]; result: any }) {
       scene.add(new THREE.ArrowHelper(vec.clone().normalize(), new THREE.Vector3(0, 0, 0), m * scale, FORCE_COLORS[i % FORCE_COLORS.length], m * scale * 0.2, m * scale * 0.12));
     });
     if (result.R > 0.001) {
-      const rv = new THREE.Vector3(result.sumFx, result.sumFz, result.sumFy);
+      const rv = new THREE.Vector3( 
+        result.sumFx,
+        result.sumFy,
+        result.sumFz
+      );
       scene.add(new THREE.ArrowHelper(rv.clone().normalize(), new THREE.Vector3(0, 0, 0), result.R * scale, 0x009900, result.R * scale * 0.2, result.R * scale * 0.12));
     }
     const orbit = { theta: 0.6, phi: 0.9, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } };
