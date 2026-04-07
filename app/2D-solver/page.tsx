@@ -8,6 +8,11 @@ import "katex/dist/katex.min.css";
 import { useStepByStepPDF } from "../ToPDF/Page";
 import { StepByStepSolution, fromLegacySteps } from "../../components/StepByStep";
 
+const fmt2 = (v: number): string => {
+  if (Math.abs(v - Math.round(v)) < 1e-9) return Math.round(v).toString();
+  return v.toFixed(2).replace(/\.?0+$/, "");
+};
+
 /* ===================== Force System Logic ===================== */
 class ForceSystem2D {
   vectors: { fx: number; fy: number; magnitude: number; angleDeg: number }[];
@@ -37,9 +42,9 @@ class ForceSystem2D {
       steps.push(`
         \\begin{align*}
         F_{x${i + 1}} &= ${v.magnitude}\\cos(${v.angleDeg}^\\circ) \\\\
-                      &= ${v.fx.toFixed(3)}\\,\\text{kN} \\\\
+                      &= ${fmt2(v.fx)}\\,\\text{kN} \\\\
         F_{y${i + 1}} &= ${v.magnitude}\\sin(${v.angleDeg}^\\circ) \\\\
-                      &= ${v.fy.toFixed(3)}\\,\\text{kN}
+                      &= ${fmt2(v.fy)}\\,\\text{kN}
         \\end{align*}
       `);
       sumFx += v.fx;
@@ -51,18 +56,18 @@ steps.push("Step 2: Sum of components:");
 const fxTerms = this.vectors.map((v, i) => `F_{x${i+1}}`).join(" + ");
 const fyTerms = this.vectors.map((v, i) => `F_{y${i+1}}`).join(" + ");
 
-const fxNums = this.vectors.map(v => v.fx.toFixed(3)).join(" + ");
-const fyNums = this.vectors.map(v => v.fy.toFixed(3)).join(" + ");
+const fxNums = this.vectors.map(v => fmt2(v.fx)).join(" + ");
+const fyNums = this.vectors.map(v => fmt2(v.fy)).join(" + ");
 
 steps.push(`
 \\begin{align*}
 \\Sigma F_x &= ${fxTerms} \\\\
            &= ${fxNums} \\\\
-           &= ${sumFx.toFixed(3)}\\,\\text{kN} \\\\
+           &= ${fmt2(sumFx)}\\,\\text{kN} \\\\
 \\\\
 \\Sigma F_y &= ${fyTerms} \\\\
            &= ${fyNums} \\\\
-           &= ${sumFy.toFixed(3)}\\,\\text{kN}
+           &= ${fmt2(sumFy)}\\,\\text{kN}
 \\end{align*}
 `);
 
@@ -86,7 +91,13 @@ steps.push(`
 
 /* ===================== Types ===================== */
 type ForceInput = { magnitude: string; angle: string };
-type ForceResult = { steps: string[]; sumFx: number; sumFy: number; R: number; theta: number };
+type ForceResult = {
+  steps: string[];
+  sumFx: number;
+  sumFy: number;
+  R: number;
+  theta: number;
+};
 
 /* ===================== ResultantFBD ===================== */
 // ✅ Added svgRef prop so the PDF exporter can capture the diagram
@@ -259,14 +270,6 @@ export default function Solver2D() {
       <Header />
 
       <main className="flex-grow flex flex-col items-center px-4 py-10">
-        <div
-    className="fixed inset-0 pointer-events-none"
-    style={{
-        backgroundImage: `radial-gradient(circle, rgba(24,72,160,0.15) 2px, transparent 2px)`,
-        backgroundSize: "40px 40px",
-    }}
-/>
-
         {/* ── TABS ── */}
         <div className="flex justify-center mb-6 gap-4">
           <button onClick={() => setActiveTab("2d")}
@@ -341,9 +344,9 @@ export default function Solver2D() {
 <PDFButton
   steps={result.steps}
   resultRows={[
-    { label: "Horizontal component (Fx)", value: `${result.sumFx.toFixed(3)} kN` },
-    { label: "Vertical component (Fy)",   value: `${result.sumFy.toFixed(3)} kN` },
-    { label: "Magnitude (R)",             value: `${result.R.toFixed(3)} kN`     },
+{ label: "Horizontal component (Fx)", value: `${fmt2(result.sumFx)} kN` },
+{ label: "Vertical component (Fy)",   value: `${fmt2(result.sumFy)} kN` },
+    { label: "Magnitude (R)",             value: `${fmt2(result.R)} kN`     },
     { label: "Angle (θ)",                 value: `${result.theta.toFixed(2)}°`   },
   ]}
   fbdRef={fbdRef}
@@ -354,12 +357,12 @@ export default function Solver2D() {
                   <h2 className="text-[20px] font-semibold">Resultant Force (kN)</h2>
                   <div>
                     <label className="block font-medium text-[18px]">Horizontal component (Fx)</label>
-                    <input type="text" value={`${result.sumFx.toFixed(3)} kN`} readOnly
+                    <input type="text" value={`${fmt2(result.sumFx)} kN`} readOnly
                       className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
                   </div>
                   <div>
                     <label className="block font-medium text-[18px]">Vertical component (Fy)</label>
-                    <input type="text" value={`${result.sumFy.toFixed(3)} kN`} readOnly
+                    <input type="text" value={`${fmt2(result.sumFy)} kN`} readOnly
                       className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
                   </div>
                   <div>

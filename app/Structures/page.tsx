@@ -102,6 +102,32 @@ const fmt = (v: number): string => {
 // Same smart formatter (replaces old n4 / n3)
 const fmtN = (v: number): string => fmt(v);
 
+/* ── Gaussian elimination with partial pivoting ─────────────────────────── */
+function gaussianElim(A: number[][], b: number[]): number[] | null {
+  const n = A.length;
+  for (let col = 0; col < n; col++) {
+    let maxRow = col;
+    for (let row = col + 1; row < n; row++) {
+      if (Math.abs(A[row][col]) > Math.abs(A[maxRow][col])) maxRow = row;
+    }
+    [A[col], A[maxRow]] = [A[maxRow], A[col]];
+    [b[col], b[maxRow]] = [b[maxRow], b[col]];
+    if (Math.abs(A[col][col]) < 1e-10) return null;
+    for (let row = col + 1; row < n; row++) {
+      const factor = A[row][col] / A[col][col];
+      b[row] -= factor * b[col];
+      for (let k = col; k < n; k++) A[row][k] -= factor * A[col][k];
+    }
+  }
+  const x = new Array(n).fill(0);
+  for (let row = n - 1; row >= 0; row--) {
+    x[row] = b[row];
+    for (let k = row + 1; k < n; k++) x[row] -= A[row][k] * x[k];
+    x[row] /= A[row][row];
+  }
+  return x;
+}
+
 /* ── Arrow marker helper ─────────────────────────────────────────────────── */
 function ArrowMarker({ id, color }: { id: string; color: string }) {
   return (
@@ -558,7 +584,7 @@ connectedMembers.forEach(mIdx => {
   const isTension = known && force > tol;
   const isComp = known && force < -tol;
 
-  const arrowAngle = isComp ? angle + Math.PI : angle;
+  const arrowAngle = angle;
 
   const color =
     !known ? "#6b7280" :
@@ -731,7 +757,7 @@ export default function TrussSolverUI() {
     else W("✘  Statically Indeterminate — this solver handles determinate trusses only.");
     SP();
 
-    H("Step 2: Support Reactions");
+H("Step 2: Support Reactions");
     const reactions: { x: number; y: number }[] = numericNodes.map(() => ({ x: 0, y: 0 }));
     let totalFx = 0, totalFy = 0;
     forces.forEach(f => {
@@ -746,39 +772,86 @@ export default function TrussSolverUI() {
       const mag = parseFloat(f.magnitude) || 0, ang = parseFloat(f.angle) || 0;
       const angR = ang * Math.PI / 180;
       T(`F${i + 1} at Joint ${nodeLabel(f.Joint)}: ${fmt(mag)} kN @ ${fmt(ang)}°`);
-      E(`F_{x${i + 1}} = ${fmt(mag)}\\cos(${fmt(ang)}^\\circ) = ${fmtN(mag * Math.cos(angR))}\\ \\text{kN}`);
-      E(`F_{y${i + 1}} = ${fmt(mag)}\\sin(${fmt(ang)}^\\circ) = ${fmtN(mag * Math.sin(angR))}\\ \\text{kN}`);
+      E(`F_{x${i+1}} = ${fmt(mag)}\\cos(${fmt(ang)}^\\circ) = ${fmtN(mag * Math.cos(angR))}\\ \\text{kN}`);
+      E(`F_{y${i+1}} = ${fmt(mag)}\\sin(${fmt(ang)}^\\circ) = ${fmtN(mag * Math.sin(angR))}\\ \\text{kN}`);
     });
-    E(`\\Sigma F_x = ${fmtN(totalFx)}\\ \\text{kN}, \\quad \\Sigma F_y = ${fmtN(totalFy)}\\ \\text{kN}`);
+    E(`\\Sigma F_x^{\\text{ext}} = ${fmtN(totalFx)}\\ \\text{kN}, \\quad \\Sigma F_y^{\\text{ext}} = ${fmtN(totalFy)}\\ \\text{kN}`);
     SP();
 
-    if (supports.length === 2) {
-      const la = nodeLabel(0), lb = nodeLabel(1);
-      const node1 = numericNodes[0], node2 = numericNodes[1];
-      let momentA = 0;
-      forces.forEach(f => {
-        const mag = parseFloat(f.magnitude) || 0;
-        const ang = (parseFloat(f.angle) || 0) * Math.PI / 180;
-        const fy = mag * Math.sin(ang);
-        const dx = numericNodes[f.Joint].x - node1.x;
-        momentA += fy * dx;
-      });
-      const dxSup = node2.x - node1.x;
-      const Ry2 = dxSup !== 0 ? -momentA / dxSup : 0;
-      const Ry1 = -(totalFy + Ry2), Rx1 = -totalFx;
-      reactions[0] = { x: Rx1, y: Ry1 }; reactions[1] = { x: 0, y: Ry2 };
+    // Build reaction unknowns based on actual support types
+    type ReactionUnknown = { jointIdx: number; dir: "x" | "y" };
+    const unknownReactions: ReactionUnknown[] = [];
+    supports.forEach((s, i) => {
+      if (s.type === "Pinned") {
+        unknownReactions.push({ jointIdx: i, dir: "x" });
+        unknownReactions.push({ jointIdx: i, dir: "y" });
+      } else {
+        // Roller: vertical reaction only
+        unknownReactions.push({ jointIdx: i, dir: "y" });
+      }
+    });
 
-      SH(`Moment about Joint ${la}  (ΣM = 0):`);
-      forces.forEach(f => {
-        const mag = parseFloat(f.magnitude) || 0;
-        const fy = mag * Math.sin((parseFloat(f.angle) || 0) * Math.PI / 180);
-        const dx = numericNodes[f.Joint].x - node1.x;
-        E(`F_{y} \\times d = ${fmtN(fy)} \\times ${fmtN(dx)} = ${fmtN(fy * dx)}\\ \\text{kN} \\cdot \\text{m}`);
+    const nUnk = unknownReactions.length;
+    const refNode = numericNodes[0];
+
+    // Moment of applied forces about joint A (refNode): M = dx*Fy - dy*Fx
+    let momentApplied = 0;
+    forces.forEach(f => {
+      const mag = parseFloat(f.magnitude) || 0;
+      const ang = (parseFloat(f.angle) || 0) * Math.PI / 180;
+      const fx = mag * Math.cos(ang), fy = mag * Math.sin(ang);
+      const dx = numericNodes[f.Joint].x - refNode.x;
+      const dy = numericNodes[f.Joint].y - refNode.y;
+      momentApplied += dx * fy - dy * fx;
+    });
+
+    // 3 equilibrium equations: ΣFx=0, ΣFy=0, ΣM_A=0
+    const Aeq: number[][] = [
+      unknownReactions.map(u => u.dir === "x" ? 1 : 0),
+      unknownReactions.map(u => u.dir === "y" ? 1 : 0),
+      unknownReactions.map(u => {
+        const n = numericNodes[u.jointIdx];
+        const dx = n.x - refNode.x, dy = n.y - refNode.y;
+        return u.dir === "x" ? -dy : dx;
+      }),
+    ];
+    const beq = [-totalFx, -totalFy, -momentApplied];
+
+    // Use only as many equations as unknowns
+    const Asq = Aeq.slice(0, nUnk).map(r => [...r]);
+    const bsq = beq.slice(0, nUnk);
+    const solved = gaussianElim(Asq, bsq);
+
+    if (solved) {
+      solved.forEach((val, k) => {
+        const u = unknownReactions[k];
+        if (u.dir === "x") reactions[u.jointIdx].x = val;
+        else               reactions[u.jointIdx].y = val;
       });
-      E(`R_{y${lb}} \\times ${fmtN(dxSup)} = -${fmtN(momentA)}`);
-      R(`R_{y${lb}} = ${fmtN(Ry2)}\\ \\text{kN}`);
-      SH("ΣFy = 0:"); E(`R_{y${la}} + R_{y${lb}} + ${fmtN(totalFy)} = 0`); R(`R_{y${la}} = ${fmtN(Ry1)}\\ \\text{kN}`); SP();
-      SH("ΣFx = 0:"); E(`R_{x${la}} = -(${fmtN(totalFx)})`); R(`R_{x${la}} = ${fmtN(Rx1)}\\ \\text{kN}`); SP();
+      supports.forEach((s, i) => {
+        const la = nodeLabel(i);
+        SH(`Support ${la} (${s.type}):`);
+        if (s.type === "Pinned") {
+          R(`R_{x${la}} = ${fmtN(reactions[i].x)}\\ \\text{kN}`);
+        } else {
+          T(`(Roller — no horizontal reaction)`);
+        }
+        R(`R_{y${la}} = ${fmtN(reactions[i].y)}\\ \\text{kN}`);
+      });
+      SP();
+      // Verification
+      let chkFx = totalFx, chkFy = totalFy, chkM = momentApplied;
+      supports.forEach((_, i) => { chkFx += reactions[i].x; chkFy += reactions[i].y; });
+      supports.forEach((_, i) => {
+        const n = numericNodes[i];
+        chkM += (n.x - refNode.x) * reactions[i].y - (n.y - refNode.y) * reactions[i].x;
+      });
+      if (Math.abs(chkFx) < 1e-4 && Math.abs(chkFy) < 1e-4 && Math.abs(chkM) < 1e-4)
+        R("\\checkmark\\ \\text{Equilibrium verified: } \\Sigma F_x = \\Sigma F_y = \\Sigma M = 0");
+      else
+        W(`⚠ Equilibrium check failed: ΣFx=${fmtN(chkFx)}, ΣFy=${fmtN(chkFy)}, ΣM=${fmtN(chkM)}`);
+    } else {
+      W("✘  Could not solve reactions — check support configuration.");
     }
 
     const extF: { x: number; y: number }[] = numericNodes.map((_, idx) => ({ x: reactions[idx]?.x || 0, y: reactions[idx]?.y || 0 }));
@@ -831,8 +904,10 @@ export default function TrussSolverUI() {
           E(`\\cos_x = ${fmtN(c.dx / c.L)},\\quad \\cos_y = ${fmtN(c.dy / c.L)}`);
           E(`\\Sigma F_x = 0:\\quad ${cosTex(c.dx / c.L, c.label)} + (${fmtN(fxK)}) = 0`);
           E(`\\Sigma F_y = 0:\\quad ${cosTex(c.dy / c.L, c.label)} + (${fmtN(fyK)}) = 0`);
-          const denom = rowX[0] ** 2 + rowY[0] ** 2;
-          const f = -(fxK * rowX[0] + fyK * rowY[0]) / denom;
+          // Use the equation with the larger coefficient for numerical stability
+          const f = Math.abs(rowX[0]) >= Math.abs(rowY[0])
+            ? -fxK / rowX[0]
+            : -fyK / rowY[0];
           memberForces[unknowns[0]] = f; solvedMembers[unknowns[0]] = true; progress = true;
           const type = Math.abs(f) < tolerance ? "\\text{Zero-force}" : f > 0 ? "\\text{Tension}" : "\\text{Compression}";
           R(`F_{${c.label}} = ${fmtN(f)}\\ \\text{kN}\\quad (${type})`);
@@ -885,13 +960,7 @@ export default function TrussSolverUI() {
     <div className="relative flex flex-col min-h-screen bg-gray-50 text-gray-900">
       <Header />
       <main className="flex-grow px-6 py-10 max-w-6xl mx-auto w-full relative">
-        <div
-    className="fixed inset-0 pointer-events-none"
-    style={{
-        backgroundImage: `radial-gradient(circle, rgba(24,72,160,0.15) 2px, transparent 2px)`,
-        backgroundSize: "40px 40px",
-    }}
-/>
+
         <h1 className="text-3xl font-bold text-center mb-2">Truss Calculator</h1>
         <h2 className="text-xl font-semibold text-center mb-6">Real-Time Free Body Diagram</h2>
 

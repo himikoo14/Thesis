@@ -553,13 +553,6 @@ export default function DistributedLoadPage() {
       <Header />
 
       <main className="flex-grow max-w-7xl mx-auto px-6 py-10">
-<div
-    className="fixed inset-0 pointer-events-none"
-    style={{
-        backgroundImage: `radial-gradient(circle, rgba(24,72,160,0.15) 2px, transparent 2px)`,
-        backgroundSize: "40px 40px",
-    }}
-/>
         <h1 className="text-3xl font-bold mb-8 text-center">
           Moment of Inertia for Composite Shapes Calculator
         </h1>
