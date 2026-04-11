@@ -90,7 +90,7 @@ export default function HomePage() {
 
 
             {/* Module 8 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 8:MOI Centroidal Axis</p>
+            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 8:Moment of Inertia about Centroidal Axes</p>
             <Link
               href="/modules/MOIcentroidal"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
@@ -99,7 +99,7 @@ export default function HomePage() {
             </Link>
 
             {/* Module 9 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 9:MOI Custom Axis</p>
+            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 9:Moment of Inertia about Custom Axes</p>
             <Link
               href="/modules/MOIcustom"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"

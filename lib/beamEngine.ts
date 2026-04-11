@@ -165,13 +165,26 @@ F_{eq${i + 1}} &= ${fmt(eq.magnitude)}\\,\\text{kN} \\\\
   const RB = momentAboutA / span;
   const RA = totalLoad - RB;
 
-  steps.push(`
+  // Build each moment term individually: F_i × (x_i - x_A)
+const momentTerms = allLoads
+  .map(l => `${fmt(l.F)}(${fmt(l.x)} - ${fmt(xA)})`)
+  .join(" + ");
+
+const momentExpanded = allLoads
+  .map(l => `${fmt(l.F * (l.x - xA))}`)
+  .join(" + ");
+
+steps.push(`
     \\begin{align*}
     \\Sigma M_A &= 0 \\\\
-    R_B &= \\frac{\\sum F_i (x_i - x_A)}{x_B - x_A} = 
-\\frac{${fmt(momentAboutA)}}{${fmt(span)}} = ${fmt(RB)}\\,\\text{kN} \\\\[6pt]
-\\Sigma F_y &= 0 \\\\
-R_A &= \\Sigma F_{ext} - R_B = ${fmt(totalLoad)} - ${fmt(RB)} = ${fmt(RA)}\\,\\text{kN}
+    
+    R_B(${fmt(span)}) &= ${momentTerms} \\\\
+    R_B(${fmt(span)}) &= ${momentExpanded} \\\\
+    R_B(${fmt(span)}) &= ${fmt(momentAboutA)} \\\\
+    R_B &= \\frac{${fmt(momentAboutA)}}{${fmt(span)}} = ${fmt(RB)}\\,\\text{kN} \\\\[6pt]
+    \\Sigma F_y &= 0 \\\\
+    R_A &= ${allLoads.map(l => fmt(l.F)).join(" + ")} - R_B \\\\
+    R_A &= ${fmt(totalLoad)} - ${fmt(RB)} = ${fmt(RA)}\\,\\text{kN}
     \\end{align*}
   `);
 
@@ -181,7 +194,6 @@ R_A &= \\Sigma F_{ext} - R_B = ${fmt(totalLoad)} - ${fmt(RB)} = ${fmt(RA)}\\,\\t
   ];
 
   /* ---- 4. Shear Force & Bending Moment Diagrams ---- */
-  steps.push("Step 4: Compute Shear Force (V) and Bending Moment (M) along the beam:");
 
   const N = 500; // number of sample points
   const dx = beamLength / N;
@@ -253,12 +265,6 @@ R_A &= \\Sigma F_{ext} - R_B = ${fmt(totalLoad)} - ${fmt(RB)} = ${fmt(RA)}\\,\\t
     Math.abs(p.m) > Math.abs(best.m) ? p : best
   );
 
-  steps.push(`
-    \\begin{align*}
-V_{max} &= ${fmt(maxShear)}\\,\\text{kN} \\\\
-M_{max} &= ${fmt(maxMomentPoint.m)}\\,\\text{kN}\\cdot\\text{m at } x = ${fmt(maxMomentPoint.x)}\\,\\text{m}
-    \\end{align*}
-  `);
 
   return {
     reactions,

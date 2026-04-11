@@ -32,6 +32,10 @@ function sanitizeTeX(tex: string): string {
   });
 }
 
+function fmtNum(n: number): string {
+  return parseFloat(n.toFixed(2)).toString();
+}
+
 function fromLegacySteps(steps: string[]): StepLine[] {
   return steps.map((line) => {
     const trimmed = line.trim();
@@ -46,14 +50,19 @@ function fromLegacySteps(steps: string[]): StepLine[] {
     if (trimmed.startsWith("Step "))
       return { type: "heading", text: trimmed };
 
-    // \textit{...} => render via KaTeX so F_{n} inside renders correctly
-    if (trimmed.startsWith("\\textit{")) {
-      return { type: "math", tex: sanitizeTeX(trimmed) };
+    // \textit{...} => plain italic text (KaTeX doesn't support \textit in display mode)
+    if (trimmed.startsWith("\\textit{") && !trimmed.includes("\\theta")) {
+      const inner = trimmed.replace(/^\\textit\{([\s\S]*)\}$/, "$1");
+      return { type: "text", text: `ℹ️ ${inner}` };
     }
 
     // No backslash => plain text
     if (!trimmed.includes("\\")) return { type: "text", text: trimmed };
 
+    if (trimmed.startsWith("\\text{") && trimmed.endsWith("}")) {
+      const inner = trimmed.replace(/^\\text\{([\s\S]*)\}$/, "$1");
+      return { type: "text", text: inner };
+    }
     // Math => sanitize then KaTeX
     return { type: "math", tex: sanitizeTeX(trimmed) };
   });
@@ -224,6 +233,14 @@ async function writePDF(p: { steps: string[]; resultRows?: { label: string; valu
       pdf.setFont("helvetica", "italic"); pdf.setFontSize(10); pdf.setTextColor(100, 100, 100);
       pdf.text(`ℹ️ ${inner}`, M, y); y += 8; continue;
     }
+
+    if (s.startsWith("\\text{") && s.endsWith("}")) {
+      guard(8);
+      const inner = s.replace(/^\\text\{([\s\S]*)\}$/, "$1");
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(11); pdf.setTextColor(50, 50, 50);
+      pdf.text(inner, M, y); y += 8; continue;
+    }
+    
     if (!s.includes("\\")) {
       guard(8);
       pdf.setFont("helvetica", "normal"); pdf.setFontSize(11); pdf.setTextColor(50, 50, 50);
@@ -341,7 +358,10 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
     const x = cursor.x - 150, y = cursor.y - 150;
     const newAngle = (Math.atan2(-y, x) * 180) / Math.PI;
     const newForces = [...forces];
-    newForces[dragIndex] = { ...newForces[dragIndex], angle: newAngle.toFixed(3) };
+    newForces[dragIndex] = {
+      ...newForces[dragIndex],
+      angle: fmtNum(newAngle)
+    };
     setForces(newForces);
   };
 
@@ -490,8 +510,8 @@ function calculate(forces: ForceInput[]): {
       const angle = (Math.atan2(Ry, Rx) * 180) / Math.PI;
 
       const resultRows = [
-        { label: "Resultant Magnitude", value: `${R.toFixed(3)} kN` },
-        { label: "Resultant Angle", value: `${angle.toFixed(3)}°` },
+        { label: "Resultant Magnitude", value: `${fmtNum(R)} kN` },
+        { label: "Resultant Angle", value: `${fmtNum(angle)}°` },
       ];
       const steps = resultX.steps;
       return { steps, stepLines: fromLegacySteps(steps), resultRows };
@@ -518,15 +538,15 @@ function calculate(forces: ForceInput[]): {
       const mag = Math.hypot(Fx, Fy);
       const ang = (Math.atan2(Fy, Fx) * 180) / Math.PI;
       const resultRows = [
-        { label: `Force ${idx + 1} Magnitude`, value: `${mag.toFixed(3)} kN` },
-        { label: `Force ${idx + 1} Angle`, value: `${ang.toFixed(3)}°` },
+        { label: `Force ${idx + 1} Magnitude`, value: `${fmtNum(mag)} kN` },
+        { label: `Force ${idx + 1} Angle`, value: `${fmtNum(ang)}°` },
       ];
       const steps = result.steps;
       return {
         steps,
         stepLines: fromLegacySteps(steps),
         resultRows,
-        solvedLabel: `F${idx + 1}: ${mag.toFixed(3)} kN @ ${ang.toFixed(3)}°`,
+        solvedLabel: `F${idx + 1}: ${fmtNum(mag)} kN @ ${fmtNum(ang)}°`,
       };
     } catch (e: any) {
       return { error: e.message };
@@ -552,17 +572,28 @@ function calculate(forces: ForceInput[]): {
       const Fy = -result.unknowns[1].value;
       // validate against known magnitude
       const computedMag = Math.hypot(Fx, Fy);
-      if (Math.abs(computedMag - mag) > 0.01 * mag + 1e-6) {
-        return { error: `No valid angle solution for Force ${idx + 1}: magnitude ${mag} kN is inconsistent with equilibrium.` };
+      if (Math.abs(computedMag - mag) > Math.max(1e-6, 0.01 * mag)) {
+        return {
+          error: `No valid angle for Force ${idx + 1}: given magnitude ${fmtNum(mag)} kN is inconsistent with equilibrium — required magnitude is ${fmtNum(computedMag)} kN.`,
+        };
       }
       const ang = (Math.atan2(Fy, Fx) * 180) / Math.PI;
-      const resultRows = [{ label: `Force ${idx + 1} Angle`, value: `${ang.toFixed(3)}°` }];
-      const steps = result.steps;
+      const resultRows = [{ label: `Force ${idx + 1} Angle`, value: `${fmtNum(ang)}°` }];
+
+      const angleSteps: string[] = [
+        `\\textbf{Finding the Angle of F_{${idx + 1}}}`,
+        `\\text{The components of } F_{${idx + 1}} \\text{ required for equilibrium are:}`,
+        `F_{${idx + 1}x} = ${fmtNum(Fx)} \\text{ kN}, \\quad F_{${idx + 1}y} = ${fmtNum(Fy)} \\text{ kN}`,
+        `\\theta = \\tan^{-1}\\!\\left(\\frac{F_{${idx + 1}y}}{F_{${idx + 1}x}}\\right) = \\tan^{-1}\\!\\left(\\frac{${fmtNum(Fy)}}{${fmtNum(Fx)}}\\right)`,
+        `\\theta = ${fmtNum(ang)}^{\\circ}`,
+      ];
+
+      const allSteps = [...result.steps, ...angleSteps];
       return {
-        steps,
-        stepLines: fromLegacySteps(steps),
+        steps: allSteps,
+        stepLines: fromLegacySteps(allSteps),
         resultRows,
-        solvedLabel: `F${idx + 1} angle = ${ang.toFixed(3)}°`,
+        solvedLabel: `F${idx + 1} angle = ${fmtNum(ang)}°`,
       };
     } catch (e: any) {
       return { error: e.message };
@@ -591,11 +622,11 @@ function calculate(forces: ForceInput[]): {
       const resultRows = magUnknownIndices.map((origIdx, k) => {
         const val = result.unknowns[k].value;
         const mag = Math.abs(val);
-        return { label: `Force ${origIdx + 1} Magnitude`, value: `${mag.toFixed(3)} kN` };
+        return { label: `Force ${origIdx + 1} Magnitude`, value: `${fmtNum(mag)} kN` };
       });
 
       const solvedLabel = magUnknownIndices
-        .map((origIdx, k) => `F${origIdx + 1} = ${Math.abs(result.unknowns[k].value).toFixed(3)} kN`)
+        .map((origIdx, k) => `F${origIdx + 1} = ${fmtNum(Math.abs(result.unknowns[k].value))} kN`)
         .join(" | ");
 
       return {
@@ -658,15 +689,15 @@ function calculate(forces: ForceInput[]): {
       const actualAngle = solvedMag >= 0 ? magAngle : magAngle + 180;
 
       const resultRows = [
-        { label: `Force ${magIdx + 1} Magnitude`, value: `${actualMag.toFixed(3)} kN` },
-        { label: `Force ${angIdx + 1} Angle`, value: `${ang.toFixed(3)}°` },
+        { label: `Force ${magIdx + 1} Magnitude`, value: `${fmtNum(actualMag)} kN` },
+        { label: `Force ${angIdx + 1} Angle`, value: `${fmtNum(ang)}°` },
       ];
       const steps = [...resultFx.steps, ...resultFy.steps];
       return {
         steps,
         stepLines: fromLegacySteps(steps),
         resultRows,
-        solvedLabel: `F${magIdx + 1} = ${actualMag.toFixed(3)} kN | F${angIdx + 1} angle = ${ang.toFixed(3)}°`,
+        solvedLabel: `F${magIdx + 1} = ${fmtNum(actualMag)} kN | F${angIdx + 1} angle = ${fmtNum(ang)}°`,
       };
     } catch (e: any) {
       return { error: e.message };
@@ -722,12 +753,7 @@ export default function Equilibrium() {
 
       <main className="flex-grow flex flex-col items-center px-4 pt-8 pb-10">
         <div
-    className="fixed inset-0 pointer-events-none"
-    style={{
-        backgroundImage: `radial-gradient(circle, rgba(24,72,160,0.15) 2px, transparent 2px)`,
-        backgroundSize: "40px 40px",
-    }}
-/>
+        />
         {/* Tabs */}
         <div className="flex justify-center mb-6 gap-4">
           <button

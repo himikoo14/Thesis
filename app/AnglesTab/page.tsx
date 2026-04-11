@@ -71,9 +71,9 @@ function buildBaseScene() {
   const axLen = 3;
   const mkAxis = (a: THREE.Vector3, b: THREE.Vector3, c: number) =>
     new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.5 }));
-  scene.add(mkAxis(new THREE.Vector3(-axLen, 0, 0), new THREE.Vector3(axLen, 0, 0), 0xff4444));
-  scene.add(mkAxis(new THREE.Vector3(0, -axLen, 0), new THREE.Vector3(0, axLen, 0), 0x22bb44));
-  scene.add(mkAxis(new THREE.Vector3(0, 0, -axLen), new THREE.Vector3(0, 0, axLen), 0x2266ff));
+  scene.add(mkAxis(new THREE.Vector3(-axLen, 0, 0), new THREE.Vector3(axLen, 0, 0), 0xff4444));  // THREE X → statics X (red)
+  scene.add(mkAxis(new THREE.Vector3(0, -axLen, 0), new THREE.Vector3(0, axLen, 0), 0x2266ff));  // THREE Y (up) → statics Z (blue)
+  scene.add(mkAxis(new THREE.Vector3(0, 0, -axLen), new THREE.Vector3(0, 0, axLen), 0x22bb44));  // THREE Z (forward) → statics Y (green)
   scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 16), new THREE.MeshBasicMaterial({ color: 0x333333 })));
   scene.add(new THREE.AmbientLight(0xffffff, 1));
   return scene;
@@ -108,7 +108,7 @@ function FBD3D({ forces }: { forces: any[] }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const arrowsRef = useRef<THREE.ArrowHelper[]>([]);
-  const orbitRef = useRef({ theta: 0.6, phi: 0.9, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } });
+  const orbitRef = useRef({ theta: -0.6, phi: 0.85, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } });
 
   useEffect(() => {
     const el = mountRef.current!;
@@ -183,14 +183,14 @@ function ResultantFBD3D({ forces, result }: { forces: any[]; result: any }) {
       scene.add(new THREE.ArrowHelper(vec.clone().normalize(), new THREE.Vector3(0, 0, 0), m * scale, FORCE_COLORS[i % FORCE_COLORS.length], m * scale * 0.2, m * scale * 0.12));
     });
     if (result.R > 0.001) {
-      const rv = new THREE.Vector3( 
+      const rv = new THREE.Vector3(
         result.sumFx,
         result.sumFy,
         result.sumFz
       );
       scene.add(new THREE.ArrowHelper(rv.clone().normalize(), new THREE.Vector3(0, 0, 0), result.R * scale, 0x009900, result.R * scale * 0.2, result.R * scale * 0.12));
     }
-    const orbit = { theta: 0.6, phi: 0.9, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } };
+    const orbit = { theta: -0.6, phi: 0.85, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } };
     let raf: number;
     const animate = () => {
       raf = requestAnimationFrame(animate);

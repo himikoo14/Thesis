@@ -32,14 +32,14 @@ export default function Header() {
 
           {/* Topics Dropdown */}
           <div className="group relative">
-            <button className="hover:text-[#1848a0]">Topics ▾</button>
+            <button className="hover:text-[#1848a0]">Calculators ▾</button>
             <div
               className="absolute left-1/2 -translate-x-1/2 mt-2 w-56 bg-white border rounded-lg shadow-lg 
                 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition text-[18px]"
             >
               <div className="flex flex-col p-2 text-gray-700">
                 <Link href="/Introduction" className="hover:text-[#1848a0] p-2">
-                  Chapter 1: Introduction to Statics
+                  Chapter 1: Statics Modules
                 </Link>
                 <Link href="/2D-solver" className="hover:text-[#1848a0] p-2">
                   Chapter 2: Force Systems

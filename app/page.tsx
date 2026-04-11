@@ -6,11 +6,6 @@ export default function HomePage() {
   return (
     <main className="bg-gray-50 min-h-screen flex flex-col relative">
 <div
-    className="absolute inset-0 pointer-events-none"
-    style={{
-        backgroundImage: `radial-gradient(circle, rgba(24,72,160,0.15) 2px, transparent 2px)`,
-        backgroundSize: "40px 40px",
-    }}
 />
       <Header />
 
@@ -36,7 +31,7 @@ export default function HomePage() {
               href="/Introduction"
               className="bg-[#1848a0] text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] transition text-[18px]"
             >
-              Introduction
+              Statics Modules
             </Link>
 
             {/* Chapter 2 */}

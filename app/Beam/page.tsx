@@ -488,9 +488,7 @@ export default function BeamSolverUI() {
   /* ---------- RESULT ROWS for PDF / summary ---------- */
   const resultRows = result ? [
     ...result.reactions.map(r => ({ label: `${r.type} at x = ${fmt(r.location)} m`, value: `${fmt(r.vertical)} kN` })),
-    { label: "Max Shear Force", value: `${fmt(result.maxShear)} kN` },
-    { label: "Max Bending Moment", value: `${fmt(result.maxMoment)} kN·m at x = ${fmt(result.maxMomentLocation)} m` },
-  ] : [];
+   ] : [];
 
   /* ===================== JSX ===================== */
   return (
@@ -620,17 +618,7 @@ export default function BeamSolverUI() {
                   style={{ ...inputStyle, background: "#f9fafb", color: "#374151" }} />
               </div>
             ))}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 16 }}>
-              <div>
-                <label style={labelStyle}>Max Shear Force</label>
-                <input type="text" readOnly value={`${fmt(result.maxShear)} kN`}
-                  style={{ ...inputStyle, background: "#f9fafb", color: "#374151" }} />
-              </div>
-              <div>
-                <label style={labelStyle}>Max Bending Moment</label>
-                <input type="text" readOnly value={`${fmt(result.maxMoment)} kN·m at x = ${fmt(result.maxMomentLocation)} m`} style={{ ...inputStyle, background: "#f9fafb", color: "#374151" }} />
-              </div>
-            </div>
+
 
             {/* Results summary tiles */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 16 }}>

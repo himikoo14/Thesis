@@ -9,7 +9,7 @@ import * as THREE from "three";
 function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const dynamicGroupRef = useRef<THREE.Group | null>(null);
-  const orbitRef = useRef({ theta: 0.7, phi: 1.1, r: 6, isDragging: false, prev: { x: 0, y: 0 } });
+  const orbitRef = useRef({ theta: Math.PI * 1.25, phi: 0.65, r: 6, isDragging: false, prev: { x: 0, y: 0 } });
   const rafRef = useRef(0);
 
   useEffect(() => {
@@ -28,9 +28,9 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
     scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.08, 24, 24), new THREE.MeshStandardMaterial({ color: 0x222222 })));
     // Axis lines (no arrows)
     const axes: [number[], number][] = [
-      [[1, 0, 0], 0xe63946],
-      [[0, 1, 0], 0x2a9d8f],
-      [[0, 0, 1], 0x4361ee],
+      [[1, 0, 0], 0x2a9d8f],  // THREE X → labeled Y (teal)
+      [[0, 1, 0], 0x4361ee],  // THREE Y → labeled Z (blue)
+      [[0, 0, 1], 0xe63946],  // THREE Z → labeled X (red)
     ];
     axes.forEach(([dir, color]) => {
       const material = new THREE.LineBasicMaterial({ color });
