@@ -91,39 +91,39 @@ type FBDArrow = {
 };
 
 /* ── Smart number formatter ──────────────────────────────────────────────── */
-// Shows up to 2 decimal places; drops trailing zeros; whole numbers show no decimal
 const fmt = (v: number): string => {
   if (Math.abs(v - Math.round(v)) < 1e-9) return Math.round(v).toString();
   const s = v.toFixed(2);
-  // remove trailing zeros after decimal
   return s.replace(/\.?0+$/, "");
 };
 
-// Same smart formatter (replaces old n4 / n3)
 const fmtN = (v: number): string => fmt(v);
 
 /* ── Gaussian elimination with partial pivoting ─────────────────────────── */
 function gaussianElim(A: number[][], b: number[]): number[] | null {
   const n = A.length;
+  // Deep copy to avoid mutating inputs
+  const M = A.map(r => [...r]);
+  const bv = [...b];
   for (let col = 0; col < n; col++) {
     let maxRow = col;
     for (let row = col + 1; row < n; row++) {
-      if (Math.abs(A[row][col]) > Math.abs(A[maxRow][col])) maxRow = row;
+      if (Math.abs(M[row][col]) > Math.abs(M[maxRow][col])) maxRow = row;
     }
-    [A[col], A[maxRow]] = [A[maxRow], A[col]];
-    [b[col], b[maxRow]] = [b[maxRow], b[col]];
-    if (Math.abs(A[col][col]) < 1e-10) return null;
+    [M[col], M[maxRow]] = [M[maxRow], M[col]];
+    [bv[col], bv[maxRow]] = [bv[maxRow], bv[col]];
+    if (Math.abs(M[col][col]) < 1e-10) return null;
     for (let row = col + 1; row < n; row++) {
-      const factor = A[row][col] / A[col][col];
-      b[row] -= factor * b[col];
-      for (let k = col; k < n; k++) A[row][k] -= factor * A[col][k];
+      const factor = M[row][col] / M[col][col];
+      bv[row] -= factor * bv[col];
+      for (let k = col; k < n; k++) M[row][k] -= factor * M[col][k];
     }
   }
   const x = new Array(n).fill(0);
   for (let row = n - 1; row >= 0; row--) {
-    x[row] = b[row];
-    for (let k = row + 1; k < n; k++) x[row] -= A[row][k] * x[k];
-    x[row] /= A[row][row];
+    x[row] = bv[row];
+    for (let k = row + 1; k < n; k++) x[row] -= M[row][k] * x[k];
+    x[row] /= M[row][row];
   }
   return x;
 }
@@ -171,8 +171,6 @@ function TrussStepRenderer({
   supports: Support[];
   forces: Force[];
 }) {
-  const nodeLabel = (i: number) => String.fromCharCode(65 + i);
-
   return (
     <div style={{ lineHeight: 1.8 }}>
       {lines.map((line, idx) => {
@@ -553,7 +551,7 @@ function JointFBD({ jointIdx, connectedMembers, solvedMemberForces, members, all
   solution: Solution;
   forces: Force[];
 }) {
-  const SIZE = 260, CX = SIZE / 2, CY = SIZE / 2, ARM = 90;
+  const SIZE = 260, CX = SIZE / 2, CY = SIZE / 2;
   const nodeLabel = (i: number) => String.fromCharCode(65 + i);
   const tol = 1e-6;
 
@@ -562,92 +560,103 @@ function JointFBD({ jointIdx, connectedMembers, solvedMemberForces, members, all
   const jy = parseFloat(jointNode?.y || "0");
   const jLabel = nodeLabel(jointIdx);
 
-const arrows: FBDArrow[] = [];
+  const arrows: FBDArrow[] = [];
 
   // ================= MEMBER FORCES =================
-connectedMembers.forEach(mIdx => {
-  const mb = members[mIdx];
-  const otherIdx = mb.start === jointIdx ? mb.end : mb.start;
-  const otherNode = allNodes[otherIdx];
+  // Convention: we draw the force that the member exerts ON this joint.
+  // Tension (+): member pulls joint → arrow points AWAY from joint (toward other node)
+  // Compression (−): member pushes joint → arrow points TOWARD joint (away from other node, i.e. +π)
+  connectedMembers.forEach(mIdx => {
+    const mb = members[mIdx];
+    const otherIdx = mb.start === jointIdx ? mb.end : mb.start;
+    const otherNode = allNodes[otherIdx];
 
-  const ox = parseFloat(otherNode?.x || "0");
-  const oy = parseFloat(otherNode?.y || "0");
+    const ox = parseFloat(otherNode?.x || "0");
+    const oy = parseFloat(otherNode?.y || "0");
 
-  const dx = ox - jx;
-  const dy = oy - jy;
-  const angle = Math.atan2(dy, dx);
+    const dx = ox - jx;
+    const dy = oy - jy;
+    // Angle pointing toward the other node
+    const angleToOther = Math.atan2(dy, dx);
 
-  const lbl = `${nodeLabel(mb.start)}${nodeLabel(mb.end)}`;
-  const force = solvedMemberForces[mIdx];
+    const lbl = `${nodeLabel(mb.start)}${nodeLabel(mb.end)}`;
+    const force = solvedMemberForces[mIdx];
+    const known = force !== undefined && !isNaN(force);
+    const isTension = known && force > tol;
+    const isCompression = known && force < -tol;
+    const isZero = known && Math.abs(force) <= tol;
 
-  const known = force !== undefined && !isNaN(force);
-  const isTension = known && force > tol;
-  const isComp = known && force < -tol;
+    // For tension: arrow points away from joint (toward other) — angle = angleToOther
+    // For compression: arrow points into joint from outside — but we show the force on joint,
+    //   which means the force vector points INWARD, so arrow tip is at center.
+    //   We draw FROM outer point TO center = from (CX + cos*len, CY - sin*len) to (CX, CY)
+    //   Equivalently, arrow base is at the outer end, tip at center → use angle + π for the draw direction
+    //   But our arrow system draws FROM x1,y1 TO x2,y2.
+    //   For tension: FROM center, TO outer → arrowAngle = angleToOther
+    //   For compression: FROM outer, TO center → we'll handle this separately
 
-  const arrowAngle = angle;
-
-  const color =
-    !known ? "#6b7280" :
-    Math.abs(force) < tol ? "#9ca3af" :
-    isTension ? "#2563eb" : "#dc2626";
-
-  arrows.push({
-    angle: arrowAngle,
-    color,
-    label: known ? `F${lbl}=${fmt(Math.abs(force))} kN` : `F${lbl}=?`,
-    magnitude: known ? Math.abs(force) : 1,
-    dashed: !known
-  });
-});
-
-// ================= REACTIONS =================
-const rxn = solution.reactions.find(r => r.node === jointIdx);
-
-if (rxn) {
-  if (Math.abs(rxn.x) > tol) {
-    arrows.push({
-      angle: rxn.x > 0 ? 0 : Math.PI,
-      color: "#16a34a",
-      label: `Rx=${fmt(rxn.x)}`,
-      magnitude: Math.abs(rxn.x),
-      dashed: false
-    });
-  }
-
-  if (Math.abs(rxn.y) > tol) {
-    arrows.push({
-      angle: rxn.y > 0 ? Math.PI / 2 : -Math.PI / 2,
-      color: "#16a34a",
-      label: `Ry=${fmt(rxn.y)}`,
-      magnitude: Math.abs(rxn.y),
-      dashed: false
-    });
-  }
-}
-
-// ================= EXTERNAL FORCES =================
-forces
-  .filter(f => f.Joint === jointIdx)
-  .forEach((f, i) => {
-    const mag = parseFloat(f.magnitude || "0");
-    if (!mag) return;
-
-    const ang = (parseFloat(f.angle || "0") * Math.PI) / 180;
+    const color =
+      !known ? "#6b7280" :
+        isZero ? "#9ca3af" :
+          isTension ? "#2563eb" : "#dc2626";
 
     arrows.push({
-      angle: ang,
-      color: "#dc2626",
-      label: `F${i + 1}=${fmt(mag)} kN`,
-      magnitude: Math.abs(mag),
-      dashed: false
+      angle: angleToOther,          // angle toward other node (used for tension direction)
+      color,
+      label: known ? `F${lbl}=${fmt(Math.abs(force))} kN` : `F${lbl}=?`,
+      magnitude: known ? Math.abs(force) : 1,
+      dashed: !known,
     });
   });
 
-// ================= SCALING =================
-const maxForce = Math.max(...arrows.map(a => a.magnitude || 1), 1);
+  // ================= REACTIONS =================
+  const rxn = solution.reactions.find(r => r.node === jointIdx);
+  if (rxn) {
+    if (Math.abs(rxn.x) > tol) {
+      arrows.push({
+        angle: rxn.x > 0 ? 0 : Math.PI,
+        color: "#16a34a",
+        label: `Rx=${fmt(rxn.x)} kN`,
+        magnitude: Math.abs(rxn.x),
+        dashed: false,
+      });
+    }
+    if (Math.abs(rxn.y) > tol) {
+      arrows.push({
+        angle: rxn.y > 0 ? Math.PI / 2 : -Math.PI / 2,
+        color: "#16a34a",
+        label: `Ry=${fmt(rxn.y)} kN`,
+        magnitude: Math.abs(rxn.y),
+        dashed: false,
+      });
+    }
+  }
 
-const MAX_ARM = 90;
-const MIN_ARM = 40;
+  // ================= EXTERNAL FORCES =================
+  forces
+    .filter(f => f.Joint === jointIdx)
+    .forEach((f, i) => {
+      const mag = parseFloat(f.magnitude || "0");
+      if (!mag) return;
+      const ang = (parseFloat(f.angle || "0") * Math.PI) / 180;
+      arrows.push({
+        angle: ang,
+        color: "#dc2626",
+        label: `F${i + 1}=${fmt(Math.abs(mag))} kN`,
+        magnitude: Math.abs(mag),
+        dashed: false,
+      });
+    });
+
+  // ================= SCALING =================
+  const maxForce = Math.max(...arrows.map(a => a.magnitude || 1), 1);
+  const MAX_ARM = 90, MIN_ARM = 40;
+
+  // Determine which member arrows are compression (to flip direction)
+  const memberForceMap: Record<number, number> = {};
+  connectedMembers.forEach(mIdx => {
+    memberForceMap[mIdx] = solvedMemberForces[mIdx];
+  });
 
   return (
     <svg width={SIZE} height={SIZE} style={{ display: "block", margin: "12px auto", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
@@ -658,29 +667,70 @@ const MIN_ARM = 40;
         <ArrowMarker id={`jgr-${jointIdx}`} color="#16a34a" />
         <ArrowMarker id={`jlg-${jointIdx}`} color="#9ca3af" />
       </defs>
-      <line x1={CX - ARM - 10} y1={CY} x2={CX + ARM + 10} y2={CY} stroke="#e2e8f0" strokeWidth={1} />
-      <line x1={CX} y1={CY - ARM - 10} x2={CX} y2={CY + ARM + 10} stroke="#e2e8f0" strokeWidth={1} />
+      <line x1={CX - MAX_ARM - 10} y1={CY} x2={CX + MAX_ARM + 10} y2={CY} stroke="#e2e8f0" strokeWidth={1} />
+      <line x1={CX} y1={CY - MAX_ARM - 10} x2={CX} y2={CY + MAX_ARM + 10} stroke="#e2e8f0" strokeWidth={1} />
+
       {arrows.map((arrow, idx) => {
-const scale = arrow.magnitude / maxForce;
-const length = MIN_ARM + scale * (MAX_ARM - MIN_ARM);
+        const scale = arrow.magnitude / maxForce;
+        const length = MIN_ARM + scale * (MAX_ARM - MIN_ARM);
 
-const ex = CX + Math.cos(arrow.angle) * length;
-const ey = CY - Math.sin(arrow.angle) * length;
+        // Is this a member force arrow that is compression?
+        // connectedMembers[idx] only valid for first N arrows (member forces)
+        const isMemberArrow = idx < connectedMembers.length;
+        const mIdx = isMemberArrow ? connectedMembers[idx] : -1;
+        const mForce = isMemberArrow ? solvedMemberForces[mIdx] : undefined;
+        const isCompression = mForce !== undefined && !isNaN(mForce) && mForce < -tol;
 
-const labelR = length + 14;
-        const markerId = arrow.color === "#2563eb" ? `jb-${jointIdx}` : arrow.color === "#dc2626" ? `jr-${jointIdx}` : arrow.color === "#16a34a" ? `jgr-${jointIdx}` : arrow.color === "#9ca3af" ? `jlg-${jointIdx}` : `jg-${jointIdx}`;
-       
+        let x1: number, y1: number, x2: number, y2: number;
+
+        if (isCompression) {
+          // Compression: force on joint is directed INWARD (toward joint from outside)
+          // Draw arrow FROM outer point TO center
+          const outerX = CX + Math.cos(arrow.angle) * length;
+          const outerY = CY - Math.sin(arrow.angle) * length;
+          x1 = outerX; y1 = outerY; x2 = CX; y2 = CY;
+        } else {
+          // Tension / reaction / external: arrow FROM center TOWARD outer
+          x1 = CX; y1 = CY;
+          x2 = CX + Math.cos(arrow.angle) * length;
+          y2 = CY - Math.sin(arrow.angle) * length;
+        }
+
+        const markerId =
+          arrow.color === "#2563eb" ? `jb-${jointIdx}` :
+            arrow.color === "#dc2626" ? `jr-${jointIdx}` :
+              arrow.color === "#16a34a" ? `jgr-${jointIdx}` :
+                arrow.color === "#9ca3af" ? `jlg-${jointIdx}` :
+                  `jg-${jointIdx}`;
+
+        // Label position: at the outer end of the arrow
+        const labelR = length + 14;
         const lx = CX + Math.cos(arrow.angle) * labelR;
         const ly = CY - Math.sin(arrow.angle) * labelR;
         const textAnchor = Math.cos(arrow.angle) > 0.2 ? "start" : Math.cos(arrow.angle) < -0.2 ? "end" : "middle";
         const textDy = Math.sin(arrow.angle) > 0.2 ? -2 : Math.sin(arrow.angle) < -0.2 ? 10 : 4;
+
+        // Shorten the line to leave room for the arrowhead
+        const dxLine = x2 - x1; const dyLine = y2 - y1;
+        const Lline = Math.hypot(dxLine, dyLine) || 1;
+        const ex = x2 - (dxLine / Lline) * 1;
+        const ey = y2 - (dyLine / Lline) * 1;
+
         return (
           <g key={idx}>
-            <line x1={CX} y1={CY} x2={ex} y2={ey} stroke={arrow.color} strokeWidth={2.2} strokeDasharray={arrow.dashed ? "5,3" : undefined} markerEnd={`url(#${markerId})`} />
-            <text x={lx} y={ly + textDy} textAnchor={textAnchor} fontSize={9} fill={arrow.color} fontWeight="600">{arrow.label}</text>
+            <line
+              x1={x1} y1={y1} x2={ex} y2={ey}
+              stroke={arrow.color} strokeWidth={2.2}
+              strokeDasharray={arrow.dashed ? "5,3" : undefined}
+              markerEnd={`url(#${markerId})`}
+            />
+            <text x={lx} y={ly + textDy} textAnchor={textAnchor} fontSize={9} fill={arrow.color} fontWeight="600">
+              {arrow.label}
+            </text>
           </g>
         );
       })}
+
       <circle cx={CX} cy={CY} r={7} fill="white" stroke="#1e40af" strokeWidth={2.5} />
       <text x={CX} y={CY + 4} textAnchor="middle" fontSize={10} fontWeight="800" fill="#1e3a8a">{jLabel}</text>
       <text x={SIZE / 2} y={14} textAnchor="middle" fontSize={10} fontWeight="700" fill="#374151">FBD — Joint {jLabel}</text>
@@ -706,7 +756,6 @@ export default function TrussSolverUI() {
   const numericNodes = allNodes.map(n => ({ x: parseFloat(n.x || "0"), y: parseFloat(n.y || "0") }));
   const nodeLabel = (i: number) => String.fromCharCode(65 + i);
 
-  // fmtNum for signed display (used in cosTex and elsewhere)
   const fmtNum = (v: number): string => (v < 0 ? `-${fmt(Math.abs(v))}` : `${fmt(v)}`);
   const cosTex = (cos: number, lbl: string) => `${fmtNum(cos)} \\cdot F_{${lbl}}`;
 
@@ -733,10 +782,13 @@ export default function TrussSolverUI() {
     const nJoints = numericNodes.length;
     const nMembers = members.length;
     const tolerance = 1e-6;
-    const memberForces: number[] = Array(nMembers).fill(0);
+    const memberForces: number[] = Array(nMembers).fill(NaN);
     const solvedMembers: boolean[] = Array(nMembers).fill(false);
     const jointMembers: number[][] = Array.from({ length: nJoints }, () => []);
-    members.forEach((mb, idx) => { jointMembers[mb.start].push(idx); jointMembers[mb.end].push(idx); });
+    members.forEach((mb, idx) => {
+      jointMembers[mb.start].push(idx);
+      jointMembers[mb.end].push(idx);
+    });
 
     const lines: StepLine[] = [];
     const H = (text: string) => lines.push({ kind: "heading", text });
@@ -747,8 +799,11 @@ export default function TrussSolverUI() {
     const W = (text: string) => lines.push({ kind: "warn", text });
     const SP = () => lines.push({ kind: "spacer" });
 
+    /* ── Step 1: Determinacy ── */
     H("Step 1: Determinacy Check");
-    const m_val = nMembers, j_val = nJoints, r_val = supports.reduce((a, s) => a + (s.type === "Pinned" ? 2 : 1), 0);
+    const m_val = nMembers;
+    const j_val = nJoints;
+    const r_val = supports.reduce((a, s) => a + (s.type === "Pinned" ? 2 : 1), 0);
     const det_val = m_val + r_val - 2 * j_val;
     T(`Members: m = ${m_val},  Joints: j = ${j_val},  Reactions: r = ${r_val}`);
     E(`m + r - 2j = ${m_val} + ${r_val} - 2(${j_val}) = ${det_val}`);
@@ -757,8 +812,10 @@ export default function TrussSolverUI() {
     else W("✘  Statically Indeterminate — this solver handles determinate trusses only.");
     SP();
 
-H("Step 2: Support Reactions");
-    const reactions: { x: number; y: number }[] = numericNodes.map(() => ({ x: 0, y: 0 }));
+    /* ── Step 2: Support Reactions ── */
+    H("Step 2: Support Reactions");
+
+    // Collect external force resultants
     let totalFx = 0, totalFy = 0;
     forces.forEach(f => {
       const mag = parseFloat(f.magnitude) || 0;
@@ -769,16 +826,17 @@ H("Step 2: Support Reactions");
 
     SH("Applied external loads:");
     forces.forEach((f, i) => {
-      const mag = parseFloat(f.magnitude) || 0, ang = parseFloat(f.angle) || 0;
+      const mag = parseFloat(f.magnitude) || 0;
+      const ang = parseFloat(f.angle) || 0;
       const angR = ang * Math.PI / 180;
       T(`F${i + 1} at Joint ${nodeLabel(f.Joint)}: ${fmt(mag)} kN @ ${fmt(ang)}°`);
-      E(`F_{x${i+1}} = ${fmt(mag)}\\cos(${fmt(ang)}^\\circ) = ${fmtN(mag * Math.cos(angR))}\\ \\text{kN}`);
-      E(`F_{y${i+1}} = ${fmt(mag)}\\sin(${fmt(ang)}^\\circ) = ${fmtN(mag * Math.sin(angR))}\\ \\text{kN}`);
+      E(`F_{x${i + 1}} = ${fmt(mag)}\\cos(${fmt(ang)}^\\circ) = ${fmtN(mag * Math.cos(angR))}\\ \\text{kN}`);
+      E(`F_{y${i + 1}} = ${fmt(mag)}\\sin(${fmt(ang)}^\\circ) = ${fmtN(mag * Math.sin(angR))}\\ \\text{kN}`);
     });
     E(`\\Sigma F_x^{\\text{ext}} = ${fmtN(totalFx)}\\ \\text{kN}, \\quad \\Sigma F_y^{\\text{ext}} = ${fmtN(totalFy)}\\ \\text{kN}`);
     SP();
 
-    // Build reaction unknowns based on actual support types
+    // Build reaction unknowns
     type ReactionUnknown = { jointIdx: number; dir: "x" | "y" };
     const unknownReactions: ReactionUnknown[] = [];
     supports.forEach((s, i) => {
@@ -786,48 +844,86 @@ H("Step 2: Support Reactions");
         unknownReactions.push({ jointIdx: i, dir: "x" });
         unknownReactions.push({ jointIdx: i, dir: "y" });
       } else {
-        // Roller: vertical reaction only
+        // Roller: vertical (y) reaction only
         unknownReactions.push({ jointIdx: i, dir: "y" });
       }
     });
 
     const nUnk = unknownReactions.length;
+
+    // Moment reference node: use support A (index 0)
     const refNode = numericNodes[0];
 
-    // Moment of applied forces about joint A (refNode): M = dx*Fy - dy*Fx
+    // Moment of applied forces about refNode: M = Σ(dx*Fy - dy*Fx)
     let momentApplied = 0;
     forces.forEach(f => {
       const mag = parseFloat(f.magnitude) || 0;
       const ang = (parseFloat(f.angle) || 0) * Math.PI / 180;
-      const fx = mag * Math.cos(ang), fy = mag * Math.sin(ang);
+      const fx = mag * Math.cos(ang);
+      const fy = mag * Math.sin(ang);
       const dx = numericNodes[f.Joint].x - refNode.x;
       const dy = numericNodes[f.Joint].y - refNode.y;
       momentApplied += dx * fy - dy * fx;
     });
 
     // 3 equilibrium equations: ΣFx=0, ΣFy=0, ΣM_A=0
+    // Each reaction R_k contributes:
+    //   to ΣFx: +1 if dir='x', 0 if dir='y'
+    //   to ΣFy: 0 if dir='x', +1 if dir='y'
+    //   to ΣM_A: if dir='x' → moment arm = -(y_k - y_A), if dir='y' → moment arm = +(x_k - x_A)
     const Aeq: number[][] = [
-      unknownReactions.map(u => u.dir === "x" ? 1 : 0),
-      unknownReactions.map(u => u.dir === "y" ? 1 : 0),
-      unknownReactions.map(u => {
+      unknownReactions.map(u => u.dir === "x" ? 1 : 0),                             // ΣFx
+      unknownReactions.map(u => u.dir === "y" ? 1 : 0),                             // ΣFy
+      unknownReactions.map(u => {                                                    // ΣM_A
         const n = numericNodes[u.jointIdx];
-        const dx = n.x - refNode.x, dy = n.y - refNode.y;
+        const dx = n.x - refNode.x;
+        const dy = n.y - refNode.y;
+        // Moment of a horizontal force Rx: M = Rx * (-dy) (using right-hand rule, CCW+)
+        // Moment of a vertical force Ry:   M = Ry * (dx)
         return u.dir === "x" ? -dy : dx;
       }),
     ];
     const beq = [-totalFx, -totalFy, -momentApplied];
 
-    // Use only as many equations as unknowns
-    const Asq = Aeq.slice(0, nUnk).map(r => [...r]);
-    const bsq = beq.slice(0, nUnk);
+    // Select nUnk equations from the 3 available (for nUnk <= 3)
+    // Always use all 3 if nUnk == 3; pick best subset if nUnk < 3
+    let Asq: number[][];
+    let bsq: number[];
+    if (nUnk === 3) {
+      Asq = Aeq.map(r => [...r]);
+      bsq = [...beq];
+    } else if (nUnk === 2) {
+      // Use ΣFx, ΣFy (rows 0 and 1); if singular, try with ΣM
+      Asq = [Aeq[0].slice(), Aeq[1].slice()];
+      bsq = [beq[0], beq[1]];
+      // Check determinant
+      const detTest = Asq[0][0] * Asq[1][1] - Asq[0][1] * Asq[1][0];
+      if (Math.abs(detTest) < 1e-10) {
+        // Try ΣFx + ΣM
+        Asq = [Aeq[0].slice(), Aeq[2].slice()];
+        bsq = [beq[0], beq[2]];
+      }
+    } else if (nUnk === 1) {
+      // Use ΣFy first, then ΣFx, then ΣM
+      const row = Math.abs(Aeq[1][0]) > Math.abs(Aeq[0][0]) ? 1 : 0;
+      Asq = [Aeq[row].slice()];
+      bsq = [beq[row]];
+    } else {
+      Asq = Aeq.slice(0, nUnk).map(r => [...r]);
+      bsq = beq.slice(0, nUnk);
+    }
+
+    // Initialize reaction storage for ALL joints
+    const reactions: { x: number; y: number }[] = numericNodes.map(() => ({ x: 0, y: 0 }));
     const solved = gaussianElim(Asq, bsq);
 
     if (solved) {
       solved.forEach((val, k) => {
         const u = unknownReactions[k];
         if (u.dir === "x") reactions[u.jointIdx].x = val;
-        else               reactions[u.jointIdx].y = val;
+        else reactions[u.jointIdx].y = val;
       });
+
       supports.forEach((s, i) => {
         const la = nodeLabel(i);
         SH(`Support ${la} (${s.type}):`);
@@ -839,33 +935,48 @@ H("Step 2: Support Reactions");
         R(`R_{y${la}} = ${fmtN(reactions[i].y)}\\ \\text{kN}`);
       });
       SP();
-      // Verification
+
+      // Equilibrium verification
       let chkFx = totalFx, chkFy = totalFy, chkM = momentApplied;
-      supports.forEach((_, i) => { chkFx += reactions[i].x; chkFy += reactions[i].y; });
-      supports.forEach((_, i) => {
+      for (let i = 0; i < supports.length; i++) {
+        chkFx += reactions[i].x;
+        chkFy += reactions[i].y;
         const n = numericNodes[i];
         chkM += (n.x - refNode.x) * reactions[i].y - (n.y - refNode.y) * reactions[i].x;
-      });
-      if (Math.abs(chkFx) < 1e-4 && Math.abs(chkFy) < 1e-4 && Math.abs(chkM) < 1e-4)
+      }
+      if (Math.abs(chkFx) < 1e-4 && Math.abs(chkFy) < 1e-4 && Math.abs(chkM) < 1e-4) {
         R("\\checkmark\\ \\text{Equilibrium verified: } \\Sigma F_x = \\Sigma F_y = \\Sigma M = 0");
-      else
+      } else {
         W(`⚠ Equilibrium check failed: ΣFx=${fmtN(chkFx)}, ΣFy=${fmtN(chkFy)}, ΣM=${fmtN(chkM)}`);
+      }
     } else {
       W("✘  Could not solve reactions — check support configuration.");
     }
 
-    const extF: { x: number; y: number }[] = numericNodes.map((_, idx) => ({ x: reactions[idx]?.x || 0, y: reactions[idx]?.y || 0 }));
+    // Build total external force at each joint (reactions + applied loads)
+    // This represents the net non-member force acting ON each joint
+    const extF: { x: number; y: number }[] = numericNodes.map((_, idx) => ({
+      x: reactions[idx]?.x || 0,
+      y: reactions[idx]?.y || 0,
+    }));
     forces.forEach(f => {
-      const mag = parseFloat(f.magnitude) || 0, ang = (parseFloat(f.angle) || 0) * Math.PI / 180;
-      extF[f.Joint].x += mag * Math.cos(ang); extF[f.Joint].y += mag * Math.sin(ang);
+      const mag = parseFloat(f.magnitude) || 0;
+      const ang = (parseFloat(f.angle) || 0) * Math.PI / 180;
+      extF[f.Joint].x += mag * Math.cos(ang);
+      extF[f.Joint].y += mag * Math.sin(ang);
     });
 
+    /* ── Step 3: Method of Joints ── */
     H("Step 3: Method of Joints");
-    T("Convention: (+) = Tension,  (−) = Compression"); SP();
+    T("Convention: positive F = Tension,  negative F = Compression");
+    T("Equilibrium at each joint: Σ(cos_x · F) + extFx = 0,  Σ(cos_y · F) + extFy = 0");
+    SP();
 
-    let progress = true, iter = 0;
-    while (progress && iter < nJoints * 2) {
-      progress = false; iter++;
+    let progress = true;
+    let iter = 0;
+    while (progress && iter < nJoints * 3) {
+      progress = false;
+      iter++;
       for (let jIdx = 0; jIdx < nJoints; jIdx++) {
         const connected = jointMembers[jIdx];
         const unknowns = connected.filter(i => !solvedMembers[i]);
@@ -874,70 +985,146 @@ H("Step 2: Support Reactions");
         const lbl = nodeLabel(jIdx);
         SH(`Joint ${lbl}`);
         lines.push({ kind: "jointFBD", joint: jIdx, members: connected });
-        T(`Connected: ${connected.map(u => { const mb = members[u]; return `${nodeLabel(mb.start)}${nodeLabel(mb.end)}`; }).join(", ")}`);
-        T(`Unknowns:  ${unknowns.map(u => { const mb = members[u]; return `${nodeLabel(mb.start)}${nodeLabel(mb.end)}`; }).join(", ")}`);
+        T(`Connected members: ${connected.map(u => {
+          const mb = members[u];
+          return `${nodeLabel(mb.start)}${nodeLabel(mb.end)}`;
+        }).join(", ")}`);
+        T(`Unknown forces:  ${unknowns.map(u => {
+          const mb = members[u];
+          return `${nodeLabel(mb.start)}${nodeLabel(mb.end)}`;
+        }).join(", ")}`);
         SP();
 
-        const rowX: number[] = [], rowY: number[] = [];
-        let fxK = extF[jIdx].x, fyK = extF[jIdx].y;
+        // Compute the known-force residual at this joint
+        // Start from total external force (reactions + applied loads)
+        let fxK = extF[jIdx].x;
+        let fyK = extF[jIdx].y;
+
+        // Subtract contributions from already-solved members
         connected.forEach(mIdx => {
           if (solvedMembers[mIdx]) {
-            const mb = members[mIdx]; const other = mb.start === jIdx ? mb.end : mb.start;
-            const dx = numericNodes[other].x - numericNodes[jIdx].x; const dy = numericNodes[other].y - numericNodes[jIdx].y;
-            const L = Math.hypot(dx, dy); const f = memberForces[mIdx];
-            fxK -= f * (dx / L); fyK -= f * (dy / L);
+            const mb = members[mIdx];
+            const other = mb.start === jIdx ? mb.end : mb.start;
+            const dx = numericNodes[other].x - numericNodes[jIdx].x;
+            const dy = numericNodes[other].y - numericNodes[jIdx].y;
+            const L = Math.hypot(dx, dy);
+            if (L < tolerance) return;
+            const f = memberForces[mIdx];
+            // Member force f acts on joint: direction toward other if tension (+), away if compression (-)
+            // Component contribution to equilibrium: cos_x * f, cos_y * f
+            fxK -= f * (dx / L);
+            fyK -= f * (dy / L);
           }
         });
 
+        // Build direction cosines for unknowns
+        // For unknown member k: force direction = unit vector from this joint toward other joint
+        const rowX: number[] = [];
+        const rowY: number[] = [];
         const cosines: { dx: number; dy: number; L: number; label: string }[] = [];
+
         unknowns.forEach(mIdx => {
-          const mb = members[mIdx]; const other = mb.start === jIdx ? mb.end : mb.start;
-          const dx = numericNodes[other].x - numericNodes[jIdx].x; const dy = numericNodes[other].y - numericNodes[jIdx].y;
+          const mb = members[mIdx];
+          const other = mb.start === jIdx ? mb.end : mb.start;
+          const dx = numericNodes[other].x - numericNodes[jIdx].x;
+          const dy = numericNodes[other].y - numericNodes[jIdx].y;
           const L = Math.hypot(dx, dy);
-          rowX.push(dx / L); rowY.push(dy / L);
+          rowX.push(L > tolerance ? dx / L : 0);
+          rowY.push(L > tolerance ? dy / L : 0);
           cosines.push({ dx, dy, L, label: `${nodeLabel(mb.start)}${nodeLabel(mb.end)}` });
         });
 
         if (unknowns.length === 1) {
           const c = cosines[0];
           E(`L_{${c.label}} = \\sqrt{(${fmtN(c.dx)})^2 + (${fmtN(c.dy)})^2} = ${fmtN(c.L)}\\ \\text{m}`);
-          E(`\\cos_x = ${fmtN(c.dx / c.L)},\\quad \\cos_y = ${fmtN(c.dy / c.L)}`);
-          E(`\\Sigma F_x = 0:\\quad ${cosTex(c.dx / c.L, c.label)} + (${fmtN(fxK)}) = 0`);
-          E(`\\Sigma F_y = 0:\\quad ${cosTex(c.dy / c.L, c.label)} + (${fmtN(fyK)}) = 0`);
+          E(`\\cos_x = ${fmtN(rowX[0])},\\quad \\cos_y = ${fmtN(rowY[0])}`);
+          E(`\\Sigma F_x = 0:\\quad ${cosTex(rowX[0], c.label)} + (${fmtN(fxK)}) = 0`);
+          E(`\\Sigma F_y = 0:\\quad ${cosTex(rowY[0], c.label)} + (${fmtN(fyK)}) = 0`);
+
           // Use the equation with the larger coefficient for numerical stability
-          const f = Math.abs(rowX[0]) >= Math.abs(rowY[0])
-            ? -fxK / rowX[0]
-            : -fyK / rowY[0];
-          memberForces[unknowns[0]] = f; solvedMembers[unknowns[0]] = true; progress = true;
-          const type = Math.abs(f) < tolerance ? "\\text{Zero-force}" : f > 0 ? "\\text{Tension}" : "\\text{Compression}";
+          let f: number;
+          if (Math.abs(rowX[0]) >= Math.abs(rowY[0]) && Math.abs(rowX[0]) > tolerance) {
+            f = -fxK / rowX[0];
+          } else if (Math.abs(rowY[0]) > tolerance) {
+            f = -fyK / rowY[0];
+          } else {
+            W(`✘  Zero-length member or degenerate geometry at Joint ${lbl}.`);
+            SP();
+            continue;
+          }
+
+          memberForces[unknowns[0]] = f;
+          solvedMembers[unknowns[0]] = true;
+          progress = true;
+
+          const type = Math.abs(f) < tolerance
+            ? "\\text{Zero-force}"
+            : f > 0 ? "\\text{Tension}" : "\\text{Compression}";
           R(`F_{${c.label}} = ${fmtN(f)}\\ \\text{kN}\\quad (${type})`);
+
         } else if (unknowns.length === 2) {
           const [c0, c1] = cosines;
           E(`L_{${c0.label}} = ${fmtN(c0.L)}\\ \\text{m},\\quad \\cos_x = ${fmtN(rowX[0])},\\quad \\cos_y = ${fmtN(rowY[0])}`);
           E(`L_{${c1.label}} = ${fmtN(c1.L)}\\ \\text{m},\\quad \\cos_x = ${fmtN(rowX[1])},\\quad \\cos_y = ${fmtN(rowY[1])}`);
           E(`\\Sigma F_x = 0:\\quad ${cosTex(rowX[0], c0.label)} + ${cosTex(rowX[1], c1.label)} + (${fmtN(fxK)}) = 0`);
           E(`\\Sigma F_y = 0:\\quad ${cosTex(rowY[0], c0.label)} + ${cosTex(rowY[1], c1.label)} + (${fmtN(fyK)}) = 0`);
+
+          // Solve 2×2 system:
+          // [ rowX[0]  rowX[1] ] [f0]   [ -fxK ]
+          // [ rowY[0]  rowY[1] ] [f1] = [ -fyK ]
           const det = rowX[0] * rowY[1] - rowX[1] * rowY[0];
-          if (Math.abs(det) < tolerance) { W(`✘  Singular system at Joint ${lbl} (det ≈ 0) — skipping.`); SP(); continue; }
-          const f1 = (-fxK * rowY[1] + fyK * rowX[1]) / det;
-          const f2 = (fxK * rowY[0] - fyK * rowX[0]) / det;
-          memberForces[unknowns[0]] = f1; memberForces[unknowns[1]] = f2;
-          solvedMembers[unknowns[0]] = true; solvedMembers[unknowns[1]] = true; progress = true;
           E(`\\Delta = ${fmtN(rowX[0])} \\cdot ${fmtN(rowY[1])} - ${fmtN(rowX[1])} \\cdot ${fmtN(rowY[0])} = ${fmtN(det)}`);
+
+          if (Math.abs(det) < tolerance) {
+            W(`✘  Singular system at Joint ${lbl} (det ≈ 0) — skipping.`);
+            SP();
+            continue;
+          }
+
+          // Cramer's rule:
+          // f0 = | -fxK  rowX[1] | / det = (-fxK*rowY[1] + fyK*rowX[1]) / det
+          //      | -fyK  rowY[1] |
+          // f1 = | rowX[0]  -fxK | / det = (-fyK*rowX[0] + fxK*rowY[0]) / det
+          //      | rowY[0]  -fyK |
+          const f0 = (-fxK * rowY[1] + fyK * rowX[1]) / det;
+          const f1 = (fxK * rowY[0] - fyK * rowX[0]) / det;
+
+          memberForces[unknowns[0]] = f0;
+          memberForces[unknowns[1]] = f1;
+          solvedMembers[unknowns[0]] = true;
+          solvedMembers[unknowns[1]] = true;
+          progress = true;
+
+          const t0 = Math.abs(f0) < tolerance ? "\\text{Zero-force}" : f0 > 0 ? "\\text{Tension}" : "\\text{Compression}";
           const t1 = Math.abs(f1) < tolerance ? "\\text{Zero-force}" : f1 > 0 ? "\\text{Tension}" : "\\text{Compression}";
-          const t2 = Math.abs(f2) < tolerance ? "\\text{Zero-force}" : f2 > 0 ? "\\text{Tension}" : "\\text{Compression}";
-          R(`F_{${c0.label}} = ${fmtN(f1)}\\ \\text{kN}\\quad (${t1})`);
-          R(`F_{${c1.label}} = ${fmtN(f2)}\\ \\text{kN}\\quad (${t2})`);
+          R(`F_{${c0.label}} = ${fmtN(f0)}\\ \\text{kN}\\quad (${t0})`);
+          R(`F_{${c1.label}} = ${fmtN(f1)}\\ \\text{kN}\\quad (${t1})`);
         }
         SP();
       }
     }
 
+    // Report any unsolved members
     const unsolvedIdx = members.map((_, i) => i).filter(i => !solvedMembers[i]);
-    if (unsolvedIdx.length > 0) W(`⚠  Could not solve: ${unsolvedIdx.map(i => { const mb = members[i]; return `${nodeLabel(mb.start)}${nodeLabel(mb.end)}`; }).join(", ")}.`);
+    if (unsolvedIdx.length > 0) {
+      W(`⚠  Could not solve members: ${unsolvedIdx.map(i => {
+        const mb = members[i];
+        return `${nodeLabel(mb.start)}${nodeLabel(mb.end)}`;
+      }).join(", ")}. Check that the truss is determinate and geometry is valid.`);
+    }
 
-    const formattedReactions = reactions.map((r, i) => ({ dir: r.x !== 0 && r.y !== 0 ? "xy" : r.x !== 0 ? "x" : "y", node: i, x: r.x, y: r.y }));
-    setSolution({ lines, memberForces, reactions: formattedReactions });
+    // Replace any remaining NaN with 0 for display
+    const finalForces = memberForces.map(f => isNaN(f) ? 0 : f);
+
+    const formattedReactions = reactions.map((r, i) => ({
+      dir: Math.abs(r.x) > tolerance && Math.abs(r.y) > tolerance ? "xy" :
+        Math.abs(r.x) > tolerance ? "x" : "y",
+      node: i,
+      x: r.x,
+      y: r.y,
+    }));
+
+    setSolution({ lines, memberForces: finalForces, reactions: formattedReactions });
   };
 
   /* ── Result rows for PDF ── */
@@ -945,12 +1132,15 @@ H("Step 2: Support Reactions");
     ...solution.memberForces.map((f, i) => {
       const tol = 1e-6;
       const type = Math.abs(f) < tol ? "Zero-force" : f > 0 ? "Tension" : "Compression";
-      return { label: `Member ${nodeLabel(members[i].start)}${nodeLabel(members[i].end)}`, value: `${f > 0 ? "+" : ""}${fmt(f)} kN  (${type})` };
+      return {
+        label: `Member ${nodeLabel(members[i].start)}${nodeLabel(members[i].end)}`,
+        value: `${f > 0 ? "+" : ""}${fmt(f)} kN  (${type})`,
+      };
     }),
     ...solution.reactions.filter(r => Math.abs(r.x) > 1e-6 || Math.abs(r.y) > 1e-6).flatMap(r => {
       const rows = [];
       if (Math.abs(r.x) > 1e-6) rows.push({ label: `R${nodeLabel(r.node)}x`, value: `${fmt(r.x)} kN` });
-      rows.push({ label: `R${nodeLabel(r.node)}y`, value: `${fmt(r.y)} kN` });
+      if (Math.abs(r.y) > 1e-6) rows.push({ label: `R${nodeLabel(r.node)}y`, value: `${fmt(r.y)} kN` });
       return rows;
     }),
   ] : [];
@@ -1084,6 +1274,7 @@ H("Step 2: Support Reactions");
                 {solution.reactions.map((r, i) => {
                   if (Math.abs(r.x) < 1e-6 && Math.abs(r.y) < 1e-6) return null;
                   const hasRx = Math.abs(r.x) > 1e-6;
+                  const hasRy = Math.abs(r.y) > 1e-6;
                   const label = nodeLabel(i);
                   const sType = i < supports.length ? supports[i].type : "";
                   return (
@@ -1099,10 +1290,12 @@ H("Step 2: Support Reactions");
                             <KaTeXInline tex={`${fmt(r.x)}\\ \\text{kN}`} />
                           </div>
                         )}
-                        <div>
-                          <p className="text-[11px] text-gray-400 uppercase tracking-wider mb-1">Vertical (R<sub>y</sub>)</p>
-                          <KaTeXInline tex={`${fmt(r.y)}\\ \\text{kN}`} />
-                        </div>
+                        {hasRy && (
+                          <div>
+                            <p className="text-[11px] text-gray-400 uppercase tracking-wider mb-1">Vertical (R<sub>y</sub>)</p>
+                            <KaTeXInline tex={`${fmt(r.y)}\\ \\text{kN}`} />
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
