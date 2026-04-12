@@ -440,7 +440,7 @@ function MainFBD({ numericNodes, members, supports, forces, solution, allNodes }
         const cosA = Math.cos(ang);
         const sinA = Math.sin(ang);
         const ex = sx(n.x) + arrowLen * cosA;
-        const ey = sy(n.y) + arrowLen * sinA;
+        const ey = sy(n.y) - arrowLen * sinA;  // ← flip sin for SVG coordinates
         const labelX = ex + (cosA >= 0 ? 8 : -8);
         const labelY = ey + (sinA > 0.2 ? 14 : -4);
         const anchor = cosA > 0.2 ? "start" : cosA < -0.2 ? "end" : "middle";
@@ -528,8 +528,8 @@ function JointFBD({ jointIdx, connectedMembers, solvedMemberForces, members, all
 
   const rxn = solution.reactions.find(r => r.node === jointIdx);
   if (rxn) {
-    if (Math.abs(rxn.x) > tol) arrows.push({ angle: rxn.x > 0 ? 0 : Math.PI, color: "#16a34a", label: `Rx=${fmt(rxn.x)} kN`, magnitude: Math.abs(rxn.x), dashed: false });
-    if (Math.abs(rxn.y) > tol) arrows.push({ angle: rxn.y > 0 ? Math.PI / 2 : -Math.PI / 2, color: "#16a34a", label: `Ry=${fmt(rxn.y)} kN`, magnitude: Math.abs(rxn.y), dashed: false });
+    if (Math.abs(rxn.x) > tol) arrows.push({ angle: rxn.x > 0 ? 0 : Math.PI, color: "#16a34a", label: `R${nodeLabel(jointIdx)}x=${fmt(rxn.x)} kN`, magnitude: Math.abs(rxn.x), dashed: false });
+    if (Math.abs(rxn.y) > tol) arrows.push({ angle: rxn.y > 0 ? Math.PI / 2 : -Math.PI / 2, color: "#16a34a", label: `R${nodeLabel(jointIdx)}y=${fmt(rxn.y)} kN`, magnitude: Math.abs(rxn.y), dashed: false });
   }
 
   forces.filter(f => f.Joint === jointIdx).forEach((f, i) => {
@@ -774,8 +774,8 @@ export default function TrussSolverUI() {
                         <span className="text-[11px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{sType}</span>
                       </div>
                       <div className="flex gap-8">
-                        {hasRx && <div><p className="text-[11px] text-gray-400 uppercase tracking-wider mb-1">Horizontal (R<sub>x</sub>)</p><KaTeXInline tex={`${fmt(r.x)}\\ \\text{kN}`} /></div>}
-                        {hasRy && <div><p className="text-[11px] text-gray-400 uppercase tracking-wider mb-1">Vertical (R<sub>y</sub>)</p><KaTeXInline tex={`${fmt(r.y)}\\ \\text{kN}`} /></div>}
+                        {hasRx && <div><p className="text-[11px] text-gray-400 uppercase tracking-wider mb-1">Horizontal (R<sub>{label}</sub><sub>x</sub>)</p><KaTeXInline tex={`${fmt(r.x)}\\ \\text{kN}`} /></div>}
+                        {hasRy && <div><p className="text-[11px] text-gray-400 uppercase tracking-wider mb-1">Vertical (R<sub>{label}</sub><sub>y</sub>)</p><KaTeXInline tex={`${fmt(r.y)}\\ \\text{kN}`} /></div>}
                       </div>
                     </div>
                   );
