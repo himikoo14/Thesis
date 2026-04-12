@@ -24,55 +24,56 @@ export default function HomePage() {
           <div className="grid grid-cols-2 gap-4 items-center">
 
             {/* Module 1 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold">Module 1: Introduction to Statics</p>
+            <p className="text-left text-black text-[18px] font-bold font-bold">Module 1: Free Body Diagram</p>
             <Link
-              href="/modules/Introduction"
+              href="/modules/FBD"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
             >
               Module 1
             </Link>
 
             {/* Module 2 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold">Module 2: Free Body Diagram</p>
+            <p className="text-left text-black text-[18px] font-bold font-bold">Module 2: 2D Resultant</p>
             <Link
-              href="/modules/FBD"
+              href="/modules/2D-Resultant"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
             >
               Module 2
             </Link>
 
             {/* Module 3 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold">Module 3: 2D Resultant</p>
+            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 3: 3D Resultant</p>
             <Link
-              href="/modules/2D-Resultant"
+              href="/modules/3D-Resultant"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
             >
               Module 3
             </Link>
 
             {/* Module 4 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 4: 3D Resultant</p>
+            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 4: 2D Equilibrium</p>
             <Link
-              href="/modules/3D-Resultant"
+              href="/modules/2D-Equilibrium"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
             >
               Module 4
             </Link>
 
+            
             {/* Module 5 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 5: 2D Equilibrium</p>
+            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 5: 3D Equilibrium</p>
             <Link
-              href="/modules/2D-Equilibrium"
+              href="/modules/3D-Equilibrium"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
             >
               Module 5
             </Link>
 
-            
+
             {/* Module 6 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 6: 3D Equilibrium</p>
+            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 6: Truss Joint Method</p>
             <Link
-              href="/modules/3D-Equilibrium"
+              href="/modules/Truss"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
             >
               Module 6
@@ -80,31 +81,21 @@ export default function HomePage() {
 
 
             {/* Module 7 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 7: Truss Joint Method</p>
+            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 7:Moment of Inertia about Centroidal Axes</p>
             <Link
-              href="/modules/Truss"
+              href="/modules/MOIcentroidal"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
             >
               Module 7
             </Link>
 
-
             {/* Module 8 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 8:Moment of Inertia about Centroidal Axes</p>
-            <Link
-              href="/modules/MOIcentroidal"
-              className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
-            >
-              Module 8
-            </Link>
-
-            {/* Module 9 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 9:Moment of Inertia about Custom Axes</p>
+            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Module 8:Moment of Inertia about Custom Axes</p>
             <Link
               href="/modules/MOIcustom"
               className="bg-[#008409] text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] transition text-[18px]"
             >
-              Module 9
+              Module 8
             </Link>
 
           </div>

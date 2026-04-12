@@ -1,8 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback, ReactNode } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
+import {
+  solveTruss,
+  fmt,
+  fmtN,
+  nodeLabel,
+  type Support,
+  type Joint,
+  type Member,
+  type Force,
+  type Solution,
+  type StepLine,
+} from "../../lib/truss";
 
 /* ── KaTeX via CDN ─────────────────────────────────────────────────────────── */
 declare global {
@@ -58,29 +70,8 @@ function KTX({ tex }: { tex: string }) {
   return <div ref={ref} style={{ margin: "3px 0", overflowX: "auto" }} />;
 }
 
-/* ===================== TYPES ===================== */
-
-type Support = { x: string; y: string; type: "Pinned" | "Roller" };
-type Joint = { x: string; y: string };
-type Member = { start: number; end: number };
-type Force = { Joint: number; magnitude: string; angle: string };
+/* ===================== LOCAL TYPES ===================== */
 type GenericObject = Record<string, any>;
-
-type StepLine =
-  | { kind: "heading"; text: string }
-  | { kind: "subheading"; text: string }
-  | { kind: "text"; text: string }
-  | { kind: "eq"; tex: string }
-  | { kind: "result"; tex: string }
-  | { kind: "warn"; text: string }
-  | { kind: "jointFBD"; joint: number; members: number[] }
-  | { kind: "spacer" };
-
-type Solution = {
-  lines: StepLine[];
-  memberForces: number[];
-  reactions: { dir: string; node: number; x: number; y: number }[];
-};
 
 type FBDArrow = {
   angle: number;
@@ -89,44 +80,6 @@ type FBDArrow = {
   magnitude: number;
   dashed: boolean;
 };
-
-/* ── Smart number formatter ──────────────────────────────────────────────── */
-const fmt = (v: number): string => {
-  if (Math.abs(v - Math.round(v)) < 1e-9) return Math.round(v).toString();
-  const s = v.toFixed(2);
-  return s.replace(/\.?0+$/, "");
-};
-
-const fmtN = (v: number): string => fmt(v);
-
-/* ── Gaussian elimination with partial pivoting ─────────────────────────── */
-function gaussianElim(A: number[][], b: number[]): number[] | null {
-  const n = A.length;
-  // Deep copy to avoid mutating inputs
-  const M = A.map(r => [...r]);
-  const bv = [...b];
-  for (let col = 0; col < n; col++) {
-    let maxRow = col;
-    for (let row = col + 1; row < n; row++) {
-      if (Math.abs(M[row][col]) > Math.abs(M[maxRow][col])) maxRow = row;
-    }
-    [M[col], M[maxRow]] = [M[maxRow], M[col]];
-    [bv[col], bv[maxRow]] = [bv[maxRow], bv[col]];
-    if (Math.abs(M[col][col]) < 1e-10) return null;
-    for (let row = col + 1; row < n; row++) {
-      const factor = M[row][col] / M[col][col];
-      bv[row] -= factor * bv[col];
-      for (let k = col; k < n; k++) M[row][k] -= factor * M[col][k];
-    }
-  }
-  const x = new Array(n).fill(0);
-  for (let row = n - 1; row >= 0; row--) {
-    x[row] = bv[row];
-    for (let k = row + 1; k < n; k++) x[row] -= M[row][k] * x[k];
-    x[row] /= M[row][row];
-  }
-  return x;
-}
 
 /* ── Arrow marker helper ─────────────────────────────────────────────────── */
 function ArrowMarker({ id, color }: { id: string; color: string }) {
@@ -157,12 +110,7 @@ function Arrow({ x1, y1, x2, y2, color, markerId, label, labelOffset = { dx: 6, 
    STEP-BY-STEP RENDERER
 ================================================================ */
 function TrussStepRenderer({
-  lines,
-  solution,
-  members,
-  allNodes,
-  supports,
-  forces,
+  lines, solution, members, allNodes, supports, forces,
 }: {
   lines: StepLine[];
   solution: Solution;
@@ -418,7 +366,6 @@ function MainFBD({ numericNodes, members, supports, forces, solution, allNodes }
   allNodes: Joint[];
 }) {
   const W = 560, H = 420, PAD = 56;
-  const nodeLabel = (i: number) => String.fromCharCode(65 + i);
   const xs = numericNodes.map(n => n.x); const ys = numericNodes.map(n => n.y);
   const minX = Math.min(...xs); const maxX = Math.max(...xs);
   const minY = Math.min(...ys); const maxY = Math.max(...ys);
@@ -490,12 +437,17 @@ function MainFBD({ numericNodes, members, supports, forces, solution, allNodes }
         const n = numericNodes[f.Joint]; if (!n) return null;
         const mag = parseFloat(f.magnitude || "0"); if (!mag) return null;
         const ang = (parseFloat(f.angle || "0") * Math.PI) / 180;
-        const ex = sx(n.x) + arrowLen * Math.cos(ang);
-        const ey = sy(n.y) - arrowLen * Math.sin(ang);
+        const cosA = Math.cos(ang);
+        const sinA = Math.sin(ang);
+        const ex = sx(n.x) + arrowLen * cosA;
+        const ey = sy(n.y) + arrowLen * sinA;
+        const labelX = ex + (cosA >= 0 ? 8 : -8);
+        const labelY = ey + (sinA > 0.2 ? 14 : -4);
+        const anchor = cosA > 0.2 ? "start" : cosA < -0.2 ? "end" : "middle";
         return (
           <g key={`f-${i}`}>
             <line x1={sx(n.x)} y1={sy(n.y)} x2={ex} y2={ey} stroke="#dc2626" strokeWidth={2.5} markerEnd="url(#main-red)" />
-            <text x={ex + (Math.cos(ang) > 0 ? 6 : -6)} y={ey - 4} fontSize={10} fill="#dc2626" fontWeight="700" textAnchor={Math.cos(ang) > 0 ? "start" : "end"}>{mag} kN</text>
+            <text x={labelX} y={labelY} fontSize={10} fill="#dc2626" fontWeight="700" textAnchor={anchor}>{mag} kN</text>
           </g>
         );
       })}
@@ -506,24 +458,16 @@ function MainFBD({ numericNodes, members, supports, forces, solution, allNodes }
         return (
           <g key={`rx-${i}`}>
             {Math.abs(r.x) > tol && (
-              <Arrow
-                x1={cx - Math.sign(r.x) * arrowLen} y1={cy}
-                x2={cx} y2={cy}
+              <Arrow x1={cx - Math.sign(r.x) * arrowLen} y1={cy} x2={cx} y2={cy}
                 color="#16a34a" markerId="main-green"
                 label={`R${lbl}x = ${fmt(r.x)} kN`}
-                labelOffset={{ dx: r.x > 0 ? -arrowLen - 4 : 6, dy: -8 }}
-                fontSize={10}
-              />
+                labelOffset={{ dx: r.x > 0 ? -arrowLen - 4 : 6, dy: -8 }} fontSize={10} />
             )}
             {Math.abs(r.y) > tol && (
-              <Arrow
-                x1={cx} y1={cy + Math.sign(r.y) * arrowLen}
-                x2={cx} y2={cy}
+              <Arrow x1={cx} y1={cy + Math.sign(r.y) * arrowLen} x2={cx} y2={cy}
                 color="#16a34a" markerId="main-green"
                 label={`R${lbl}y = ${fmt(r.y)} kN`}
-                labelOffset={{ dx: 8, dy: r.y > 0 ? arrowLen + 14 : -arrowLen - 4 }}
-                fontSize={10}
-              />
+                labelOffset={{ dx: 8, dy: r.y > 0 ? arrowLen + 14 : -arrowLen - 4 }} fontSize={10} />
             )}
           </g>
         );
@@ -552,56 +496,29 @@ function JointFBD({ jointIdx, connectedMembers, solvedMemberForces, members, all
   forces: Force[];
 }) {
   const SIZE = 260, CX = SIZE / 2, CY = SIZE / 2;
-  const nodeLabel = (i: number) => String.fromCharCode(65 + i);
   const tol = 1e-6;
-
   const jointNode = allNodes[jointIdx];
   const jx = parseFloat(jointNode?.x || "0");
   const jy = parseFloat(jointNode?.y || "0");
   const jLabel = nodeLabel(jointIdx);
-
   const arrows: FBDArrow[] = [];
 
-  // ================= MEMBER FORCES =================
-  // Convention: we draw the force that the member exerts ON this joint.
-  // Tension (+): member pulls joint → arrow points AWAY from joint (toward other node)
-  // Compression (−): member pushes joint → arrow points TOWARD joint (away from other node, i.e. +π)
   connectedMembers.forEach(mIdx => {
     const mb = members[mIdx];
     const otherIdx = mb.start === jointIdx ? mb.end : mb.start;
     const otherNode = allNodes[otherIdx];
-
     const ox = parseFloat(otherNode?.x || "0");
     const oy = parseFloat(otherNode?.y || "0");
-
-    const dx = ox - jx;
-    const dy = oy - jy;
-    // Angle pointing toward the other node
+    const dx = ox - jx; const dy = oy - jy;
     const angleToOther = Math.atan2(dy, dx);
-
     const lbl = `${nodeLabel(mb.start)}${nodeLabel(mb.end)}`;
     const force = solvedMemberForces[mIdx];
     const known = force !== undefined && !isNaN(force);
     const isTension = known && force > tol;
-    const isCompression = known && force < -tol;
     const isZero = known && Math.abs(force) <= tol;
-
-    // For tension: arrow points away from joint (toward other) — angle = angleToOther
-    // For compression: arrow points into joint from outside — but we show the force on joint,
-    //   which means the force vector points INWARD, so arrow tip is at center.
-    //   We draw FROM outer point TO center = from (CX + cos*len, CY - sin*len) to (CX, CY)
-    //   Equivalently, arrow base is at the outer end, tip at center → use angle + π for the draw direction
-    //   But our arrow system draws FROM x1,y1 TO x2,y2.
-    //   For tension: FROM center, TO outer → arrowAngle = angleToOther
-    //   For compression: FROM outer, TO center → we'll handle this separately
-
-    const color =
-      !known ? "#6b7280" :
-        isZero ? "#9ca3af" :
-          isTension ? "#2563eb" : "#dc2626";
-
+    const color = !known ? "#6b7280" : isZero ? "#9ca3af" : isTension ? "#2563eb" : "#dc2626";
     arrows.push({
-      angle: angleToOther,          // angle toward other node (used for tension direction)
+      angle: angleToOther,
       color,
       label: known ? `F${lbl}=${fmt(Math.abs(force))} kN` : `F${lbl}=?`,
       magnitude: known ? Math.abs(force) : 1,
@@ -609,54 +526,20 @@ function JointFBD({ jointIdx, connectedMembers, solvedMemberForces, members, all
     });
   });
 
-  // ================= REACTIONS =================
   const rxn = solution.reactions.find(r => r.node === jointIdx);
   if (rxn) {
-    if (Math.abs(rxn.x) > tol) {
-      arrows.push({
-        angle: rxn.x > 0 ? 0 : Math.PI,
-        color: "#16a34a",
-        label: `Rx=${fmt(rxn.x)} kN`,
-        magnitude: Math.abs(rxn.x),
-        dashed: false,
-      });
-    }
-    if (Math.abs(rxn.y) > tol) {
-      arrows.push({
-        angle: rxn.y > 0 ? Math.PI / 2 : -Math.PI / 2,
-        color: "#16a34a",
-        label: `Ry=${fmt(rxn.y)} kN`,
-        magnitude: Math.abs(rxn.y),
-        dashed: false,
-      });
-    }
+    if (Math.abs(rxn.x) > tol) arrows.push({ angle: rxn.x > 0 ? 0 : Math.PI, color: "#16a34a", label: `Rx=${fmt(rxn.x)} kN`, magnitude: Math.abs(rxn.x), dashed: false });
+    if (Math.abs(rxn.y) > tol) arrows.push({ angle: rxn.y > 0 ? Math.PI / 2 : -Math.PI / 2, color: "#16a34a", label: `Ry=${fmt(rxn.y)} kN`, magnitude: Math.abs(rxn.y), dashed: false });
   }
 
-  // ================= EXTERNAL FORCES =================
-  forces
-    .filter(f => f.Joint === jointIdx)
-    .forEach((f, i) => {
-      const mag = parseFloat(f.magnitude || "0");
-      if (!mag) return;
-      const ang = (parseFloat(f.angle || "0") * Math.PI) / 180;
-      arrows.push({
-        angle: ang,
-        color: "#dc2626",
-        label: `F${i + 1}=${fmt(Math.abs(mag))} kN`,
-        magnitude: Math.abs(mag),
-        dashed: false,
-      });
-    });
+  forces.filter(f => f.Joint === jointIdx).forEach((f, i) => {
+    const mag = parseFloat(f.magnitude || "0"); if (!mag) return;
+    const ang = (parseFloat(f.angle || "0") * Math.PI) / 180;
+    arrows.push({ angle: -ang, color: "#dc2626", label: `F${i + 1}=${fmt(Math.abs(mag))} kN`, magnitude: Math.abs(mag), dashed: false });
+  });
 
-  // ================= SCALING =================
   const maxForce = Math.max(...arrows.map(a => a.magnitude || 1), 1);
   const MAX_ARM = 90, MIN_ARM = 40;
-
-  // Determine which member arrows are compression (to flip direction)
-  const memberForceMap: Record<number, number> = {};
-  connectedMembers.forEach(mIdx => {
-    memberForceMap[mIdx] = solvedMemberForces[mIdx];
-  });
 
   return (
     <svg width={SIZE} height={SIZE} style={{ display: "block", margin: "12px auto", background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
@@ -673,60 +556,31 @@ function JointFBD({ jointIdx, connectedMembers, solvedMemberForces, members, all
       {arrows.map((arrow, idx) => {
         const scale = arrow.magnitude / maxForce;
         const length = MIN_ARM + scale * (MAX_ARM - MIN_ARM);
-
-        // Is this a member force arrow that is compression?
-        // connectedMembers[idx] only valid for first N arrows (member forces)
         const isMemberArrow = idx < connectedMembers.length;
         const mIdx = isMemberArrow ? connectedMembers[idx] : -1;
         const mForce = isMemberArrow ? solvedMemberForces[mIdx] : undefined;
         const isCompression = mForce !== undefined && !isNaN(mForce) && mForce < -tol;
-
         let x1: number, y1: number, x2: number, y2: number;
-
         if (isCompression) {
-          // Compression: force on joint is directed INWARD (toward joint from outside)
-          // Draw arrow FROM outer point TO center
-          const outerX = CX + Math.cos(arrow.angle) * length;
-          const outerY = CY - Math.sin(arrow.angle) * length;
-          x1 = outerX; y1 = outerY; x2 = CX; y2 = CY;
+          x1 = CX + Math.cos(arrow.angle) * length; y1 = CY - Math.sin(arrow.angle) * length;
+          x2 = CX; y2 = CY;
         } else {
-          // Tension / reaction / external: arrow FROM center TOWARD outer
           x1 = CX; y1 = CY;
-          x2 = CX + Math.cos(arrow.angle) * length;
-          y2 = CY - Math.sin(arrow.angle) * length;
+          x2 = CX + Math.cos(arrow.angle) * length; y2 = CY - Math.sin(arrow.angle) * length;
         }
-
-        const markerId =
-          arrow.color === "#2563eb" ? `jb-${jointIdx}` :
-            arrow.color === "#dc2626" ? `jr-${jointIdx}` :
-              arrow.color === "#16a34a" ? `jgr-${jointIdx}` :
-                arrow.color === "#9ca3af" ? `jlg-${jointIdx}` :
-                  `jg-${jointIdx}`;
-
-        // Label position: at the outer end of the arrow
+        const markerId = arrow.color === "#2563eb" ? `jb-${jointIdx}` : arrow.color === "#dc2626" ? `jr-${jointIdx}` : arrow.color === "#16a34a" ? `jgr-${jointIdx}` : arrow.color === "#9ca3af" ? `jlg-${jointIdx}` : `jg-${jointIdx}`;
         const labelR = length + 14;
         const lx = CX + Math.cos(arrow.angle) * labelR;
         const ly = CY - Math.sin(arrow.angle) * labelR;
         const textAnchor = Math.cos(arrow.angle) > 0.2 ? "start" : Math.cos(arrow.angle) < -0.2 ? "end" : "middle";
         const textDy = Math.sin(arrow.angle) > 0.2 ? -2 : Math.sin(arrow.angle) < -0.2 ? 10 : 4;
-
-        // Shorten the line to leave room for the arrowhead
         const dxLine = x2 - x1; const dyLine = y2 - y1;
         const Lline = Math.hypot(dxLine, dyLine) || 1;
-        const ex = x2 - (dxLine / Lline) * 1;
-        const ey = y2 - (dyLine / Lline) * 1;
-
+        const ex = x2 - (dxLine / Lline); const ey = y2 - (dyLine / Lline);
         return (
           <g key={idx}>
-            <line
-              x1={x1} y1={y1} x2={ex} y2={ey}
-              stroke={arrow.color} strokeWidth={2.2}
-              strokeDasharray={arrow.dashed ? "5,3" : undefined}
-              markerEnd={`url(#${markerId})`}
-            />
-            <text x={lx} y={ly + textDy} textAnchor={textAnchor} fontSize={9} fill={arrow.color} fontWeight="600">
-              {arrow.label}
-            </text>
+            <line x1={x1} y1={y1} x2={ex} y2={ey} stroke={arrow.color} strokeWidth={2.2} strokeDasharray={arrow.dashed ? "5,3" : undefined} markerEnd={`url(#${markerId})`} />
+            <text x={lx} y={ly + textDy} textAnchor={textAnchor} fontSize={9} fill={arrow.color} fontWeight="600">{arrow.label}</text>
           </g>
         );
       })}
@@ -754,380 +608,21 @@ export default function TrussSolverUI() {
 
   const allNodes: Joint[] = [...supports.map(s => ({ x: s.x, y: s.y })), ...nodes];
   const numericNodes = allNodes.map(n => ({ x: parseFloat(n.x || "0"), y: parseFloat(n.y || "0") }));
-  const nodeLabel = (i: number) => String.fromCharCode(65 + i);
-
-  const fmtNum = (v: number): string => (v < 0 ? `-${fmt(Math.abs(v))}` : `${fmt(v)}`);
-  const cosTex = (cos: number, lbl: string) => `${fmtNum(cos)} \\cdot F_{${lbl}}`;
 
   const inputClass = "w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 outline-none focus:ring-0";
   const redButtonClass = "w-10 px-2 py-0.5 bg-red-500 text-white rounded-md hover:bg-red-600 text-[20px]";
   const greenButtonClass = "px-3 py-1 bg-[#008409] text-white rounded-lg hover:bg-[#15711b] transition text-[18px]";
 
   function handleChange<T extends GenericObject>(arr: T[], setArr: React.Dispatch<React.SetStateAction<T[]>>, index: number, field: keyof T, value: T[keyof T]) {
-    const a = [...arr];
-    a[index][field] = value;
-    setArr(a);
+    const a = [...arr]; a[index][field] = value; setArr(a);
   }
+  function addItem<T>(arr: T[], setArr: React.Dispatch<React.SetStateAction<T[]>>, tpl: T) { setArr([...arr, tpl]); }
+  function removeItem<T>(arr: T[], setArr: React.Dispatch<React.SetStateAction<T[]>>, i: number) { setArr(arr.filter((_, j) => j !== i)); }
 
-  function addItem<T>(arr: T[], setArr: React.Dispatch<React.SetStateAction<T[]>>, tpl: T) {
-    setArr([...arr, tpl]);
-  }
-
-  function removeItem<T>(arr: T[], setArr: React.Dispatch<React.SetStateAction<T[]>>, i: number) {
-    setArr(arr.filter((_, j) => j !== i));
-  }
-
-  /* ===================== SOLVER ===================== */
-  const solveTruss = () => {
-    const nJoints = numericNodes.length;
-    const nMembers = members.length;
-    const tolerance = 1e-6;
-    const memberForces: number[] = Array(nMembers).fill(NaN);
-    const solvedMembers: boolean[] = Array(nMembers).fill(false);
-    const jointMembers: number[][] = Array.from({ length: nJoints }, () => []);
-    members.forEach((mb, idx) => {
-      jointMembers[mb.start].push(idx);
-      jointMembers[mb.end].push(idx);
-    });
-
-    const lines: StepLine[] = [];
-    const H = (text: string) => lines.push({ kind: "heading", text });
-    const SH = (text: string) => lines.push({ kind: "subheading", text });
-    const T = (text: string) => lines.push({ kind: "text", text });
-    const E = (tex: string) => lines.push({ kind: "eq", tex });
-    const R = (tex: string) => lines.push({ kind: "result", tex });
-    const W = (text: string) => lines.push({ kind: "warn", text });
-    const SP = () => lines.push({ kind: "spacer" });
-
-    /* ── Step 1: Determinacy ── */
-    H("Step 1: Determinacy Check");
-    const m_val = nMembers;
-    const j_val = nJoints;
-    const r_val = supports.reduce((a, s) => a + (s.type === "Pinned" ? 2 : 1), 0);
-    const det_val = m_val + r_val - 2 * j_val;
-    T(`Members: m = ${m_val},  Joints: j = ${j_val},  Reactions: r = ${r_val}`);
-    E(`m + r - 2j = ${m_val} + ${r_val} - 2(${j_val}) = ${det_val}`);
-    if (det_val === 0) R("\\checkmark\\ \\text{Statically Determinate and stable}");
-    else if (det_val < 0) W("✘  Mechanism (unstable) — check inputs.");
-    else W("✘  Statically Indeterminate — this solver handles determinate trusses only.");
-    SP();
-
-    /* ── Step 2: Support Reactions ── */
-    H("Step 2: Support Reactions");
-
-    // Collect external force resultants
-    let totalFx = 0, totalFy = 0;
-    forces.forEach(f => {
-      const mag = parseFloat(f.magnitude) || 0;
-      const ang = (parseFloat(f.angle) || 0) * Math.PI / 180;
-      totalFx += mag * Math.cos(ang);
-      totalFy += mag * Math.sin(ang);
-    });
-
-    SH("Applied external loads:");
-    forces.forEach((f, i) => {
-      const mag = parseFloat(f.magnitude) || 0;
-      const ang = parseFloat(f.angle) || 0;
-      const angR = ang * Math.PI / 180;
-      T(`F${i + 1} at Joint ${nodeLabel(f.Joint)}: ${fmt(mag)} kN @ ${fmt(ang)}°`);
-      E(`F_{x${i + 1}} = ${fmt(mag)}\\cos(${fmt(ang)}^\\circ) = ${fmtN(mag * Math.cos(angR))}\\ \\text{kN}`);
-      E(`F_{y${i + 1}} = ${fmt(mag)}\\sin(${fmt(ang)}^\\circ) = ${fmtN(mag * Math.sin(angR))}\\ \\text{kN}`);
-    });
-    E(`\\Sigma F_x^{\\text{ext}} = ${fmtN(totalFx)}\\ \\text{kN}, \\quad \\Sigma F_y^{\\text{ext}} = ${fmtN(totalFy)}\\ \\text{kN}`);
-    SP();
-
-    // Build reaction unknowns
-    type ReactionUnknown = { jointIdx: number; dir: "x" | "y" };
-    const unknownReactions: ReactionUnknown[] = [];
-    supports.forEach((s, i) => {
-      if (s.type === "Pinned") {
-        unknownReactions.push({ jointIdx: i, dir: "x" });
-        unknownReactions.push({ jointIdx: i, dir: "y" });
-      } else {
-        // Roller: vertical (y) reaction only
-        unknownReactions.push({ jointIdx: i, dir: "y" });
-      }
-    });
-
-    const nUnk = unknownReactions.length;
-
-    // Moment reference node: use support A (index 0)
-    const refNode = numericNodes[0];
-
-    // Moment of applied forces about refNode: M = Σ(dx*Fy - dy*Fx)
-    let momentApplied = 0;
-    forces.forEach(f => {
-      const mag = parseFloat(f.magnitude) || 0;
-      const ang = (parseFloat(f.angle) || 0) * Math.PI / 180;
-      const fx = mag * Math.cos(ang);
-      const fy = mag * Math.sin(ang);
-      const dx = numericNodes[f.Joint].x - refNode.x;
-      const dy = numericNodes[f.Joint].y - refNode.y;
-      momentApplied += dx * fy - dy * fx;
-    });
-
-    // 3 equilibrium equations: ΣFx=0, ΣFy=0, ΣM_A=0
-    // Each reaction R_k contributes:
-    //   to ΣFx: +1 if dir='x', 0 if dir='y'
-    //   to ΣFy: 0 if dir='x', +1 if dir='y'
-    //   to ΣM_A: if dir='x' → moment arm = -(y_k - y_A), if dir='y' → moment arm = +(x_k - x_A)
-    const Aeq: number[][] = [
-      unknownReactions.map(u => u.dir === "x" ? 1 : 0),                             // ΣFx
-      unknownReactions.map(u => u.dir === "y" ? 1 : 0),                             // ΣFy
-      unknownReactions.map(u => {                                                    // ΣM_A
-        const n = numericNodes[u.jointIdx];
-        const dx = n.x - refNode.x;
-        const dy = n.y - refNode.y;
-        // Moment of a horizontal force Rx: M = Rx * (-dy) (using right-hand rule, CCW+)
-        // Moment of a vertical force Ry:   M = Ry * (dx)
-        return u.dir === "x" ? -dy : dx;
-      }),
-    ];
-    const beq = [-totalFx, -totalFy, -momentApplied];
-
-    // Select nUnk equations from the 3 available (for nUnk <= 3)
-    // Always use all 3 if nUnk == 3; pick best subset if nUnk < 3
-    let Asq: number[][];
-    let bsq: number[];
-    if (nUnk === 3) {
-      Asq = Aeq.map(r => [...r]);
-      bsq = [...beq];
-    } else if (nUnk === 2) {
-      // Use ΣFx, ΣFy (rows 0 and 1); if singular, try with ΣM
-      Asq = [Aeq[0].slice(), Aeq[1].slice()];
-      bsq = [beq[0], beq[1]];
-      // Check determinant
-      const detTest = Asq[0][0] * Asq[1][1] - Asq[0][1] * Asq[1][0];
-      if (Math.abs(detTest) < 1e-10) {
-        // Try ΣFx + ΣM
-        Asq = [Aeq[0].slice(), Aeq[2].slice()];
-        bsq = [beq[0], beq[2]];
-      }
-    } else if (nUnk === 1) {
-      // Use ΣFy first, then ΣFx, then ΣM
-      const row = Math.abs(Aeq[1][0]) > Math.abs(Aeq[0][0]) ? 1 : 0;
-      Asq = [Aeq[row].slice()];
-      bsq = [beq[row]];
-    } else {
-      Asq = Aeq.slice(0, nUnk).map(r => [...r]);
-      bsq = beq.slice(0, nUnk);
-    }
-
-    // Initialize reaction storage for ALL joints
-    const reactions: { x: number; y: number }[] = numericNodes.map(() => ({ x: 0, y: 0 }));
-    const solved = gaussianElim(Asq, bsq);
-
-    if (solved) {
-      solved.forEach((val, k) => {
-        const u = unknownReactions[k];
-        if (u.dir === "x") reactions[u.jointIdx].x = val;
-        else reactions[u.jointIdx].y = val;
-      });
-
-      supports.forEach((s, i) => {
-        const la = nodeLabel(i);
-        SH(`Support ${la} (${s.type}):`);
-        if (s.type === "Pinned") {
-          R(`R_{x${la}} = ${fmtN(reactions[i].x)}\\ \\text{kN}`);
-        } else {
-          T(`(Roller — no horizontal reaction)`);
-        }
-        R(`R_{y${la}} = ${fmtN(reactions[i].y)}\\ \\text{kN}`);
-      });
-      SP();
-
-      // Equilibrium verification
-      let chkFx = totalFx, chkFy = totalFy, chkM = momentApplied;
-      for (let i = 0; i < supports.length; i++) {
-        chkFx += reactions[i].x;
-        chkFy += reactions[i].y;
-        const n = numericNodes[i];
-        chkM += (n.x - refNode.x) * reactions[i].y - (n.y - refNode.y) * reactions[i].x;
-      }
-      if (Math.abs(chkFx) < 1e-4 && Math.abs(chkFy) < 1e-4 && Math.abs(chkM) < 1e-4) {
-        R("\\checkmark\\ \\text{Equilibrium verified: } \\Sigma F_x = \\Sigma F_y = \\Sigma M = 0");
-      } else {
-        W(`⚠ Equilibrium check failed: ΣFx=${fmtN(chkFx)}, ΣFy=${fmtN(chkFy)}, ΣM=${fmtN(chkM)}`);
-      }
-    } else {
-      W("✘  Could not solve reactions — check support configuration.");
-    }
-
-    // Build total external force at each joint (reactions + applied loads)
-    // This represents the net non-member force acting ON each joint
-    const extF: { x: number; y: number }[] = numericNodes.map((_, idx) => ({
-      x: reactions[idx]?.x || 0,
-      y: reactions[idx]?.y || 0,
-    }));
-    forces.forEach(f => {
-      const mag = parseFloat(f.magnitude) || 0;
-      const ang = (parseFloat(f.angle) || 0) * Math.PI / 180;
-      extF[f.Joint].x += mag * Math.cos(ang);
-      extF[f.Joint].y += mag * Math.sin(ang);
-    });
-
-    /* ── Step 3: Method of Joints ── */
-    H("Step 3: Method of Joints");
-    T("Convention: positive F = Tension,  negative F = Compression");
-    T("Equilibrium at each joint: Σ(cos_x · F) + extFx = 0,  Σ(cos_y · F) + extFy = 0");
-    SP();
-
-    let progress = true;
-    let iter = 0;
-    while (progress && iter < nJoints * 3) {
-      progress = false;
-      iter++;
-      for (let jIdx = 0; jIdx < nJoints; jIdx++) {
-        const connected = jointMembers[jIdx];
-        const unknowns = connected.filter(i => !solvedMembers[i]);
-        if (unknowns.length === 0 || unknowns.length > 2) continue;
-
-        const lbl = nodeLabel(jIdx);
-        SH(`Joint ${lbl}`);
-        lines.push({ kind: "jointFBD", joint: jIdx, members: connected });
-        T(`Connected members: ${connected.map(u => {
-          const mb = members[u];
-          return `${nodeLabel(mb.start)}${nodeLabel(mb.end)}`;
-        }).join(", ")}`);
-        T(`Unknown forces:  ${unknowns.map(u => {
-          const mb = members[u];
-          return `${nodeLabel(mb.start)}${nodeLabel(mb.end)}`;
-        }).join(", ")}`);
-        SP();
-
-        // Compute the known-force residual at this joint
-        // Start from total external force (reactions + applied loads)
-        let fxK = extF[jIdx].x;
-        let fyK = extF[jIdx].y;
-
-        // Subtract contributions from already-solved members
-        connected.forEach(mIdx => {
-          if (solvedMembers[mIdx]) {
-            const mb = members[mIdx];
-            const other = mb.start === jIdx ? mb.end : mb.start;
-            const dx = numericNodes[other].x - numericNodes[jIdx].x;
-            const dy = numericNodes[other].y - numericNodes[jIdx].y;
-            const L = Math.hypot(dx, dy);
-            if (L < tolerance) return;
-            const f = memberForces[mIdx];
-            // Member force f acts on joint: direction toward other if tension (+), away if compression (-)
-            // Component contribution to equilibrium: cos_x * f, cos_y * f
-            fxK -= f * (dx / L);
-            fyK -= f * (dy / L);
-          }
-        });
-
-        // Build direction cosines for unknowns
-        // For unknown member k: force direction = unit vector from this joint toward other joint
-        const rowX: number[] = [];
-        const rowY: number[] = [];
-        const cosines: { dx: number; dy: number; L: number; label: string }[] = [];
-
-        unknowns.forEach(mIdx => {
-          const mb = members[mIdx];
-          const other = mb.start === jIdx ? mb.end : mb.start;
-          const dx = numericNodes[other].x - numericNodes[jIdx].x;
-          const dy = numericNodes[other].y - numericNodes[jIdx].y;
-          const L = Math.hypot(dx, dy);
-          rowX.push(L > tolerance ? dx / L : 0);
-          rowY.push(L > tolerance ? dy / L : 0);
-          cosines.push({ dx, dy, L, label: `${nodeLabel(mb.start)}${nodeLabel(mb.end)}` });
-        });
-
-        if (unknowns.length === 1) {
-          const c = cosines[0];
-          E(`L_{${c.label}} = \\sqrt{(${fmtN(c.dx)})^2 + (${fmtN(c.dy)})^2} = ${fmtN(c.L)}\\ \\text{m}`);
-          E(`\\cos_x = ${fmtN(rowX[0])},\\quad \\cos_y = ${fmtN(rowY[0])}`);
-          E(`\\Sigma F_x = 0:\\quad ${cosTex(rowX[0], c.label)} + (${fmtN(fxK)}) = 0`);
-          E(`\\Sigma F_y = 0:\\quad ${cosTex(rowY[0], c.label)} + (${fmtN(fyK)}) = 0`);
-
-          // Use the equation with the larger coefficient for numerical stability
-          let f: number;
-          if (Math.abs(rowX[0]) >= Math.abs(rowY[0]) && Math.abs(rowX[0]) > tolerance) {
-            f = -fxK / rowX[0];
-          } else if (Math.abs(rowY[0]) > tolerance) {
-            f = -fyK / rowY[0];
-          } else {
-            W(`✘  Zero-length member or degenerate geometry at Joint ${lbl}.`);
-            SP();
-            continue;
-          }
-
-          memberForces[unknowns[0]] = f;
-          solvedMembers[unknowns[0]] = true;
-          progress = true;
-
-          const type = Math.abs(f) < tolerance
-            ? "\\text{Zero-force}"
-            : f > 0 ? "\\text{Tension}" : "\\text{Compression}";
-          R(`F_{${c.label}} = ${fmtN(f)}\\ \\text{kN}\\quad (${type})`);
-
-        } else if (unknowns.length === 2) {
-          const [c0, c1] = cosines;
-          E(`L_{${c0.label}} = ${fmtN(c0.L)}\\ \\text{m},\\quad \\cos_x = ${fmtN(rowX[0])},\\quad \\cos_y = ${fmtN(rowY[0])}`);
-          E(`L_{${c1.label}} = ${fmtN(c1.L)}\\ \\text{m},\\quad \\cos_x = ${fmtN(rowX[1])},\\quad \\cos_y = ${fmtN(rowY[1])}`);
-          E(`\\Sigma F_x = 0:\\quad ${cosTex(rowX[0], c0.label)} + ${cosTex(rowX[1], c1.label)} + (${fmtN(fxK)}) = 0`);
-          E(`\\Sigma F_y = 0:\\quad ${cosTex(rowY[0], c0.label)} + ${cosTex(rowY[1], c1.label)} + (${fmtN(fyK)}) = 0`);
-
-          // Solve 2×2 system:
-          // [ rowX[0]  rowX[1] ] [f0]   [ -fxK ]
-          // [ rowY[0]  rowY[1] ] [f1] = [ -fyK ]
-          const det = rowX[0] * rowY[1] - rowX[1] * rowY[0];
-          E(`\\Delta = ${fmtN(rowX[0])} \\cdot ${fmtN(rowY[1])} - ${fmtN(rowX[1])} \\cdot ${fmtN(rowY[0])} = ${fmtN(det)}`);
-
-          if (Math.abs(det) < tolerance) {
-            W(`✘  Singular system at Joint ${lbl} (det ≈ 0) — skipping.`);
-            SP();
-            continue;
-          }
-
-          // Cramer's rule:
-          // f0 = | -fxK  rowX[1] | / det = (-fxK*rowY[1] + fyK*rowX[1]) / det
-          //      | -fyK  rowY[1] |
-          // f1 = | rowX[0]  -fxK | / det = (-fyK*rowX[0] + fxK*rowY[0]) / det
-          //      | rowY[0]  -fyK |
-          const f0 = (-fxK * rowY[1] + fyK * rowX[1]) / det;
-          const f1 = (fxK * rowY[0] - fyK * rowX[0]) / det;
-
-          memberForces[unknowns[0]] = f0;
-          memberForces[unknowns[1]] = f1;
-          solvedMembers[unknowns[0]] = true;
-          solvedMembers[unknowns[1]] = true;
-          progress = true;
-
-          const t0 = Math.abs(f0) < tolerance ? "\\text{Zero-force}" : f0 > 0 ? "\\text{Tension}" : "\\text{Compression}";
-          const t1 = Math.abs(f1) < tolerance ? "\\text{Zero-force}" : f1 > 0 ? "\\text{Tension}" : "\\text{Compression}";
-          R(`F_{${c0.label}} = ${fmtN(f0)}\\ \\text{kN}\\quad (${t0})`);
-          R(`F_{${c1.label}} = ${fmtN(f1)}\\ \\text{kN}\\quad (${t1})`);
-        }
-        SP();
-      }
-    }
-
-    // Report any unsolved members
-    const unsolvedIdx = members.map((_, i) => i).filter(i => !solvedMembers[i]);
-    if (unsolvedIdx.length > 0) {
-      W(`⚠  Could not solve members: ${unsolvedIdx.map(i => {
-        const mb = members[i];
-        return `${nodeLabel(mb.start)}${nodeLabel(mb.end)}`;
-      }).join(", ")}. Check that the truss is determinate and geometry is valid.`);
-    }
-
-    // Replace any remaining NaN with 0 for display
-    const finalForces = memberForces.map(f => isNaN(f) ? 0 : f);
-
-    const formattedReactions = reactions.map((r, i) => ({
-      dir: Math.abs(r.x) > tolerance && Math.abs(r.y) > tolerance ? "xy" :
-        Math.abs(r.x) > tolerance ? "x" : "y",
-      node: i,
-      x: r.x,
-      y: r.y,
-    }));
-
-    setSolution({ lines, memberForces: finalForces, reactions: formattedReactions });
+  const handleSolve = () => {
+    setSolution(solveTruss(supports, nodes, members, forces));
   };
 
-  /* ── Result rows for PDF ── */
   const resultRows = solution ? [
     ...solution.memberForces.map((f, i) => {
       const tol = 1e-6;
@@ -1145,21 +640,17 @@ export default function TrussSolverUI() {
     }),
   ] : [];
 
-  /* ===================== JSX ===================== */
   return (
     <div className="relative flex flex-col min-h-screen bg-gray-50 text-gray-900">
       <Header />
       <main className="flex-grow px-6 py-10 max-w-6xl mx-auto w-full relative">
-
         <h1 className="text-3xl font-bold text-center mb-2">Truss Calculator</h1>
         <h2 className="text-xl font-semibold text-center mb-6">Real-Time Free Body Diagram</h2>
 
-        {/* Main FBD */}
         <div className="relative rounded-xl shadow h-[420px] mb-8 overflow-hidden bg-white">
           <MainFBD numericNodes={numericNodes} members={members} supports={supports} forces={forces} solution={solution} allNodes={allNodes} />
         </div>
 
-        {/* Input Panels */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Supports */}
           <div className="bg-white rounded-xl shadow p-4 relative z-10">
@@ -1233,14 +724,13 @@ export default function TrussSolverUI() {
           </div>
         </div>
 
-        <button className="w-full bg-[#1848a0] hover:bg-[#163d8a] text-white py-3 rounded-lg font-semibold mb-6 transition" onClick={solveTruss}>
+        <button className="w-full bg-[#1848a0] hover:bg-[#163d8a] text-white py-3 rounded-lg font-semibold mb-6 transition" onClick={handleSolve}>
           Calculate
         </button>
 
-        {/* ══════════════ SOLUTION DISPLAY ══════════════ */}
         {solution && (
           <>
-            {/* Member Forces card */}
+            {/* Member Forces */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-4">
               <div className="px-5 py-3 border-b border-gray-100">
                 <h3 className="text-[15px] font-semibold text-gray-800 tracking-wide">Member Forces</h3>
@@ -1265,7 +755,7 @@ export default function TrussSolverUI() {
               </div>
             </div>
 
-            {/* Support Reactions card */}
+            {/* Support Reactions */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-4">
               <div className="px-5 py-3 border-b border-gray-100">
                 <h3 className="text-[15px] font-semibold text-gray-800 tracking-wide">Support Reactions</h3>
@@ -1284,18 +774,8 @@ export default function TrussSolverUI() {
                         <span className="text-[11px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{sType}</span>
                       </div>
                       <div className="flex gap-8">
-                        {hasRx && (
-                          <div>
-                            <p className="text-[11px] text-gray-400 uppercase tracking-wider mb-1">Horizontal (R<sub>x</sub>)</p>
-                            <KaTeXInline tex={`${fmt(r.x)}\\ \\text{kN}`} />
-                          </div>
-                        )}
-                        {hasRy && (
-                          <div>
-                            <p className="text-[11px] text-gray-400 uppercase tracking-wider mb-1">Vertical (R<sub>y</sub>)</p>
-                            <KaTeXInline tex={`${fmt(r.y)}\\ \\text{kN}`} />
-                          </div>
-                        )}
+                        {hasRx && <div><p className="text-[11px] text-gray-400 uppercase tracking-wider mb-1">Horizontal (R<sub>x</sub>)</p><KaTeXInline tex={`${fmt(r.x)}\\ \\text{kN}`} /></div>}
+                        {hasRy && <div><p className="text-[11px] text-gray-400 uppercase tracking-wider mb-1">Vertical (R<sub>y</sub>)</p><KaTeXInline tex={`${fmt(r.y)}\\ \\text{kN}`} /></div>}
                       </div>
                     </div>
                   );
@@ -1303,26 +783,14 @@ export default function TrussSolverUI() {
               </div>
             </div>
 
-            {/* Step-by-Step Solution card */}
+            {/* Step-by-Step */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100">
               <div className="px-5 py-3 border-b border-gray-100">
                 <h3 className="text-[15px] font-semibold text-gray-800 tracking-wide">Step-by-Step Solution</h3>
               </div>
               <div className="px-6 py-5">
-                <PDFExportButton
-                  lines={solution.lines}
-                  resultRows={resultRows}
-                  title="Truss Analysis — Step-by-Step Solution"
-                  filename="truss-solution.pdf"
-                />
-                <TrussStepRenderer
-                  lines={solution.lines}
-                  solution={solution}
-                  members={members}
-                  allNodes={allNodes}
-                  supports={supports}
-                  forces={forces}
-                />
+                <PDFExportButton lines={solution.lines} resultRows={resultRows} title="Truss Analysis — Step-by-Step Solution" filename="truss-solution.pdf" />
+                <TrussStepRenderer lines={solution.lines} solution={solution} members={members} allNodes={allNodes} supports={supports} forces={forces} />
               </div>
             </div>
           </>

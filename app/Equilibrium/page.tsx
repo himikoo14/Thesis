@@ -605,7 +605,7 @@ function calculate(forces: ForceInput[]): {
     const unknownForces = magUnknownIndices.map((i) => {
       const angle = parseFloat(forces[i].angle);
       if (isNaN(angle)) return null;
-      return { angle, label: `F_{${i + 1}}` };
+      return { angle, label: `F${i + 1}` };
     });
 
     if (unknownForces.some((u) => u === null)) {

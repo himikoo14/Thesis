@@ -67,32 +67,29 @@ export default function Header() {
                 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition text-[18px]"
             >
               <div className="flex flex-col p-2 text-gray-700">
-                <Link href="/modules/Introduction" className="hover:text-[#1848a0] p-2">
-                  Module 1: Introduction to Statics
-                </Link>
                 <Link href="/modules/FBD" className="hover:text-[#1848a0] p-2">
-                  Module 2: Free Body Diagram
+                  Module 1: Free Body Diagram
                 </Link>
                 <Link href="/modules/2D-Resultant" className="hover:text-[#1848a0] p-2">
-                  Module 3: 2D Resultant
+                  Module 2: 2D Resultant
                 </Link>
                 <Link href="/modules/3D-Resultant" className="hover:text-[#1848a0] p-2">
-                  Module 4: 3D Resultant
+                  Module 3: 3D Resultant
                 </Link>
                 <Link href="/modules/2D-Equilibrium" className="hover:text-[#1848a0] p-2">
-                  Module 5: 2D Equilibrium
+                  Module 4: 2D Equilibrium
                 </Link>
                 <Link href="/modules/3D-Equilibrium" className="hover:text-[#1848a0] p-2">
-                  Module 6: 3D Equilibrium
+                  Module 5  : 3D Equilibrium
                 </Link>
                 <Link href="/modules/Truss" className="hover:text-[#1848a0] p-2">
-                  Module 7: Truss Joint Method
+                  Module 6: Truss Joint Method
                 </Link>
                 <Link href="/modules/MOIcentroidal" className="hover:text-[#1848a0] p-2">
-                  Module 8: MOI Centroidal Axis
+                  Module 7: MOI Centroidal Axis
                 </Link>
                 <Link href="/modules/MOIcustom" className="hover:text-[#1848a0] p-2">
-                  Module 9: MOI Custom Axis
+                  Module 8: MOI Custom Axis
                 </Link>
               </div>
             </div>
