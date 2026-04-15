@@ -114,7 +114,7 @@ export function computeMOI(shapes: ShapeData[]) {
     // I_perp      = MOI about axis perpendicular to flat edge (through centroid)
     //             = πr⁴/8  (no offset correction needed on this axis)
     const I_parallel = (Math.PI * r ** 4) / 8 - A * d * d;
-    const I_perp     = (Math.PI * r ** 4) / 8;
+    const I_perp = (Math.PI * r ** 4) / 8;
 
     let Cx = cx;
     let Cy = cy;
@@ -173,6 +173,55 @@ export function computeMOI(shapes: ShapeData[]) {
     return { A, Cx, Cy, Ix: I_centroidal, Iy: I_centroidal };
   }
 
+  function fmtR(r: number): string {
+    return Number.isInteger(r) ? r.toString() : r.toFixed(2);
+  }
+
+  function getFormulas(shape: ShapeData, r: number): { Ix_formula: string | null; Iy_formula: string | null } {
+    if (shape.type === "Polygon") {
+      const pts = shape.nodes.map(p => ({ x: Number(p.x), y: Number(p.y) }));
+      const xs = pts.map(p => p.x);
+      const ys = pts.map(p => p.y);
+      const b = Math.max(...xs) - Math.min(...xs);
+      const h = Math.max(...ys) - Math.min(...ys);
+      return {
+        Ix_formula: `\\dfrac{${fmtR(b)}(${fmtR(h)})^3}{12}`,
+        Iy_formula: `\\dfrac{(${fmtR(b)})^3 ${fmtR(h)}}{12}`,
+      };
+    }
+
+    if (shape.type === "Circle") {
+      return {
+        Ix_formula: `\\dfrac{\\pi (${fmtR(r)})^4}{4}`,
+        Iy_formula: `\\dfrac{\\pi (${fmtR(r)})^4}{4}`,
+      };
+    }
+
+    if (shape.type === "Semi-circle-1" || shape.type === "Semi-circle-3") {
+      // Flat edge horizontal → Ix uses (π/8 - 8/9π)r⁴, Iy uses πr⁴/8
+      return {
+        Ix_formula: `\\left(\\dfrac{\\pi}{8} - \\dfrac{8}{9\\pi}\\right)(${fmtR(r)})^4`,
+        Iy_formula: `\\dfrac{\\pi (${fmtR(r)})^4}{8}`,
+      };
+    }
+
+    if (shape.type === "Semi-circle-2" || shape.type === "Semi-circle-4") {
+      // Flat edge vertical → axes swapped: Ix uses πr⁴/8, Iy uses (π/8 - 8/9π)r⁴
+      return {
+        Ix_formula: `\\dfrac{\\pi (${fmtR(r)})^4}{8}`,
+        Iy_formula: `\\left(\\dfrac{\\pi}{8} - \\dfrac{8}{9\\pi}\\right)(${fmtR(r)})^4`,
+      };
+    }
+
+    if (shape.type.startsWith("Quarter")) {
+      // Both axes identical for all quarter-circle orientations
+      const f = `\\left(\\dfrac{\\pi}{16} - \\dfrac{4}{9\\pi}\\right)(${fmtR(r)})^4`;
+      return { Ix_formula: f, Iy_formula: f };
+    }
+
+    return { Ix_formula: null, Iy_formula: null };
+  }
+
   /* 🔷 MAIN CALCULATION */
 
   const results: ShapeResult[] = [];
@@ -192,21 +241,22 @@ export function computeMOI(shapes: ShapeData[]) {
 
     const sign = shape.hollow === "Hollow" ? -1 : 1;
 
-    // Push to step1 BEFORE sign so KaTeX can show true geometry values
+    const formulas = getFormulas(shape, Number(shape.radius));
+
     step1.push({
       index: index + 1,
       type: shape.type,
       hollow: shape.hollow,
-      // raw unsigned geometry
       area: raw.A,
       cx: raw.Cx,
       cy: raw.Cy,
-      Ix_own: raw.Ix,        // centroidal MOI (always positive magnitude)
+      Ix_own: raw.Ix,
       Iy_own: raw.Iy,
-      // signed values used in summation
       signedArea: sign * raw.A,
       signedIx: sign * raw.Ix,
       signedIy: sign * raw.Iy,
+      Ix_formula: formulas.Ix_formula,
+      Iy_formula: formulas.Iy_formula,
     });
 
     results.push({
@@ -278,6 +328,9 @@ export function computeMOI(shapes: ShapeData[]) {
       // final transferred values (signed, because hollow shapes subtract)
       Ix_transferred,
       Iy_transferred,
+      // formulas for display
+      Ix_formula: s1?.Ix_formula ?? null,
+      Iy_formula: s1?.Iy_formula ?? null,
     });
   });
 
