@@ -4,12 +4,15 @@
  * using the Parallel Axis Theorem.
  *
  * Formula:
- *   Ix = Ix_centroid + A * dy²
- *   Iy = Iy_centroid + A * dx²
+ *   Ix_custom = Ix_centroid + A * dy²
+ *   Iy_custom = Iy_centroid + A * dx²
  *
  * where:
- *   dx = centroidX - axisX
- *   dy = centroidY - axisY
+ *   dx = axisX - centroidX   (horizontal distance from centroid to custom axis)
+ *   dy = axisY - centroidY   (vertical distance from centroid to custom axis)
+ *
+ * Note: The sign of dx/dy does not affect the result since they are squared,
+ * but the convention is kept consistent: custom axis minus centroid.
  */
 
 type CentroidalMOI = {
@@ -44,9 +47,14 @@ export function computeCustomAxis(
   axisX: number,
   axisY: number
 ): CustomMOIResult {
-  const dx = centroidX - axisX;
-  const dy = centroidY - axisY;
+  // Distance from centroid to custom axis
+  // Sign doesn't matter (squared), but convention: axis - centroid
+  const dx = axisX - centroidX;
+  const dy = axisY - centroidY;
 
+  // Parallel Axis Theorem:
+  // Ix_custom = Ix_centroid + A * dy²  (dy is the vertical offset → affects Ix)
+  // Iy_custom = Iy_centroid + A * dx²  (dx is the horizontal offset → affects Iy)
   const Ix = centroidalMOI.Ix + totalArea * dy * dy;
   const Iy = centroidalMOI.Iy + totalArea * dx * dx;
 

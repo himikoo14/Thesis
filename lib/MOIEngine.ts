@@ -45,8 +45,6 @@ export function computeMOI(shapes: ShapeData[]) {
 
     if (pts.length < 3) return null;
 
-    // ✅ Removed angle sort — it corrupts winding order and breaks concave polygons
-
     let A = 0, Cx = 0, Cy = 0, Ix = 0, Iy = 0;
 
     for (let i = 0; i < pts.length; i++) {
@@ -76,11 +74,10 @@ export function computeMOI(shapes: ShapeData[]) {
     Cx /= (6 * sign * absA);
     Cy /= (6 * sign * absA);
 
-    // ✅ Fixed: Math.abs applied before division
     Ix = Math.abs(Ix) / 12;
     Iy = Math.abs(Iy) / 12;
 
-    // ✅ Transfer from origin to centroidal axis (parallel axis theorem in reverse)
+    // Transfer from origin to centroidal axis (parallel axis theorem in reverse)
     Ix = Ix - absA * Cy * Cy;
     Iy = Iy - absA * Cx * Cx;
 
@@ -108,18 +105,43 @@ export function computeMOI(shapes: ShapeData[]) {
 
     const A = (Math.PI * r * r) / 2;
 
-    const d = r - (4 * r) / (3 * Math.PI);
+    // Distance from diameter to centroid
+    const d = (4 * r) / (3 * Math.PI);
+
+    // Centroidal MOI:
+    // I_parallel  = MOI about axis parallel to flat edge (through centroid)
+    //             = πr⁴/8 − A·d²   ≡ (π/8 − 8/9π)r⁴
+    // I_perp      = MOI about axis perpendicular to flat edge (through centroid)
+    //             = πr⁴/8  (no offset correction needed on this axis)
+    const I_parallel = (Math.PI * r ** 4) / 8 - A * d * d;
+    const I_perp     = (Math.PI * r ** 4) / 8;
 
     let Cx = cx;
     let Cy = cy;
+    let Ix: number;
+    let Iy: number;
 
-    if (shape.type === "Semi-circle-1") Cy += d;
-    if (shape.type === "Semi-circle-2") Cx += d;
-    if (shape.type === "Semi-circle-3") Cy -= d;
-    if (shape.type === "Semi-circle-4") Cx -= d;
-
-    const Ix = (Math.PI * r ** 4) / 8;
-    const Iy = Ix;
+    if (shape.type === "Semi-circle-1") {
+      // Flat edge at bottom, curved side up → centroid shifts up by d
+      Cy += d;
+      Ix = I_parallel; // x-axis is parallel to the flat edge
+      Iy = I_perp;
+    } else if (shape.type === "Semi-circle-2") {
+      // Flat edge at left, curved side right → centroid shifts right by d
+      Cx += d;
+      Ix = I_perp;
+      Iy = I_parallel; // y-axis is parallel to the flat edge
+    } else if (shape.type === "Semi-circle-3") {
+      // Flat edge at top, curved side down → centroid shifts down by d
+      Cy -= d;
+      Ix = I_parallel; // x-axis is parallel to the flat edge
+      Iy = I_perp;
+    } else {
+      // Semi-circle-4: flat edge at right, curved side left → centroid shifts left by d
+      Cx -= d;
+      Ix = I_perp;
+      Iy = I_parallel; // y-axis is parallel to the flat edge
+    }
 
     return { A, Cx, Cy, Ix, Iy };
   }
@@ -131,20 +153,24 @@ export function computeMOI(shapes: ShapeData[]) {
     if (isNaN(r) || isNaN(cx) || isNaN(cy)) return null;
 
     const A = (Math.PI * r * r) / 4;
+
+    // Distance from each straight edge to centroid along that axis
     const d = (4 * r) / (3 * Math.PI);
+
+    // Centroidal MOI (same for both axes by symmetry):
+    // I_centroidal = πr⁴/16 − A·d²   ≡ (π/16 − 4/9π)r⁴
+    const I_centroidal = (Math.PI * r ** 4) / 16 - A * d * d;
 
     let Cx = cx;
     let Cy = cy;
 
-    if (shape.type === "Quarter-circle-1") { Cx += r - d; Cy += r - d; }
-    if (shape.type === "Quarter-circle-2") { Cx -= r - d; Cy += r - d; }
-    if (shape.type === "Quarter-circle-3") { Cx -= r - d; Cy -= r - d; }
-    if (shape.type === "Quarter-circle-4") { Cx += r - d; Cy -= r - d; }
+    // Centroid is offset by d from each straight edge toward the arc
+    if (shape.type === "Quarter-circle-1") { Cx += d; Cy += d; } // corner at bottom-left
+    if (shape.type === "Quarter-circle-2") { Cx -= d; Cy += d; } // corner at bottom-right
+    if (shape.type === "Quarter-circle-3") { Cx -= d; Cy -= d; } // corner at top-right
+    if (shape.type === "Quarter-circle-4") { Cx += d; Cy -= d; } // corner at top-left
 
-    const Ix = (Math.PI * r ** 4) / 16;
-    const Iy = Ix;
-
-    return { A, Cx, Cy, Ix, Iy };
+    return { A, Cx, Cy, Ix: I_centroidal, Iy: I_centroidal };
   }
 
   /* 🔷 MAIN CALCULATION */
@@ -172,10 +198,10 @@ export function computeMOI(shapes: ShapeData[]) {
       type: shape.type,
       hollow: shape.hollow,
       // raw unsigned geometry
-      area: raw.A,           // always positive magnitude
+      area: raw.A,
       cx: raw.Cx,
       cy: raw.Cy,
-      Ix_own: raw.Ix,        // own-axis MOI (always positive)
+      Ix_own: raw.Ix,        // centroidal MOI (always positive magnitude)
       Iy_own: raw.Iy,
       // signed values used in summation
       signedArea: sign * raw.A,
@@ -238,7 +264,7 @@ export function computeMOI(shapes: ShapeData[]) {
     step3Results.push({
       shape: index + 1,
       hollow: s1?.hollow ?? "Solid",
-      // own-axis MOI (unsigned magnitude for display)
+      // own-axis centroidal MOI (unsigned magnitude for display)
       Ix_own: s1?.Ix_own ?? Math.abs(r.Ix),
       Iy_own: s1?.Iy_own ?? Math.abs(r.Iy),
       // signed area (for d² term)
