@@ -245,6 +245,18 @@ function MathBlock({ tex }: { tex: string }) {
 export default function AnglesTab() {
   const [forces, setForces] = useState([{ magnitude: "", azimuth: "", elevation: "" }]);
   const [result, setResult] = useState<any>(null);
+  const [status, setStatus] = useState<
+    "idle" | "generating" | "done" | "error"
+  >("idle");
+
+  const off = status === "generating";
+
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Generating PDF…",
+    done: "✅ Downloaded!",
+    error: "❌ Export failed — try again",
+  };
   const katexOk = useMathJax();
 
   const resultRows = result ? [
@@ -345,12 +357,73 @@ export default function AnglesTab() {
         <div style={{ ...card, maxWidth: 580 }}>
           <h2 style={{ fontSize: 18, fontWeight: 600, marginTop: 0, marginBottom: 12 }}>Step-by-Step Solution</h2>
 
-          <StepByStepPDFExport
-            title="3D Resultant Force — Step-by-Step Solution"
-            filename="resultant-3d.pdf"
-            steps={result.steps}
-            resultRows={resultRows}
-          />
+          <button
+            onClick={async () => {
+              if (off) return;
+
+              try {
+                setStatus("generating");
+
+                const payload = {
+                  steps: result.steps,
+                  resultRows,
+                  forces,
+                  result: {
+                    sumFx: result.sumFx,
+                    sumFy: result.sumFy,
+                    sumFz: result.sumFz,
+                    R: result.R,
+                    azimuth: result.azimuth,
+                    elevation: result.elevation,
+                  },
+                };
+
+                const res = await fetch("/api/export-pdf-3dAzimuth", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(payload),
+                });
+
+                if (!res.ok) {
+                  throw new Error("Failed to export PDF");
+                }
+
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "resultant-3d-solution.pdf";
+                a.click();
+
+                window.URL.revokeObjectURL(url);
+
+                setStatus("done");
+                setTimeout(() => setStatus("idle"), 2500);
+              } catch (err) {
+                console.error(err);
+                setStatus("error");
+                setTimeout(() => setStatus("idle"), 3000);
+              }
+            }}
+            disabled={off}
+            style={{
+              width: "100%",
+              marginBottom: 16,
+              borderRadius: 12,
+              padding: "12px 16px",
+              fontWeight: 600,
+              color: "#fff",
+              border: "none",
+              cursor: off ? "not-allowed" : "pointer",
+              background: off ? "rgba(24,72,160,0.6)" : "#1848a0",
+              transition: "0.2s",
+            }}
+          >
+            {labels[status]}
+          </button>
 
           <div style={{ lineHeight: 1.8 }}>
             {result.steps.map((line: string, i: number) =>

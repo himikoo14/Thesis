@@ -51,15 +51,15 @@ class ForceSystem2D {
       sumFy += v.fy;
     });
 
-steps.push("Step 2: Sum of components:");
+    steps.push("Step 2: Sum of components:");
 
-const fxTerms = this.vectors.map((v, i) => `F_{x${i+1}}`).join(" + ");
-const fyTerms = this.vectors.map((v, i) => `F_{y${i+1}}`).join(" + ");
+    const fxTerms = this.vectors.map((v, i) => `F_{x${i + 1}}`).join(" + ");
+    const fyTerms = this.vectors.map((v, i) => `F_{y${i + 1}}`).join(" + ");
 
-const fxNums = this.vectors.map(v => fmt2(v.fx)).join(" + ");
-const fyNums = this.vectors.map(v => fmt2(v.fy)).join(" + ");
+    const fxNums = this.vectors.map(v => fmt2(v.fx)).join(" + ");
+    const fyNums = this.vectors.map(v => fmt2(v.fy)).join(" + ");
 
-steps.push(`
+    steps.push(`
 \\begin{align*}
 \\Sigma F_x &= ${fxTerms} \\\\
            &= ${fxNums} \\\\
@@ -80,11 +80,13 @@ steps.push(`
       \\begin{align*}
       R &= \\sqrt{(\\Sigma F_x)^2 + (\\Sigma F_y)^2} \\\\
         &= ${R.toFixed(3)}\\,\\text{kN} \\\\
-      \\theta &= \\tan^{-1}\\left(\\tfrac{\\Sigma F_y}{\\Sigma F_x}\\right) \\\\
+\\theta &= \\tan^{-1}\\left(\\frac{{\\Sigma F_y}\\vphantom{F_x}}{{\\Sigma F_x}}\\right) \\\\
               &= ${theta.toFixed(2)}^\\circ ${arrow}\\,\\text{from +x axis}
       \\end{align*}
     `);
 
+    steps.push(`\\text{Resultant magnitude: } R = ${R.toFixed(3)}\\,\\text{kN}`);
+    steps.push(`\\text{Resultant angle: } \\theta = ${theta.toFixed(2)}^\\circ`);
     return { steps, sumFx, sumFy, R, theta };
   }
 }
@@ -123,7 +125,7 @@ function ResultantFBD({
   const R = { x: result.sumFx, y: result.sumFy };
   const magnitudes = [...vectors.map((v) => Math.hypot(v.x, v.y)), Math.hypot(R.x, R.y)];
   const maxMag = Math.max(1, ...magnitudes);
-  const scale  = 90 / maxMag;
+  const scale = 90 / maxMag;
 
   return (
     // ✅ svgRef attached here
@@ -166,7 +168,7 @@ function ResultantFBD({
 
 /* ===================== Draggable FBD (live preview) ===================== */
 function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: ForceInput[]) => void }) {
-  const svgRef   = useRef<SVGSVGElement | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   const vectors = forces
@@ -180,7 +182,7 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
     .filter(Boolean) as { x: number; y: number }[];
 
   const maxMag = Math.max(1, ...vectors.map((v) => Math.hypot(v.x, v.y)));
-  const scale  = 80 / maxMag;
+  const scale = 80 / maxMag;
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (dragIndex === null) return;
@@ -238,8 +240,20 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
 /* ===================== MAIN COMPONENT ===================== */
 export default function Solver2D() {
   const [activeTab, setActiveTab] = useState<"2d" | "3d">("2d");
-  const [forces, setForces]       = useState<ForceInput[]>([{ magnitude: "", angle: "" }]);
-  const [result, setResult]       = useState<ForceResult | null>(null);
+  const [forces, setForces] = useState<ForceInput[]>([{ magnitude: "", angle: "" }]);
+  const [result, setResult] = useState<ForceResult | null>(null);
+  const [status, setStatus] = useState<
+  "idle" | "generating" | "done" | "error"
+>("idle");
+
+const off = status === "generating";
+
+const labels: Record<typeof status, string> = {
+  idle: "⬇ Download Solution as PDF",
+  generating: "⏳ Generating PDF…",
+  done: "✅ Downloaded!",
+  error: "❌ Export failed — try again",
+};
 
   // ✅ Ref for the ResultantFBD <svg> — passed to PDFButton for diagram capture
   const fbdRef = useRef<SVGSVGElement>(null);
@@ -339,19 +353,68 @@ export default function Solver2D() {
             {result && (
               <div ref={solutionRef as React.Ref<HTMLDivElement>}>
 
-                {/* ✅ PDFButton now receives steps + result + fbdRef for full PDF */}
-                {typeof PDFButton === "function" && (
-<PDFButton
-  steps={result.steps}
-  resultRows={[
-{ label: "Horizontal component (Fx)", value: `${fmt2(result.sumFx)} kN` },
-{ label: "Vertical component (Fy)",   value: `${fmt2(result.sumFy)} kN` },
-    { label: "Magnitude (R)",             value: `${fmt2(result.R)} kN`     },
-    { label: "Angle (θ)",                 value: `${result.theta.toFixed(2)}°`   },
-  ]}
-  fbdRef={fbdRef}
-/>
-                )}
+                <button
+                  onClick={async () => {
+                    if (off) return;
+
+                    try {
+                      setStatus("generating");
+
+                      const payload = {
+                        steps: result.steps,
+                        resultRows: [
+                          { label: "Horizontal component (Fx)", value: `${fmt2(result.sumFx)} kN` },
+                          { label: "Vertical component (Fy)", value: `${fmt2(result.sumFy)} kN` },
+                          { label: "Magnitude (R)", value: `${fmt2(result.R)} kN` },
+                          { label: "Angle (θ)", value: `${result.theta.toFixed(2)}°` },
+                        ],
+                        forces,
+                        result: {
+                          sumFx: result.sumFx,
+                          sumFy: result.sumFy,
+                          R: result.R,
+                          theta: result.theta,
+                        },
+                      };
+
+                      const res = await fetch("/api/export-pdf", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(payload),
+                      });
+
+                      if (!res.ok) {
+                        throw new Error("Failed to export PDF");
+                      }
+
+                      const blob = await res.blob();
+                      const url = window.URL.createObjectURL(blob);
+
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "resultant-2d-solution.pdf";
+                      a.click();
+
+                      window.URL.revokeObjectURL(url);
+
+                      setStatus("done");
+                      setTimeout(() => setStatus("idle"), 2500);
+                    } catch (err) {
+                      console.error(err);
+                      setStatus("error");
+                      setTimeout(() => setStatus("idle"), 3000);
+                    }
+                  }}
+                  disabled={off}
+                  className={`w-full mt-4 rounded-xl px-4 py-3 font-semibold text-white transition ${off
+                      ? "cursor-not-allowed bg-[#1848a0]/60"
+                      : "bg-[#1848a0] hover:bg-[#163d8a]"
+                    }`}
+                >
+                  {labels[status]}
+                </button>
 
                 <div className="w-full max-w-xl mt-6 bg-white rounded-2xl shadow p-6 space-y-4">
                   <h2 className="text-[20px] font-semibold">Resultant Force (kN)</h2>

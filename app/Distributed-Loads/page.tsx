@@ -294,14 +294,30 @@ function PDFExportButton({ lines, resultRows, title, filename }: {
   return (
     <button
       style={{
-        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-        width: "100%", padding: "12px 0", border: "none", borderRadius: 10,
-        fontSize: 14, fontWeight: 600, transition: "all 0.2s",
-        background: "linear-gradient(135deg, #0f2d6b, #1848a0)",
-        color: "#fff", boxShadow: "0 4px 14px rgba(24,72,160,0.25)",
-        marginBottom: 14, opacity: off ? 0.65 : 1, cursor: off ? "not-allowed" : "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        width: "100%",
+        padding: "12px 0",
+        border: "none",
+        borderRadius: 10,
+        fontSize: 14,
+        fontWeight: 600,
+        transition: "all 0.2s",
+        background: off
+          ? "linear-gradient(135deg, #64748b, #94a3b8)"
+          : "linear-gradient(135deg, #0f2d6b, #1848a0)",
+        color: "#fff",
+        boxShadow: off
+          ? "none"
+          : "0 4px 14px rgba(24,72,160,0.25)",
+        marginBottom: 14,
+        opacity: off ? 0.7 : 1,
+        cursor: off ? "not-allowed" : "pointer",
       }}
-      onClick={handleExport} disabled={off}
+      onClick={handleExport}
+      disabled={off}
     >
       {labels[status]}
     </button>
@@ -444,6 +460,19 @@ export default function DistributedLoadPage() {
 
   const [result, setResult] = useState<any>(null);
   const [stepLines, setStepLines] = useState<StepLine[]>([]);
+
+  const [status, setStatus] = useState<
+    "idle" | "generating" | "done" | "error"
+  >("idle");
+
+  const off = status === "generating";
+
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Generating PDF…",
+    done: "✅ Downloaded!",
+    error: "❌ Export failed — try again",
+  };
 
   const formatNumber = (num: number) => Number(num.toFixed(3));
 
@@ -714,12 +743,84 @@ export default function DistributedLoadPage() {
               <h3 className="text-[15px] font-semibold text-gray-800 tracking-wide">Step-by-Step Solution</h3>
             </div>
             <div className="px-6 py-5">
-              <PDFExportButton
-                lines={stepLines}
-                resultRows={resultRows}
-                title="Moment of Inertia — Step-by-Step Solution"
-                filename="moi-solution.pdf"
-              />
+              <button
+                onClick={async () => {
+                  if (off) return;
+
+                  try {
+                    setStatus("generating");
+
+                    const payload = {
+                      lines: stepLines,
+                      resultRows,
+                      shapes,
+                      axisType,
+                      axisX,
+                      axisY,
+                    };
+
+                    localStorage.setItem(
+                      "moiPdfData",
+                      JSON.stringify(payload)
+                    );
+
+                    const res = await fetch("/api/export-pdf-moi", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify(payload),
+                    });
+
+                    if (!res.ok) {
+                      throw new Error("Failed to export PDF");
+                    }
+
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "moi-solution.pdf";
+                    a.click();
+
+                    window.URL.revokeObjectURL(url);
+
+                    setStatus("done");
+                    setTimeout(() => setStatus("idle"), 2500);
+                  } catch (err) {
+                    console.error(err);
+                    setStatus("error");
+                    setTimeout(() => setStatus("idle"), 3000);
+                  }
+                }}
+                disabled={off}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  width: "100%",
+                  padding: "12px 0",
+                  border: "none",
+                  borderRadius: 10,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  transition: "all 0.2s",
+                  background: off
+                    ? "linear-gradient(135deg, #64748b, #94a3b8)"
+                    : "linear-gradient(135deg, #0f2d6b, #1848a0)",
+                  color: "#fff",
+                  boxShadow: off
+                    ? "none"
+                    : "0 4px 14px rgba(24,72,160,0.25)",
+                  marginBottom: 14,
+                  opacity: off ? 0.7 : 1,
+                  cursor: off ? "not-allowed" : "pointer",
+                }}
+              >
+                {labels[status]}
+              </button>
               <MOIStepRenderer lines={stepLines} />
             </div>
           </div>

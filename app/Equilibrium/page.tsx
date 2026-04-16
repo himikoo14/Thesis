@@ -240,7 +240,7 @@ async function writePDF(p: { steps: string[]; resultRows?: { label: string; valu
       pdf.setFont("helvetica", "normal"); pdf.setFontSize(11); pdf.setTextColor(50, 50, 50);
       pdf.text(inner, M, y); y += 8; continue;
     }
-    
+
     if (!s.includes("\\")) {
       guard(8);
       pdf.setFont("helvetica", "normal"); pdf.setFontSize(11); pdf.setTextColor(50, 50, 50);
@@ -714,6 +714,19 @@ export default function Equilibrium() {
   ]);
   const [solution, setSolution] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [status, setStatus] = useState<
+    "idle" | "generating" | "done" | "error"
+  >("idle");
+
+  const off = status === "generating";
+
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Generating PDF…",
+    done: "✅ Downloaded!",
+    error: "❌ Export failed — try again",
+  };
   const [activeTab, setActiveTab] = useState<"concurrent" | "nonconcurrent">("concurrent");
 
   const toggleUnknown = (index: number, field: "magnitude" | "angle") => {
@@ -867,12 +880,78 @@ export default function Equilibrium() {
                   </div>
                 )}
 
-                <PDFExportButton
-                  steps={solution.steps}
-                  resultRows={solution.resultRows}
-                  title="Concurrent Force System — Step-by-Step Solution"
-                  filename="equilibrium-solution.pdf"
-                />
+                <button
+                  onClick={async () => {
+                    if (off) return;
+
+                    try {
+                      setStatus("generating");
+
+                      const payload = {
+                        steps: solution.steps,
+                        resultRows: solution.resultRows,
+                        solvedLabel: solution.solvedLabel,
+                        forces,
+                      };
+
+                      localStorage.setItem(
+                        "equilibriumPdfData",
+                        JSON.stringify(payload)
+                      );
+
+                      const res = await fetch("/api/export-pdf-equilibrium", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(payload),
+                      });
+
+                      if (!res.ok) {
+                        throw new Error("Failed to export PDF");
+                      }
+
+                      const blob = await res.blob();
+                      const url = window.URL.createObjectURL(blob);
+
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "equilibrium-solution.pdf";
+                      a.click();
+
+                      window.URL.revokeObjectURL(url);
+
+                      setStatus("done");
+                      setTimeout(() => setStatus("idle"), 2500);
+                    } catch (err) {
+                      console.error(err);
+                      setStatus("error");
+                      setTimeout(() => setStatus("idle"), 3000);
+                    }
+                  }}
+                  disabled={off}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    width: "100%",
+                    padding: "12px 0",
+                    border: "none",
+                    borderRadius: 10,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    transition: "all 0.2s",
+                    background: "linear-gradient(135deg, #0f2d6b, #1848a0)",
+                    color: "#fff",
+                    boxShadow: "0 4px 14px rgba(24,72,160,0.25)",
+                    marginBottom: 14,
+                    opacity: off ? 0.65 : 1,
+                    cursor: off ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {labels[status]}
+                </button>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
                   {solution.resultRows?.map((row: { label: string; value: string }, i: number) => (

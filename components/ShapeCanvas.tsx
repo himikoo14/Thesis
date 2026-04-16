@@ -246,6 +246,15 @@ export default function ShapeCanvas({ shapes }: Props) {
                   strokeDasharray={shape.hollow === "Hollow" ? "8 6" : "0"}
                 />
                 <circle cx={mapped.x} cy={mapped.y} r={10} fill="#dc2626" />
+                <text
+                  x={mapped.x + 16}
+                  y={mapped.y - 16}
+                  fontSize="26"
+                  fontWeight="bold"
+                  fill="#dc2626"
+                >
+                  C({cx}, {cy})
+                </text>
                 <circle cx={startX} cy={startY} r={8} fill="#2563eb" />
                 <circle cx={endX} cy={endY} r={8} fill="#2563eb" />
                 <line x1={mapped.x} y1={mapped.y} x2={startX} y2={startY} stroke="#16a34a" strokeWidth={3} />
@@ -321,7 +330,7 @@ export default function ShapeCanvas({ shapes }: Props) {
             const cy = Number(shape.y);
             const r = Number(shape.radius);
 
-            if ([cx, cy, r].some(isNaN)) return null;
+            if (isNaN(cx) || isNaN(cy) || isNaN(r) || r <= 0) return null;
 
             const mappedCenter = map(cx, cy);
             const scaledRadius = r * scale;
@@ -332,20 +341,49 @@ export default function ShapeCanvas({ shapes }: Props) {
                   cx={mappedCenter.x}
                   cy={mappedCenter.y}
                   r={scaledRadius}
-                  fill={shape.hollow === "Hollow" ? "rgba(156, 163, 175, 0.5)" : "rgba(59, 130, 246, 0.25)"}
+                  fill={shape.hollow === "Hollow"
+                    ? "rgba(156, 163, 175, 0.5)"
+                    : "rgba(59, 130, 246, 0.25)"}
                   stroke="#111827"
                   strokeWidth={3}
                   strokeDasharray={shape.hollow === "Hollow" ? "8 6" : "0"}
                 />
+
+                <circle
+                  cx={mappedCenter.x}
+                  cy={mappedCenter.y}
+                  r={10}
+                  fill="#dc2626"
+                />
+
+                <text
+                  x={mappedCenter.x + 16}
+                  y={mappedCenter.y - 16}
+                  fontSize="26"
+                  fontWeight="bold"
+                  fill="#dc2626"
+                >
+                  C({cx}, {cy})
+                </text>
+
                 <text
                   x={mappedCenter.x}
                   y={mappedCenter.y - scaledRadius - 20}
-                  fontSize="28" fontWeight="bold" fill="#16a34a" textAnchor="middle">
+                  fontSize="28"
+                  fontWeight="bold"
+                  fill="#16a34a"
+                  textAnchor="middle"
+                >
                   r = {r}
                 </text>
               </g>
             );
           }
+
+          // ======================
+          // 🔷 POLYGON
+          // ======================
+          return null;
 
           // ======================
           // 🔷 POLYGON

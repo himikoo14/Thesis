@@ -3,85 +3,42 @@
 /**
  * ============================================================
  *  StepByStep.tsx
- *  Dedicated step-by-step solution renderer for all calculators.
- *
- *  USAGE (drop into any calculator):
- *
- *    import { StepByStepSolution, useStepByStep } from "@/components/StepByStep";
- *
- *    // 1. Define your steps anywhere (in your solver class or component):
- *    const steps: StepLine[] = [
- *      { type: "heading", text: "Step 1: Resolve each force into components:" },
- *      { type: "math",    tex: "F_{x1} = 10\\cos(30^\\circ) = 8.660\\,\\text{kN}" },
- *      { type: "text",    text: "All components resolved successfully." },
- *      { type: "diagram", node: <MyFBDComponent /> },
- *    ];
- *
- *    // 2. Use the hook to get ref + PDF button (same as useStepByStepPDF):
- *    const { ref, PDFButton, StepByStepSolution } = useStepByStep({
- *      title: "2D Resultant Force — Step-by-Step Solution",
- *      filename: "solution.pdf",
- *    });
- *
- *    // 3. Render:
- *    <StepByStepSolution steps={steps} title="Step-by-Step Solution" />
- *
- * ============================================================
+
  */
 
 import React, { useRef, ReactNode } from "react";
 import "katex/dist/katex.min.css";
 import { BlockMath } from "react-katex";
 
-/* ------------------------------------------------------------------ */
-/*  Types                                                               */
-/* ------------------------------------------------------------------ */
-
-/**
- * A single line in the solution.
- *
- * | type      | what renders                                          |
- * |-----------|-------------------------------------------------------|
- * | "heading" | Bold step label  e.g. "Step 1: Resolve forces"       |
- * | "math"    | LaTeX via BlockMath                                   |
- * | "text"    | Plain paragraph (same 18px weight as heading but not bold) |
- * | "diagram" | Any ReactNode — FBD, SVG, chart, image, etc.         |
- */
 export type StepLine =
   | { type: "heading"; text: string }
   | { type: "math"; tex: string }
   | { type: "text"; text: string }
   | { type: "diagram"; label?: string; node: ReactNode };
 
-/* ------------------------------------------------------------------ */
-/*  Helper: convert the OLD string[] format your solvers produce       */
-/*  into the new StepLine[] format — zero refactor needed in solver.   */
-/* ------------------------------------------------------------------ */
-
-/**
- * Converts a legacy `string[]` (where "Step …" lines are headings and
- * everything else is treated as LaTeX) into `StepLine[]`.
- *
- * Drop-in bridge so your existing ForceSystem2D / 3D classes keep
- * returning `string[]` without any changes.
- *
- * Example:
- *   const lines = system.stepByStepSolution().steps;  // string[]
- *   const stepLines = fromLegacySteps(lines);          // StepLine[]
- */
 export function fromLegacySteps(steps: string[]): StepLine[] {
   return steps.map((line) => {
     const trimmed = line.trim();
+
     if (trimmed.startsWith("Step")) {
       return { type: "heading", text: trimmed };
     }
-    return { type: "math", tex: trimmed };
+
+    const looksLikeMath =
+      trimmed.startsWith("\\") ||
+      trimmed.includes("=") ||
+      trimmed.includes("^") ||
+      trimmed.includes("_") ||
+      trimmed.includes("\\frac") ||
+      trimmed.includes("\\sqrt");
+
+    if (looksLikeMath) {
+      return { type: "math", tex: trimmed };
+    }
+
+    return { type: "text", text: trimmed };
   });
 }
-
-/* ------------------------------------------------------------------ */
-/*  Core renderer                                                       */
-/* ------------------------------------------------------------------ */
 
 interface StepByStepSolutionProps {
   /** Array of StepLine items produced by your solver */
@@ -128,7 +85,7 @@ export function StepByStepSolution({
             /* Bold step heading — "Step 1: …" */
             case "heading":
               return (
-                <p key={i} className="font-medium text-[18px] text-gray-900">
+                <p key={`${line.type}-${i}`} className="font-medium text-[18px] text-gray-900">
                   {line.text}
                 </p>
               );
@@ -136,7 +93,7 @@ export function StepByStepSolution({
             /* LaTeX math block */
             case "math":
               return (
-                <div key={i} className="text-[18px] overflow-x-auto">
+                <div key={`${line.type}-${i}`} className="text-[18px] overflow-x-auto py-1">
                   <BlockMath>{line.tex}</BlockMath>
                 </div>
               );
@@ -144,7 +101,7 @@ export function StepByStepSolution({
             /* Plain descriptive text */
             case "text":
               return (
-                <p key={i} className="text-[18px] text-gray-700">
+                <p key={`${line.type}-${i}`} className="text-[18px] text-gray-700">
                   {line.text}
                 </p>
               );
@@ -152,7 +109,7 @@ export function StepByStepSolution({
             /* Diagram / FBD / SVG slot */
             case "diagram":
               return (
-                <div key={i} className="mt-6">
+                <div key={`${line.type}-${i}`} className="mt-6">
                   {line.label && (
                     <p className="font-medium text-[18px] mb-2">{line.label}</p>
                   )}

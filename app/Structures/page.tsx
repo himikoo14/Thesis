@@ -441,9 +441,15 @@ function MainFBD({ numericNodes, members, supports, forces, solution, allNodes }
         const sinA = Math.sin(ang);
         const ex = sx(n.x) + arrowLen * cosA;
         const ey = sy(n.y) - arrowLen * sinA;  // ← flip sin for SVG coordinates
-        const labelX = ex + (cosA >= 0 ? 8 : -8);
-        const labelY = ey + (sinA > 0.2 ? 14 : -4);
-        const anchor = cosA > 0.2 ? "start" : cosA < -0.2 ? "end" : "middle";
+        const labelGap = 14;
+        const labelX = ex + cosA * labelGap;
+        const labelY = ey - sinA * labelGap;
+        const anchor =
+          cosA > 0.15
+            ? "start"
+            : cosA < -0.15
+              ? "end"
+              : "middle";
         return (
           <g key={`f-${i}`}>
             <line x1={sx(n.x)} y1={sy(n.y)} x2={ex} y2={ey} stroke="#dc2626" strokeWidth={2.5} markerEnd="url(#main-red)" />
@@ -605,6 +611,19 @@ export default function TrussSolverUI() {
   const [members, setMembers] = useState<Member[]>([{ start: 0, end: 1 }]);
   const [forces, setForces] = useState<Force[]>([{ Joint: 0, magnitude: "", angle: "" }]);
   const [solution, setSolution] = useState<Solution | null>(null);
+
+  const [status, setStatus] = useState<
+    "idle" | "generating" | "done" | "error"
+  >("idle");
+
+  const off = status === "generating";
+
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Generating PDF…",
+    done: "✅ Downloaded!",
+    error: "❌ Export failed — try again",
+  };
 
   const allNodes: Joint[] = [...supports.map(s => ({ x: s.x, y: s.y })), ...nodes];
   const numericNodes = allNodes.map(n => ({ x: parseFloat(n.x || "0"), y: parseFloat(n.y || "0") }));
@@ -789,7 +808,80 @@ export default function TrussSolverUI() {
                 <h3 className="text-[15px] font-semibold text-gray-800 tracking-wide">Step-by-Step Solution</h3>
               </div>
               <div className="px-6 py-5">
-                <PDFExportButton lines={solution.lines} resultRows={resultRows} title="Truss Analysis — Step-by-Step Solution" filename="truss-solution.pdf" />
+                <button
+                  onClick={async () => {
+                    if (off) return;
+
+                    try {
+                      setStatus("generating");
+
+                      const payload = {
+                        supports,
+                        nodes,
+                        members,
+                        forces,
+                        resultRows,
+                        solution,
+                      };
+
+                      localStorage.setItem(
+                        "trussPdfData",
+                        JSON.stringify(payload)
+                      );
+
+                      const res = await fetch("/api/export-pdf-truss", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(payload),
+                      });
+
+                      if (!res.ok) {
+                        throw new Error("Failed to export PDF");
+                      }
+
+                      const blob = await res.blob();
+                      const url = window.URL.createObjectURL(blob);
+
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "truss-solution.pdf";
+                      a.click();
+
+                      window.URL.revokeObjectURL(url);
+
+                      setStatus("done");
+                      setTimeout(() => setStatus("idle"), 2500);
+                    } catch (err) {
+                      console.error(err);
+                      setStatus("error");
+                      setTimeout(() => setStatus("idle"), 3000);
+                    }
+                  }}
+                  disabled={off}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    width: "100%",
+                    padding: "12px 0",
+                    border: "none",
+                    borderRadius: 10,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    transition: "all 0.2s",
+                    background: "linear-gradient(135deg, #0f2d6b, #1848a0)",
+                    color: "#fff",
+                    boxShadow: "0 4px 14px rgba(24,72,160,0.25)",
+                    marginBottom: 14,
+                    opacity: off ? 0.65 : 1,
+                    cursor: off ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {labels[status]}
+                </button>
                 <TrussStepRenderer lines={solution.lines} solution={solution} members={members} allNodes={allNodes} supports={supports} forces={forces} />
               </div>
             </div>

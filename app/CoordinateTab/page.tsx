@@ -481,6 +481,18 @@ export default function CoordinateTab() {
   const [forces, setForces] = useState([{ mag: "", from: 0, to: 1 }]);
   const [result, setResult] = useState<any>(null);
   const [showSolution, setShowSolution] = useState(false);
+  const [status, setStatus] = useState<
+    "idle" | "generating" | "done" | "error"
+  >("idle");
+
+  const off = status === "generating";
+
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Generating PDF…",
+    done: "✅ Downloaded!",
+    error: "❌ Export failed — try again",
+  };
 
   const addPoint = () => setPoints(p => [...p, { label: ptLabel(p.length), x: "", y: "", z: "" }]);
   const removePoint = (i: number) => {
@@ -623,12 +635,85 @@ export default function CoordinateTab() {
             {showSolution && (
               <div style={{ marginTop: 20 }}>
                 {/* PDF export button */}
-                <PDFExportButton
-                  steps={result.steps}
-                  resultRows={result.resultRows}
-                  title="3D Cartesian Vector Method — Step-by-Step Solution"
-                  filename="coordinate-solution.pdf"
-                />
+                <button
+                  onClick={async () => {
+                    if (off) return;
+
+                    try {
+                      setStatus("generating");
+
+                      const payload = {
+                        steps: result.steps,
+                        resultRows: result.resultRows,
+                        points,
+                        forces,
+                        result: {
+                          Rx: result.Rx,
+                          Ry: result.Ry,
+                          Rz: result.Rz,
+                          R: result.R,
+                          details: result.details,
+                        },
+                      };
+
+                      localStorage.setItem(
+                        "coordinatePdfData",
+                        JSON.stringify(payload)
+                      );
+
+                      const res = await fetch("/api/export-pdf-3dcoordinates", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(payload),
+                      });
+
+                      if (!res.ok) {
+                        throw new Error("Failed to export PDF");
+                      }
+
+                      const blob = await res.blob();
+                      const url = window.URL.createObjectURL(blob);
+
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "coordinate-solution.pdf";
+                      a.click();
+
+                      window.URL.revokeObjectURL(url);
+
+                      setStatus("done");
+                      setTimeout(() => setStatus("idle"), 2500);
+                    } catch (err) {
+                      console.error(err);
+                      setStatus("error");
+                      setTimeout(() => setStatus("idle"), 3000);
+                    }
+                  }}
+                  disabled={off}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    width: "100%",
+                    padding: "13px 0",
+                    border: "none",
+                    borderRadius: 10,
+                    fontSize: 15,
+                    fontWeight: 600,
+                    transition: "all 0.2s",
+                    background: "linear-gradient(135deg, #0f2d6b, #1848a0)",
+                    color: "#fff",
+                    boxShadow: "0 4px 14px rgba(24,72,160,0.25)",
+                    marginBottom: 12,
+                    opacity: off ? 0.65 : 1,
+                    cursor: off ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {labels[status]}
+                </button>
 
                 {/* Results summary strip */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>

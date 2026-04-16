@@ -453,6 +453,19 @@ export default function BeamSolverUI() {
   const [result, setResult] = useState<BeamResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [status, setStatus] = useState<
+    "idle" | "generating" | "done" | "error"
+  >("idle");
+
+  const off = status === "generating";
+
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Generating PDF…",
+    done: "✅ Downloaded!",
+    error: "❌ Export failed — try again",
+  };
+
   /* ---------- STYLES ---------- */
   const inputStyle: React.CSSProperties = { width: "100%", marginTop: 4, borderRadius: 8, border: "1px solid #d1d5db", fontSize: 16, padding: "8px 10px", outline: "none", boxSizing: "border-box", fontFamily: "inherit", background: "#ffffff", boxShadow: "none" };
   const labelStyle: React.CSSProperties = { display: "block", fontWeight: 500, fontSize: 16 };
@@ -488,7 +501,7 @@ export default function BeamSolverUI() {
   /* ---------- RESULT ROWS for PDF / summary ---------- */
   const resultRows = result ? [
     ...result.reactions.map(r => ({ label: `${r.type} at x = ${fmt(r.location)} m`, value: `${fmt(r.vertical)} kN` })),
-   ] : [];
+  ] : [];
 
   /* ===================== JSX ===================== */
   return (
@@ -636,12 +649,82 @@ export default function BeamSolverUI() {
         {result && (
           <div style={{ ...cardStyle, marginBottom: 20 }}>
             {/* PDF export button */}
-            <PDFExportButton
-              steps={result.steps}
-              resultRows={resultRows}
-              title="Beam Analysis — Step-by-Step Solution"
-              filename="beam-solution.pdf"
-            />
+            <button
+              onClick={async () => {
+                if (off) return;
+
+                try {
+                  setStatus("generating");
+
+                  const payload = {
+                    beamLength,
+                    supports,
+                    pointLoads,
+                    distributedLoads,
+                    reactions: result.reactions,
+                    steps: result.steps,
+                    resultRows,
+                  };
+
+                  localStorage.setItem(
+                    "beamPdfData",
+                    JSON.stringify(payload)
+                  );
+
+                  const res = await fetch("/api/export-pdf-beam", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                  });
+
+                  if (!res.ok) {
+                    throw new Error("Failed to export PDF");
+                  }
+
+                  const blob = await res.blob();
+                  const url = window.URL.createObjectURL(blob);
+
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "beam-solution.pdf";
+                  a.click();
+
+                  window.URL.revokeObjectURL(url);
+
+                  setStatus("done");
+                  setTimeout(() => setStatus("idle"), 2500);
+                } catch (err) {
+                  console.error(err);
+                  setStatus("error");
+                  setTimeout(() => setStatus("idle"), 3000);
+                }
+              }}
+              disabled={off}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                width: "100%",
+                padding: "12px 0",
+                border: "none",
+                borderRadius: 10,
+                fontSize: 14,
+                fontWeight: 600,
+                fontFamily: "inherit",
+                transition: "all 0.2s",
+                background: "linear-gradient(135deg, #0f2d6b, #1848a0)",
+                color: "#fff",
+                boxShadow: "0 4px 14px rgba(24,72,160,0.25)",
+                marginBottom: 14,
+                opacity: off ? 0.65 : 1,
+                cursor: off ? "not-allowed" : "pointer",
+              }}
+            >
+              {labels[status]}
+            </button>
 
             {/* StepByStep renderer */}
             <StepByStepSolution
