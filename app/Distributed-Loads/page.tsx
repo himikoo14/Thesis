@@ -73,7 +73,7 @@ type MOIResult = {
   centroid: { totalArea: number; centroidX: number; centroidY: number };
   step3: any[];
   centroidMOI?: { Ix: number; Iy: number };
-  customMOI?: { Ix: number; Iy: number; dx: number; dy: number };
+  customMOI?: { Ix: number; Iy: number; shapes: { dx: number; dy: number; Ix: number; Iy: number }[] };
   final: { Ix: number; Iy: number };
 };
 
@@ -389,7 +389,7 @@ function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", 
   const ayTerms = computed.step1?.map((sh: any) => sh.hollow === "Hollow" ? `(-${fmtS(Math.abs(sh.area), 3)})(${fmtS(sh.cy, 3)})` : `(${fmtS(sh.area, 3)})(${fmtS(sh.cy, 3)})`).join(" + ") || "0";
   E(`\\Sigma A = ${aTerms} = ${fmtS(totalArea, 4)} \\text{ units}^2`);
   E(`\\bar{X} = \\dfrac{\\Sigma A_i \\bar{x}_i}{\\Sigma A} = \\dfrac{${axTerms}}{${fmtS(totalArea, 3)}} = ${fmtS(centroidX, 4)}`);
-  R(`\\bar{Y} = \\dfrac{\\Sigma A_i \\bar{y}_i}{\\Sigma A} = \\dfrac{${ayTerms}}{${fmtS(totalArea, 3)}} = ${fmtS(centroidY, 4)}`);
+  E(`\\bar{Y} = \\dfrac{\\Sigma A_i \\bar{y}_i}{\\Sigma A} = \\dfrac{${ayTerms}}{${fmtS(totalArea, 3)}} = ${fmtS(centroidY, 4)}`);
   SP();
 
   /* ── Step 3 ── */
@@ -415,19 +415,27 @@ function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", 
   const IxTerms = computed.step3.map((sh: any) => fmtS(sh.Ix_transferred ?? sh.Ix_own ?? 0, 4)).join(" + ");
   const IyTerms = computed.step3.map((sh: any) => fmtS(sh.Iy_transferred ?? sh.Iy_own ?? 0, 4)).join(" + ");
   E(`I_{x,\\text{centroid}} = \\Sigma I_{x,i}' = ${IxTerms} = ${fmtS(IxC, 4)} \\text{ units}^4`);
-  R(`I_{y,\\text{centroid}} = \\Sigma I_{y,i}' = ${IyTerms} = ${fmtS(IyC, 4)} \\text{ units}^4`);
+  E(`I_{y,\\text{centroid}} = \\Sigma I_{y,i}' = ${IyTerms} = ${fmtS(IyC, 4)} \\text{ units}^4`);
   SP();
 
   /* ── Step 5 (custom axis) — data comes from MOIcustom, no math here ── */
   if (axisType === "Custom" && computed.customMOI) {
-    const { Ix: IxF, Iy: IyF, dx, dy } = computed.customMOI;
-    const customX = Number(axisX);
-    const customY = Number(axisY);
-    H(`Step 5: Transfer to Custom Axis (${customX}, ${customY})`);
-    E(`d_x = \\bar{X} - x_{\\text{axis}} = ${fmtS(centroidX, 4)} - ${fmtS(customX, 4)} = ${fmtS(dx, 4)}`);
-    E(`d_y = \\bar{Y} - y_{\\text{axis}} = ${fmtS(centroidY, 4)} - ${fmtS(customY, 4)} = ${fmtS(dy, 4)}`);
-    E(`I_x = I_{x,c} + A d_y^2 = ${fmtS(IxC, 4)} + (${fmtS(totalArea, 3)})(${fmtS(dy, 4)})^2 = ${fmtS(IxF, 4)}`);
-    R(`I_y = I_{y,c} + A d_x^2 = ${fmtS(IyC, 4)} + (${fmtS(totalArea, 3)})(${fmtS(dx, 4)})^2 = ${fmtS(IyF, 4)}`);
+    H(`Step 5: Parallel Axis Theorem (Transfer to Custom Axis ${axisX}, ${axisY})`);
+    E(`I_{x} = \\Sigma\\left(I_{x,i} + A_i \\, d_{y,i}^2\\right), \\quad I_{y} = \\Sigma\\left(I_{y,i} + A_i \\, d_{x,i}^2\\right)`);
+    SP();
+    computed.customMOI.shapes.forEach((sh: any, i: number) => {
+      const s1 = computed.step1[i];
+      SH(`Shape ${i + 1}`);
+      E(`d_{x,${i + 1}} = \\bar{x}_{${i + 1}} - x_{\\text{axis}} = ${fmtS(s1.cx)} - ${fmtS(Number(axisX))} = ${fmtS(sh.dx)}`);
+      E(`d_{y,${i + 1}} = \\bar{y}_{${i + 1}} - y_{\\text{axis}} = ${fmtS(s1.cy)} - ${fmtS(Number(axisY))} = ${fmtS(sh.dy)}`);
+      E(`I_{x,${i + 1}}' = ${fmtS(s1.Ix_own)} + (${fmtS(Math.abs(s1.area))})(${fmtS(sh.dy)})^2 = ${fmtS(sh.Ix)}`);
+      E(`I_{y,${i + 1}}' = ${fmtS(s1.Iy_own)} + (${fmtS(Math.abs(s1.area))})(${fmtS(sh.dx)})^2 = ${fmtS(sh.Iy)}`);
+      SP();
+    });
+    const IxTerms = computed.customMOI.shapes.map((sh: any) => fmtS(sh.Ix)).join(" + ");
+    const IyTerms = computed.customMOI.shapes.map((sh: any) => fmtS(sh.Iy)).join(" + ");
+    E(`I_{x,\\text{custom}} = ${IxTerms} = ${fmtS(computed.customMOI.Ix)} \\text{ units}^4`);
+    R(`I_{y,\\text{custom}} = ${IyTerms} = ${fmtS(computed.customMOI.Iy)} \\text{ units}^4`);
     SP();
   }
 
@@ -490,11 +498,16 @@ export default function DistributedLoadPage() {
     // Step 5: custom axis from MOIcustom (only if needed)
     let customMOI: MOIResult["customMOI"] | undefined = undefined;
     if (axisType === "Custom") {
+      const shapeMOIInputs = centroidal.step1.map((sh: any) => ({
+        Ix: sh.Ix_own,
+        Iy: sh.Iy_own,
+        area: sh.area,
+        centroidX: sh.cx,
+        centroidY: sh.cy,
+      }));
+
       customMOI = computeCustomAxis(
-        centroidal.centroidMOI,
-        centroidal.centroid.totalArea,
-        centroidal.centroid.centroidX,
-        centroidal.centroid.centroidY,
+        shapeMOIInputs,
         Number(axisX),
         Number(axisY),
       );
@@ -560,7 +573,12 @@ export default function DistributedLoadPage() {
           Moment of Inertia for Composite Shapes Calculator
         </h1>
 
-        <ShapeCanvas shapes={shapes} />
+        <ShapeCanvas
+          shapes={shapes}
+          axisType={axisType}
+          axisX={Number(axisX)}
+          axisY={Number(axisY)}
+        />
 
         <p className="text-sm text-gray-700 mb-4">
           <span className="font-semibold">Note:</span> The most lower left point of the composite shape should be at (0,0).

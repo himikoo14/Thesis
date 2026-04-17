@@ -26,6 +26,9 @@ type ShapeData = {
 
 type Props = {
   shapes: ShapeData[];
+  axisType?: "Centroidal" | "Custom";
+  axisX?: number;
+  axisY?: number;
 };
 
 /* ===================== ORDER NODES BY SIDES ===================== */
@@ -61,7 +64,12 @@ function orderNodesBySides(
   return ordered.map(i => nodes[i]);
 }
 
-export default function ShapeCanvas({ shapes }: Props) {
+export default function ShapeCanvas({
+  shapes,
+  axisType,
+  axisX,
+  axisY,
+}: Props) {
   function getGlobalLabel(shapeIndex: number, nodeIndex: number) {
     let count = 0;
 
@@ -483,6 +491,51 @@ export default function ShapeCanvas({ shapes }: Props) {
             </g>
           );
         })}
+
+        {axisType === "Custom" && axisX !== undefined && axisY !== undefined && (() => {
+          const p = map(axisX, axisY);
+
+          return (
+            <g>
+              <line
+                x1={0}
+                y1={p.y}
+                x2={SIZE}
+                y2={p.y}
+                stroke="#ef4444"
+                strokeWidth={3}
+                strokeDasharray="12 8"
+              />
+
+              <line
+                x1={p.x}
+                y1={0}
+                x2={p.x}
+                y2={SIZE}
+                stroke="#2563eb"
+                strokeWidth={3}
+                strokeDasharray="12 8"
+              />
+
+              <circle
+                cx={p.x}
+                cy={p.y}
+                r={10}
+                fill="#111827"
+              />
+
+              <text
+                x={p.x + 18}
+                y={p.y - 18}
+                fontSize="26"
+                fontWeight="bold"
+                fill="#111827"
+              >
+                ({axisX}, {axisY})
+              </text>
+            </g>
+          );
+        })()}
 
       </svg>
     </div>

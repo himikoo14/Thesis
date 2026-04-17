@@ -1,62 +1,92 @@
 /**
  * MOIcustom.ts
- * Transfers centroidal MOI to a user-defined custom axis
- * using the Parallel Axis Theorem.
+ * Transfers each shape's centroidal MOI to a user-defined custom axis
+ * using the Parallel Axis Theorem, applied per shape.
  *
- * Formula:
- *   Ix_custom = Ix_centroid + A * dy²
- *   Iy_custom = Iy_centroid + A * dx²
+ * Formula (per shape i):
+ *   Ix_i_custom = Ix_i_centroid + A_i * dy_i²
+ *   Iy_i_custom = Iy_i_centroid + A_i * dx_i²
  *
  * where:
- *   dx = axisX - centroidX   (horizontal distance from centroid to custom axis)
- *   dy = axisY - centroidY   (vertical distance from centroid to custom axis)
+ *   dx_i = axisX - shape_i.centroidX  (horizontal distance: custom axis → shape centroid)
+ *   dy_i = axisY - shape_i.centroidY  (vertical distance:   custom axis → shape centroid)
  *
- * Note: The sign of dx/dy does not affect the result since they are squared,
- * but the convention is kept consistent: custom axis minus centroid.
+ * The composite MOI about the custom axis is the sum over all shapes:
+ *   Ix_custom = Σ (Ix_i_centroid + A_i * dy_i²)
+ *   Iy_custom = Σ (Iy_i_centroid + A_i * dx_i²)
+ *
+ * Note: Hollow shapes must be passed with a negative area so their
+ * contribution is correctly subtracted from the composite total.
  */
 
-type CentroidalMOI = {
+type ShapeMOIInput = {
+  /** Centroidal MOI of this shape about its own centroidal x-axis */
+  Ix: number;
+  /** Centroidal MOI of this shape about its own centroidal y-axis */
+  Iy: number;
+  /** Signed area (negative for hollow/cutout shapes) */
+  area: number;
+  /** x-coordinate of this shape's centroid */
+  centroidX: number;
+  /** y-coordinate of this shape's centroid */
+  centroidY: number;
+};
+
+type ShapeTransferDetail = {
+  dx: number;
+  dy: number;
   Ix: number;
   Iy: number;
 };
 
 type CustomMOIResult = {
+  /** Composite MOI about the custom axis (x-direction) */
   Ix: number;
+  /** Composite MOI about the custom axis (y-direction) */
   Iy: number;
-  dx: number;
-  dy: number;
+  /** Per-shape transfer details, in the same order as the input array */
+  shapes: ShapeTransferDetail[];
 };
 
 /**
- * Computes the moment of inertia about a custom (user-defined) axis
- * by applying the Parallel Axis Theorem from the centroidal axis.
+ * Computes the composite moment of inertia about a user-defined custom axis
+ * by applying the Parallel Axis Theorem independently to each shape.
  *
- * @param centroidalMOI - { Ix, Iy } about the centroidal axis
- * @param totalArea     - total composite area (signed, hollow already subtracted)
- * @param centroidX     - x-coordinate of composite centroid
- * @param centroidY     - y-coordinate of composite centroid
- * @param axisX         - x-coordinate of the custom reference axis
- * @param axisY         - y-coordinate of the custom reference axis
- * @returns             - { Ix, Iy, dx, dy } about the custom axis
+ * @param shapes  - Array of individual shapes with their centroidal MOI,
+ *                  signed area, and centroid coordinates.
+ * @param axisX   - x-coordinate of the custom reference axis
+ * @param axisY   - y-coordinate of the custom reference axis
+ * @returns       - Composite { Ix, Iy } about the custom axis, plus per-shape details
  */
 export function computeCustomAxis(
-  centroidalMOI: CentroidalMOI,
-  totalArea: number,
-  centroidX: number,
-  centroidY: number,
+  shapes: ShapeMOIInput[],
   axisX: number,
   axisY: number
 ): CustomMOIResult {
-  // Distance from centroid to custom axis
-  // Sign doesn't matter (squared), but convention: axis - centroid
-  const dx = axisX - centroidX;
-  const dy = axisY - centroidY;
+  let totalIx = 0;
+  let totalIy = 0;
 
-  // Parallel Axis Theorem:
-  // Ix_custom = Ix_centroid + A * dy²  (dy is the vertical offset → affects Ix)
-  // Iy_custom = Iy_centroid + A * dx²  (dx is the horizontal offset → affects Iy)
-  const Ix = centroidalMOI.Ix + totalArea * dy * dy;
-  const Iy = centroidalMOI.Iy + totalArea * dx * dx;
+  const shapeDetails: ShapeTransferDetail[] = shapes.map((shape) => {
+    // Distance from the custom axis to this shape's centroid.
+    // Sign doesn't affect the result (squared), but convention: axis - centroid.
+    const dx = axisX - shape.centroidX;
+    const dy = axisY - shape.centroidY;
 
-  return { Ix, Iy, dx, dy };
+    // Parallel Axis Theorem per shape:
+    //   dy (vertical offset) drives the transfer for Ix
+    //   dx (horizontal offset) drives the transfer for Iy
+    const Ix = shape.Ix + shape.area * dy * dy;
+    const Iy = shape.Iy + shape.area * dx * dx;
+
+    totalIx += Ix;
+    totalIy += Iy;
+
+    return { dx, dy, Ix, Iy };
+  });
+
+  return {
+    Ix: totalIx,
+    Iy: totalIy,
+    shapes: shapeDetails,
+  };
 }
