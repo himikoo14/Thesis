@@ -33,8 +33,8 @@ function PrintableFBD({ forces }: { forces: any[] }) {
   const scale = 80 / maxMag;
 
   return (
-    <div className="rounded-2xl border border-[#dbe7ff] bg-white p-6 flex justify-center break-inside-avoid page-break-inside-avoid">
-      <svg width="300" height="300" className="rounded-lg border bg-white shadow">
+    <div className="rounded-2xl border border-[#dbe7ff] bg-white p-3 flex justify-center break-inside-avoid page-break-inside-avoid">
+      <svg width="220" height="220" className="rounded-lg border bg-white shadow">
         <defs>
           {FORCE_COLORS.map((color, ci) => (
             <marker
@@ -51,12 +51,12 @@ function PrintableFBD({ forces }: { forces: any[] }) {
           ))}
         </defs>
 
-        <g transform="translate(150,150)">
-          <line x1={-140} y1={0} x2={140} y2={0} stroke="#e2e8f0" strokeWidth="1" />
-          <line x1={0} y1={-140} x2={0} y2={140} stroke="#e2e8f0" strokeWidth="1" />
+        <g transform="translate(110,110)">
+          <line x1={-100} y1={0} x2={100} y2={0} stroke="#e2e8f0" strokeWidth="1" />
+          <line x1={0} y1={-100} x2={0} y2={100} stroke="#e2e8f0" strokeWidth="1" />
 
-          <text x={143} y={4} fontSize="10" fill="#94a3b8">x</text>
-          <text x={3} y={-133} fontSize="10" fill="#94a3b8">y</text>
+          <text x={103} y={4} fontSize="9" fill="#94a3b8">x</text>
+          <text x={3} y={-93} fontSize="9" fill="#94a3b8">y</text>
 
           {vectors.map((v, i) => {
             const color = FORCE_COLORS[i % FORCE_COLORS.length];
@@ -80,9 +80,9 @@ function PrintableFBD({ forces }: { forces: any[] }) {
                   markerEnd={`url(#arrow-${i % FORCE_COLORS.length})`}
                 />
                 <text
-                  x={ex + 12}
-                  y={ey - 12}
-                  fontSize="12"
+                  x={ex + 10}
+                  y={ey - 10}
+                  fontSize="11"
                   fill={color}
                   fontWeight="bold"
                 >
@@ -98,6 +98,7 @@ function PrintableFBD({ forces }: { forces: any[] }) {
     </div>
   );
 }
+
 function sanitizeTeX(tex: string): string {
   return tex.replace(
     /(_\{[^}]+\})_([a-zA-Z])/g,
@@ -126,40 +127,40 @@ export default function PrintEquilibriumPage() {
   const parsed = JSON.parse(decodeURIComponent(raw));
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] py-10 px-6">
-      <div className="mx-auto max-w-4xl bg-white rounded-3xl shadow-xl p-10 space-y-10">
-        <div className="border-b pb-6">
-          <h1 className="text-3xl font-bold text-[#1848a0]">
+    <div className="min-h-screen bg-[#f8fafc] py-4 px-6" style={{ fontSize: "12px" }}>
+      <div className="mx-auto max-w-4xl bg-white rounded-3xl shadow-xl p-5 space-y-4">
+        <div className="border-b pb-4">
+          <h1 style={{ fontSize: "15px" }} className="font-bold text-[#1848a0]">
             Concurrent Force System
           </h1>
-          <p className="text-sm text-gray-500 mt-2">
+          <p style={{ fontSize: "11px" }} className="text-gray-500 mt-1">
             Generated: {new Date().toLocaleDateString()}
           </p>
         </div>
 
         {parsed.solvedLabel && (
-          <div className="rounded-2xl border border-[#1848a0] bg-blue-50 p-4">
-            <span className="font-semibold text-[#1848a0]">Solved: </span>
-            <span className="font-bold">{parsed.solvedLabel}</span>
+          <div className="rounded-2xl border border-[#1848a0] bg-blue-50 px-4 py-2">
+            <span style={{ fontSize: "11px" }} className="font-semibold text-[#1848a0]">Solved: </span>
+            <span style={{ fontSize: "11px" }} className="font-bold">{parsed.solvedLabel}</span>
           </div>
         )}
 
         <section>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+          <h2 style={{ fontSize: "13px" }} className="font-semibold text-gray-900 mb-3">
             Results Summary
           </h2>
 
-          <div className="grid gap-4">
+          <div className="grid gap-2">
             {parsed.resultRows.map(
               (row: { label: string; value: string }, i: number) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between rounded-2xl bg-[#f8fbff] border border-[#dbe7ff] px-5 py-4"
+                  className="flex items-center justify-between rounded-xl bg-[#f8fbff] border border-[#dbe7ff] px-4 py-2"
                 >
-                  <span className="font-medium text-gray-700">
+                  <span style={{ fontSize: "11px" }} className="font-medium text-gray-700">
                     {row.label}
                   </span>
-                  <span className="font-bold text-[#1848a0]">
+                  <span style={{ fontSize: "11px" }} className="font-bold text-[#1848a0]">
                     {row.value}
                   </span>
                 </div>
@@ -169,7 +170,7 @@ export default function PrintEquilibriumPage() {
         </section>
 
         <section className="break-inside-avoid page-break-inside-avoid">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+          <h2 style={{ fontSize: "13px" }} className="font-semibold text-gray-900 mb-3">
             Final Free Body Diagram
           </h2>
 
@@ -177,11 +178,11 @@ export default function PrintEquilibriumPage() {
         </section>
 
         <section>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+          <h2 style={{ fontSize: "13px" }} className="font-semibold text-gray-900 mb-3">
             Step-by-Step Solution
           </h2>
 
-          <div className="space-y-6">
+          <div className="space-y-3">
             {parsed.steps.map((step: string, i: number) => {
               const s = step.trim();
 
@@ -189,7 +190,8 @@ export default function PrintEquilibriumPage() {
                 return (
                   <div
                     key={i}
-                    className="text-xl font-bold text-[#1848a0] pt-4"
+                    style={{ fontSize: "12px" }}
+                    className="font-bold text-[#1848a0] pt-2"
                   >
                     {s.replace(/^\\textbf\{([\s\S]*)\}$/, "$1")}
                   </div>
@@ -207,7 +209,8 @@ export default function PrintEquilibriumPage() {
               return (
                 <div
                   key={i}
-                  className="overflow-x-auto rounded-xl bg-gray-50 p-4"
+                  className="overflow-x-auto rounded-lg bg-gray-50 px-2 py-1"
+                  style={{ fontSize: "11px" }}
                 >
                   <BlockMath>{sanitizeTeX(s)}</BlockMath>
                 </div>

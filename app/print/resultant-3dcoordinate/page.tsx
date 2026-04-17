@@ -16,14 +16,14 @@ function CoordinateFBD({
       className="break-inside-avoid page-break-inside-avoid"
       style={{
         width: "100%",
-        borderRadius: 16,
+        borderRadius: 12,
         border: "1px solid #dee2e6",
         background: "#f8f9fa",
         overflow: "hidden",
-        padding: 16,
+        padding: 10,
       }}
     >
-      <svg width="100%" height="360" viewBox="0 0 700 360">
+      <svg width="100%" height="260" viewBox="0 0 700 260">
         <defs>
           <marker
             id="coordArrow"
@@ -37,28 +37,28 @@ function CoordinateFBD({
           </marker>
         </defs>
 
-        <line x1="100" y1="280" x2="320" y2="280" stroke="#cccccc" strokeWidth="2" />
-        <line x1="100" y1="280" x2="100" y2="70" stroke="#cccccc" strokeWidth="2" />
-        <line x1="100" y1="280" x2="200" y2="200" stroke="#cccccc" strokeWidth="2" />
+        <line x1="100" y1="210" x2="320" y2="210" stroke="#cccccc" strokeWidth="2" />
+        <line x1="100" y1="210" x2="100" y2="40" stroke="#cccccc" strokeWidth="2" />
+        <line x1="100" y1="210" x2="200" y2="140" stroke="#cccccc" strokeWidth="2" />
 
-        <text x="330" y="285" fontSize="16" fill="#999">X</text>
-        <text x="90" y="60" fontSize="16" fill="#999">Z</text>
-        <text x="210" y="195" fontSize="16" fill="#999">Y</text>
+        <text x="330" y="215" fontSize="13" fill="#999">X</text>
+        <text x="88" y="32" fontSize="13" fill="#999">Z</text>
+        <text x="208" y="136" fontSize="13" fill="#999">Y</text>
 
         {points.map((p: any, i: number) => {
           const x = 100 + (parseFloat(p.x) || 0) * 25;
           const y =
-            280 -
+            210 -
             (parseFloat(p.z) || 0) * 25 -
             (parseFloat(p.y) || 0) * 10;
 
           return (
             <g key={i}>
-              <circle cx={x} cy={y} r="6" fill="#1848a0" />
+              <circle cx={x} cy={y} r="5" fill="#1848a0" />
               <text
-                x={x + 10}
-                y={y - 10}
-                fontSize="15"
+                x={x + 8}
+                y={y - 8}
+                fontSize="12"
                 fill="#1848a0"
                 fontWeight="bold"
               >
@@ -76,13 +76,13 @@ function CoordinateFBD({
 
           const x1 = 100 + (parseFloat(from.x) || 0) * 25;
           const y1 =
-            280 -
+            210 -
             (parseFloat(from.z) || 0) * 25 -
             (parseFloat(from.y) || 0) * 10;
 
           const x2 = 100 + (parseFloat(to.x) || 0) * 25;
           const y2 =
-            280 -
+            210 -
             (parseFloat(to.z) || 0) * 25 -
             (parseFloat(to.y) || 0) * 10;
 
@@ -94,13 +94,13 @@ function CoordinateFBD({
                 x2={x2}
                 y2={y2}
                 stroke="#f4a261"
-                strokeWidth="4"
+                strokeWidth="3"
                 markerEnd="url(#coordArrow)"
               />
               <text
-                x={(x1 + x2) / 2 + 8}
-                y={(y1 + y2) / 2 - 8}
-                fontSize="14"
+                x={(x1 + x2) / 2 + 6}
+                y={(y1 + y2) / 2 - 6}
+                fontSize="11"
                 fill="#f4a261"
                 fontWeight="bold"
               >
@@ -123,7 +123,7 @@ export default function PrintCoordinatePage() {
 
   if (!raw) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
+      <div className="min-h-screen flex items-center justify-center text-gray-500" style={{ fontSize: 12 }}>
         No data provided.
       </div>
     );
@@ -132,23 +132,26 @@ export default function PrintCoordinatePage() {
   const parsed = JSON.parse(decodeURIComponent(raw));
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] py-10 px-6">
-      <div className="mx-auto max-w-4xl bg-white rounded-3xl shadow-xl p-10 space-y-10">
-        <div className="border-b pb-6">
-          <h1 className="text-3xl font-bold text-[#1848a0]">
+    <div className="min-h-screen bg-[#f8fafc] py-4 px-4" style={{ fontSize: 12 }}>
+      <div className="mx-auto max-w-4xl bg-white rounded-2xl shadow-xl p-5 space-y-4">
+
+        {/* Header */}
+        <div className="border-b pb-3">
+          <h1 style={{ fontSize: 15 }} className="font-bold text-[#1848a0] leading-tight">
             3D Cartesian Vector Method
           </h1>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-gray-500 mt-1" style={{ fontSize: 10 }}>
             Generated: {new Date().toLocaleDateString()}
           </p>
         </div>
 
+        {/* Step-by-Step Solution */}
         <section>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+          <h2 style={{ fontSize: 13 }} className="font-semibold text-gray-900 mb-3">
             Step-by-Step Solution
           </h2>
 
-          <div className="space-y-6">
+          <div className="space-y-3">
             {parsed.steps.map((step: string, i: number) => {
               const s = step.trim();
 
@@ -156,7 +159,8 @@ export default function PrintCoordinatePage() {
                 return (
                   <div
                     key={i}
-                    className="text-xl font-bold text-[#1848a0] pt-4"
+                    style={{ fontSize: 13 }}
+                    className="font-bold text-[#1848a0] pt-2"
                   >
                     {s}
                   </div>
@@ -166,7 +170,8 @@ export default function PrintCoordinatePage() {
               return (
                 <div
                   key={i}
-                  className="overflow-x-auto rounded-xl bg-gray-50 p-4"
+                  className="overflow-x-auto rounded-lg bg-gray-50 px-2 py-1"
+                  style={{ fontSize: 11 }}
                 >
                   <BlockMath>{s}</BlockMath>
                 </div>
@@ -175,22 +180,23 @@ export default function PrintCoordinatePage() {
           </div>
         </section>
 
+        {/* Results Summary */}
         <section>
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+          <h2 style={{ fontSize: 13 }} className="font-semibold text-gray-900 mb-3">
             Results Summary
           </h2>
 
-          <div className="grid gap-4">
+          <div className="grid gap-2">
             {parsed.resultRows.map(
               (row: { label: string; value: string }, i: number) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between rounded-2xl bg-[#f8fbff] border border-[#dbe7ff] px-5 py-4"
+                  className="flex items-center justify-between rounded-xl bg-[#f8fbff] border border-[#dbe7ff] px-4 py-2"
                 >
-                  <span className="font-medium text-gray-700">
+                  <span className="font-medium text-gray-700" style={{ fontSize: 11 }}>
                     {row.label}
                   </span>
-                  <span className="font-bold text-[#1848a0]">
+                  <span className="font-bold text-[#1848a0]" style={{ fontSize: 11 }}>
                     {row.value}
                   </span>
                 </div>
@@ -199,28 +205,29 @@ export default function PrintCoordinatePage() {
           </div>
         </section>
 
+        {/* Coordinates of Points */}
         <section className="break-inside-avoid page-break-inside-avoid">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+          <h2 style={{ fontSize: 13 }} className="font-semibold text-gray-900 mb-3">
             Coordinates of Points
           </h2>
 
-          <div className="overflow-hidden rounded-2xl border border-[#dbe7ff]">
-            <table className="w-full text-left">
+          <div className="overflow-hidden rounded-xl border border-[#dbe7ff]">
+            <table className="w-full text-left" style={{ fontSize: 11 }}>
               <thead className="bg-[#1848a0] text-white">
                 <tr>
-                  <th className="px-4 py-3">Point</th>
-                  <th className="px-4 py-3">X</th>
-                  <th className="px-4 py-3">Y</th>
-                  <th className="px-4 py-3">Z</th>
+                  <th className="px-3 py-2">Point</th>
+                  <th className="px-3 py-2">X</th>
+                  <th className="px-3 py-2">Y</th>
+                  <th className="px-3 py-2">Z</th>
                 </tr>
               </thead>
               <tbody>
                 {parsed.points.map((p: any, i: number) => (
                   <tr key={i} className="border-t">
-                    <td className="px-4 py-3 font-semibold">{p.label}</td>
-                    <td className="px-4 py-3">{p.x}</td>
-                    <td className="px-4 py-3">{p.y}</td>
-                    <td className="px-4 py-3">{p.z}</td>
+                    <td className="px-3 py-2 font-semibold">{p.label}</td>
+                    <td className="px-3 py-2">{p.x}</td>
+                    <td className="px-3 py-2">{p.y}</td>
+                    <td className="px-3 py-2">{p.z}</td>
                   </tr>
                 ))}
               </tbody>
@@ -228,8 +235,9 @@ export default function PrintCoordinatePage() {
           </div>
         </section>
 
+        {/* Free Body Diagram */}
         <section className="break-inside-avoid page-break-inside-avoid">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+          <h2 style={{ fontSize: 13 }} className="font-semibold text-gray-900 mb-3">
             Final Free Body Diagram
           </h2>
 
@@ -238,6 +246,7 @@ export default function PrintCoordinatePage() {
             forces={parsed.forces}
           />
         </section>
+
       </div>
     </div>
   );
