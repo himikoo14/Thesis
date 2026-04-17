@@ -376,53 +376,63 @@ function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", 
       E(`A_{${i + 1}} = ${sign}${fmtS(Math.abs(shape.area), 4)} \\text{ units}^2`);
       E(`\\bar{x}_{${i + 1}} = ${fmtS(shape.cx, 4)}, \\quad \\bar{y}_{${i + 1}} = ${fmtS(shape.cy, 4)}`);
       E(`I_{x,${i + 1}} = ${shape.Ix_formula ?? `${fmtS(shape.Ix_own, 4)}`} = ${fmtS(shape.Ix_own, 4)} \\text{ units}^4`);
-      E(`I_{y,${i + 1}} = ${shape.Iy_formula ?? `${fmtS(shape.Iy_own, 4)}`} = ${fmtS(shape.Iy_own, 4)} \\text{ units}^4`); SP();
+      E(`I_{y,${i + 1}} = ${shape.Iy_formula ?? `${fmtS(shape.Iy_own, 4)}`} = ${fmtS(shape.Iy_own, 4)} \\text{ units}^4`);
+      SP();
     });
   } else {
     T("No shape data available.");
   }
 
-  /* ── Step 2 ── */
-  H("Step 2: Composite Centroid");
-  const aTerms = computed.step1?.map((sh: any) => sh.hollow === "Hollow" ? `(-${fmtS(Math.abs(sh.area), 3)})` : fmtS(sh.area, 3)).join(" + ") || "0";
-  const axTerms = computed.step1?.map((sh: any) => sh.hollow === "Hollow" ? `(-${fmtS(Math.abs(sh.area), 3)})(${fmtS(sh.cx, 3)})` : `(${fmtS(sh.area, 3)})(${fmtS(sh.cx, 3)})`).join(" + ") || "0";
-  const ayTerms = computed.step1?.map((sh: any) => sh.hollow === "Hollow" ? `(-${fmtS(Math.abs(sh.area), 3)})(${fmtS(sh.cy, 3)})` : `(${fmtS(sh.area, 3)})(${fmtS(sh.cy, 3)})`).join(" + ") || "0";
-  E(`\\Sigma A = ${aTerms} = ${fmtS(totalArea, 4)} \\text{ units}^2`);
-  E(`\\bar{X} = \\dfrac{\\Sigma A_i \\bar{x}_i}{\\Sigma A} = \\dfrac{${axTerms}}{${fmtS(totalArea, 3)}} = ${fmtS(centroidX, 4)}`);
-  E(`\\bar{Y} = \\dfrac{\\Sigma A_i \\bar{y}_i}{\\Sigma A} = \\dfrac{${ayTerms}}{${fmtS(totalArea, 3)}} = ${fmtS(centroidY, 4)}`);
-  SP();
+  /* ══════════════════════════════════════════════════
+     CENTROIDAL PATH — Steps 2, 3, 4
+  ══════════════════════════════════════════════════ */
+  if (axisType === "Centroidal") {
 
-  /* ── Step 3 ── */
-  H("Step 3: Parallel Axis Theorem (Transfer to Centroid)");
-  E(`I_{x} = \\Sigma\\left(I_{x,i} + A_i \\, d_{y,i}^2\\right), \\quad I_{y} = \\Sigma\\left(I_{y,i} + A_i \\, d_{x,i}^2\\right)`);
-  SP();
-  if (computed.step3?.length > 0) {
-    computed.step3.forEach((sh: any, i: number) => {
-      const dy = sh.dy ?? (sh.cy - centroidY);
-      const dx = sh.dx ?? (sh.cx - centroidX);
-      const A = sh.area;
-      SH(`Shape ${i + 1}`);
-      E(`d_{x,${i + 1}} = \\bar{X} - \\bar{x}_{${i + 1}} = ${fmtS(centroidX, 4)} - ${fmtS(sh.cx, 4)} = ${fmtS(dx, 4)}`);
-      E(`d_{y,${i + 1}} = \\bar{Y} - \\bar{y}_{${i + 1}} = ${fmtS(centroidY, 4)} - ${fmtS(sh.cy, 4)} = ${fmtS(dy, 4)}`);
-      E(`I_{x,${i + 1}}' = ${fmtS(sh.Ix_own ?? 0, 4)} + (${fmtS(Math.abs(A), 3)})(${fmtS(dy, 4)})^2 = ${fmtS(sh.Ix_transferred ?? sh.Ix_own ?? 0, 4)}`);
-      E(`I_{y,${i + 1}}' = ${fmtS(sh.Iy_own ?? 0, 4)} + (${fmtS(Math.abs(A), 3)})(${fmtS(dx, 4)})^2 = ${fmtS(sh.Iy_transferred ?? sh.Iy_own ?? 0, 4)}`);
-      SP();
-    });
-  }
+    /* ── Step 2 ── */
+    H("Step 2: Composite Centroid");
+    const aTerms = computed.step1?.map((sh: any) => sh.hollow === "Hollow" ? `(-${fmtS(Math.abs(sh.area), 3)})` : fmtS(sh.area, 3)).join(" + ") || "0";
+    const axTerms = computed.step1?.map((sh: any) => sh.hollow === "Hollow" ? `(-${fmtS(Math.abs(sh.area), 3)})(${fmtS(sh.cx, 3)})` : `(${fmtS(sh.area, 3)})(${fmtS(sh.cx, 3)})`).join(" + ") || "0";
+    const ayTerms = computed.step1?.map((sh: any) => sh.hollow === "Hollow" ? `(-${fmtS(Math.abs(sh.area), 3)})(${fmtS(sh.cy, 3)})` : `(${fmtS(sh.area, 3)})(${fmtS(sh.cy, 3)})`).join(" + ") || "0";
+    E(`\\Sigma A = ${aTerms} = ${fmtS(totalArea, 4)} \\text{ units}^2`);
+    E(`\\bar{X} = \\dfrac{\\Sigma A_i \\bar{x}_i}{\\Sigma A} = \\dfrac{${axTerms}}{${fmtS(totalArea, 3)}} = ${fmtS(centroidX, 4)}`);
+    E(`\\bar{Y} = \\dfrac{\\Sigma A_i \\bar{y}_i}{\\Sigma A} = \\dfrac{${ayTerms}}{${fmtS(totalArea, 3)}} = ${fmtS(centroidY, 4)}`);
+    SP();
 
-  /* ── Step 4 ── */
-  H("Step 4: Composite MOI About Centroidal Axis");
-  const IxTerms = computed.step3.map((sh: any) => fmtS(sh.Ix_transferred ?? sh.Ix_own ?? 0, 4)).join(" + ");
-  const IyTerms = computed.step3.map((sh: any) => fmtS(sh.Iy_transferred ?? sh.Iy_own ?? 0, 4)).join(" + ");
-  E(`I_{x,\\text{centroid}} = \\Sigma I_{x,i}' = ${IxTerms} = ${fmtS(IxC, 4)} \\text{ units}^4`);
-  E(`I_{y,\\text{centroid}} = \\Sigma I_{y,i}' = ${IyTerms} = ${fmtS(IyC, 4)} \\text{ units}^4`);
-  SP();
-
-  /* ── Step 5 (custom axis) — data comes from MOIcustom, no math here ── */
-  if (axisType === "Custom" && computed.customMOI) {
-    H(`Step 5: Parallel Axis Theorem (Transfer to Custom Axis ${axisX}, ${axisY})`);
+    /* ── Step 3 ── */
+    H("Step 3: Parallel Axis Theorem (Transfer to Centroid)");
     E(`I_{x} = \\Sigma\\left(I_{x,i} + A_i \\, d_{y,i}^2\\right), \\quad I_{y} = \\Sigma\\left(I_{y,i} + A_i \\, d_{x,i}^2\\right)`);
     SP();
+    if (computed.step3?.length > 0) {
+      computed.step3.forEach((sh: any, i: number) => {
+        const dy = sh.dy ?? (sh.cy - centroidY);
+        const dx = sh.dx ?? (sh.cx - centroidX);
+        const A = sh.area;
+        SH(`Shape ${i + 1}`);
+        E(`d_{x,${i + 1}} = \\bar{X} - \\bar{x}_{${i + 1}} = ${fmtS(centroidX, 4)} - ${fmtS(sh.cx, 4)} = ${fmtS(dx, 4)}`);
+        E(`d_{y,${i + 1}} = \\bar{Y} - \\bar{y}_{${i + 1}} = ${fmtS(centroidY, 4)} - ${fmtS(sh.cy, 4)} = ${fmtS(dy, 4)}`);
+        E(`I_{x,${i + 1}}' = ${fmtS(sh.Ix_own ?? 0, 4)} + (${fmtS(Math.abs(A), 3)})(${fmtS(dy, 4)})^2 = ${fmtS(sh.Ix_transferred ?? sh.Ix_own ?? 0, 4)}`);
+        E(`I_{y,${i + 1}}' = ${fmtS(sh.Iy_own ?? 0, 4)} + (${fmtS(Math.abs(A), 3)})(${fmtS(dx, 4)})^2 = ${fmtS(sh.Iy_transferred ?? sh.Iy_own ?? 0, 4)}`);
+        SP();
+      });
+    }
+
+    /* ── Step 4 ── */
+    H("Step 4: Composite MOI About Centroidal Axis");
+    const IxTerms = computed.step3.map((sh: any) => fmtS(sh.Ix_transferred ?? sh.Ix_own ?? 0, 4)).join(" + ");
+    const IyTerms = computed.step3.map((sh: any) => fmtS(sh.Iy_transferred ?? sh.Iy_own ?? 0, 4)).join(" + ");
+    E(`I_{x,\\text{centroid}} = \\Sigma I_{x,i}' = ${IxTerms} = ${fmtS(IxC, 4)} \\text{ units}^4`);
+    E(`I_{y,\\text{centroid}} = \\Sigma I_{y,i}' = ${IyTerms} = ${fmtS(IyC, 4)} \\text{ units}^4`);
+    SP();
+  }
+
+  /* ══════════════════════════════════════════════════
+     CUSTOM AXIS PATH — Step 2 only (direct transfer)
+  ══════════════════════════════════════════════════ */
+  if (axisType === "Custom" && computed.customMOI) {
+    H(`Step 2: Parallel Axis Theorem (Direct Transfer to Custom Axis at x=${axisX}, y=${axisY})`);
+    E(`I_{x} = \\Sigma\\left(I_{x,i} + A_i \\, d_{y,i}^2\\right), \\quad I_{y} = \\Sigma\\left(I_{y,i} + A_i \\, d_{x,i}^2\\right)`);
+    SP();
+
     computed.customMOI.shapes.forEach((sh: any, i: number) => {
       const s1 = computed.step1[i];
       SH(`Shape ${i + 1}`);
@@ -432,20 +442,23 @@ function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", 
       E(`I_{y,${i + 1}}' = ${fmtS(s1.Iy_own)} + (${fmtS(Math.abs(s1.area))})(${fmtS(sh.dx)})^2 = ${fmtS(sh.Iy)}`);
       SP();
     });
+
+    /* ── Step 3 (custom) — summation ── */
+    H("Step 3: Composite MOI About Custom Axis");
     const IxTerms = computed.customMOI.shapes.map((sh: any) => fmtS(sh.Ix)).join(" + ");
     const IyTerms = computed.customMOI.shapes.map((sh: any) => fmtS(sh.Iy)).join(" + ");
-    E(`I_{x,\\text{custom}} = ${IxTerms} = ${fmtS(computed.customMOI.Ix)} \\text{ units}^4`);
-    R(`I_{y,\\text{custom}} = ${IyTerms} = ${fmtS(computed.customMOI.Iy)} \\text{ units}^4`);
+    E(`I_{x} = ${IxTerms} = ${fmtS(computed.customMOI.Ix)} \\text{ units}^4`);
+    E(`I_{y} = ${IyTerms} = ${fmtS(computed.customMOI.Iy)} \\text{ units}^4`);
     SP();
   }
 
   /* ── Final Result ── */
   H("Final Result");
-  R(`\\bar{X} = ${fmtS(centroidX, 4)}, \\quad \\bar{Y} = ${fmtS(centroidY, 4)}`);
   if (axisType === "Custom" && computed.customMOI) {
     R(`I_x = ${fmtS(computed.customMOI.Ix, 4)} \\text{ units}^4`);
     R(`I_y = ${fmtS(computed.customMOI.Iy, 4)} \\text{ units}^4`);
   } else {
+    R(`\\bar{X} = ${fmtS(centroidX, 4)}, \\quad \\bar{Y} = ${fmtS(centroidY, 4)}`);
     R(`I_x = ${fmtS(IxC, 4)} \\text{ units}^4`);
     R(`I_y = ${fmtS(IyC, 4)} \\text{ units}^4`);
   }
