@@ -399,7 +399,7 @@ function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", 
     SP();
 
     /* ── Step 3 ── */
-    H("Step 3: Parallel Axis Theorem (Transfer to Centroid)");
+    H("Step 3: Parallel Axis Theorem");
     E(`I_{x} = \\Sigma\\left(I_{x,i} + A_i \\, d_{y,i}^2\\right), \\quad I_{y} = \\Sigma\\left(I_{y,i} + A_i \\, d_{x,i}^2\\right)`);
     SP();
     if (computed.step3?.length > 0) {
@@ -429,7 +429,7 @@ function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", 
      CUSTOM AXIS PATH — Step 2 only (direct transfer)
   ══════════════════════════════════════════════════ */
   if (axisType === "Custom" && computed.customMOI) {
-    H(`Step 2: Parallel Axis Theorem (Direct Transfer to Custom Axis at x=${axisX}, y=${axisY})`);
+    H(`Step 2: Parallel Axis Theorem `);
     E(`I_{x} = \\Sigma\\left(I_{x,i} + A_i \\, d_{y,i}^2\\right), \\quad I_{y} = \\Sigma\\left(I_{y,i} + A_i \\, d_{x,i}^2\\right)`);
     SP();
 
