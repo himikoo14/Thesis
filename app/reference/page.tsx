@@ -12,7 +12,6 @@ export default function ReferencesPage() {
           <h1 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
             References{" "}
             <span className="text-gray-500 text-[16px] font-normal">
-              (temporary text)
             </span>
           </h1>
 

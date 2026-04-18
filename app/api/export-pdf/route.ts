@@ -6,14 +6,20 @@ export async function POST(req: Request) {
 
   const encoded = encodeURIComponent(JSON.stringify(body));
 
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.URL ||
+    "http://localhost:3000";
+
   const browser = await puppeteer.launch({
     headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
 
   const page = await browser.newPage();
 
   await page.goto(
-    `http://localhost:3000/print/resultant?data=${encoded}`,
+    `${baseUrl}/print/resultant?data=${encoded}`,
     {
       waitUntil: "networkidle0",
     }
@@ -21,21 +27,21 @@ export async function POST(req: Request) {
 
   await page.emulateMediaType("screen");
 
-    await page.addStyleTag({
-  content: `
-    [data-next-badge-root],
-    nextjs-portal,
-    #__next-build-watcher,
-    [class*="issue"],
-    [class*="Issue"],
-    [class*="badge"],
-    [style*="position: fixed"],
-    [style*="position:fixed"] {
-      display: none !important;
-      visibility: hidden !important;
-    }
-  `,
-});
+  await page.addStyleTag({
+    content: `
+      [data-next-badge-root],
+      nextjs-portal,
+      #__next-build-watcher,
+      [class*="issue"],
+      [class*="Issue"],
+      [class*="badge"],
+      [style*="position: fixed"],
+      [style*="position:fixed"] {
+        display: none !important;
+        visibility: hidden !important;
+      }
+    `,
+  });
 
   const pdf = await page.pdf({
     format: "A4",
