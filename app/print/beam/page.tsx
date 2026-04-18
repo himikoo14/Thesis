@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
@@ -222,12 +223,12 @@ function BeamDiagram({
   );
 }
 
-export default function PrintBeamPage() {
+function PrintBeamContent() {
   const searchParams = useSearchParams();
 
   const raw =
     searchParams.get("data") ||
-    localStorage.getItem("beamPdfData");
+    (typeof window !== "undefined" ? localStorage.getItem("beamPdfData") : null);
 
   if (!raw) {
     return (
@@ -331,5 +332,19 @@ export default function PrintBeamPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+export default function PrintBeamPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center text-gray-500">
+          Loading...
+        </div>
+      }
+    >
+      <PrintBeamContent />
+    </Suspense>
   );
 }
