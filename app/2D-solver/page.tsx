@@ -102,7 +102,6 @@ type ForceResult = {
 };
 
 /* ===================== ResultantFBD ===================== */
-// ✅ Added svgRef prop so the PDF exporter can capture the diagram
 function ResultantFBD({
   forces,
   result,
@@ -128,7 +127,6 @@ function ResultantFBD({
   const scale = 90 / maxMag;
 
   return (
-    // ✅ svgRef attached here
     <svg
       ref={svgRef}
       width="300"
@@ -242,20 +240,17 @@ export default function Solver2D() {
   const [activeTab, setActiveTab] = useState<"2d" | "3d">("2d");
   const [forces, setForces] = useState<ForceInput[]>([{ magnitude: "", angle: "" }]);
   const [result, setResult] = useState<ForceResult | null>(null);
-  const [status, setStatus] = useState<
-  "idle" | "generating" | "done" | "error"
->("idle");
+  const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
 
-const off = status === "generating";
+  const off = status === "generating";
 
-const labels: Record<typeof status, string> = {
-  idle: "⬇ Download Solution as PDF",
-  generating: "⏳ Generating PDF…",
-  done: "✅ Downloaded!",
-  error: "❌ Export failed — try again",
-};
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Opening print view…",
+    done: "✅ Done!",
+    error: "❌ Export failed — try again",
+  };
 
-  // ✅ Ref for the ResultantFBD <svg> — passed to PDFButton for diagram capture
   const fbdRef = useRef<SVGSVGElement>(null);
 
   const [solutionRef, PDFButton] = useStepByStepPDF({
@@ -277,6 +272,45 @@ const labels: Record<typeof status, string> = {
       if (!isNaN(mag) && !isNaN(ang)) system.addForce(mag, ang);
     });
     setResult(system.stepByStepSolution());
+  };
+
+  // ✅ Replaced fetch("/api/export-pdf") with browser print — works on Netlify
+  const handleExportPDF = (result: ForceResult) => {
+    if (!result) return;
+    setStatus("generating");
+
+    const payload = {
+      steps: result.steps,
+      resultRows: [
+        { label: "Horizontal component (Fx)", value: `${fmt2(result.sumFx)} kN` },
+        { label: "Vertical component (Fy)", value: `${fmt2(result.sumFy)} kN` },
+        { label: "Magnitude (R)", value: `${fmt2(result.R)} kN` },
+        { label: "Angle (θ)", value: `${result.theta.toFixed(2)}°` },
+      ],
+      forces,
+      result: {
+        sumFx: result.sumFx,
+        sumFy: result.sumFy,
+        R: result.R,
+        theta: result.theta,
+      },
+    };
+
+    const encoded = encodeURIComponent(JSON.stringify(payload));
+    const win = window.open(`/print/resultant?data=${encoded}`, "_blank");
+
+    if (win) {
+      win.addEventListener("load", () => {
+        setTimeout(() => {
+          win.print();
+          setStatus("done");
+          setTimeout(() => setStatus("idle"), 2500);
+        }, 800);
+      });
+    } else {
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
+    }
   };
 
   return (
@@ -354,64 +388,11 @@ const labels: Record<typeof status, string> = {
               <div ref={solutionRef as React.Ref<HTMLDivElement>}>
 
                 <button
-                  onClick={async () => {
-                    if (off) return;
-
-                    try {
-                      setStatus("generating");
-
-                      const payload = {
-                        steps: result.steps,
-                        resultRows: [
-                          { label: "Horizontal component (Fx)", value: `${fmt2(result.sumFx)} kN` },
-                          { label: "Vertical component (Fy)", value: `${fmt2(result.sumFy)} kN` },
-                          { label: "Magnitude (R)", value: `${fmt2(result.R)} kN` },
-                          { label: "Angle (θ)", value: `${result.theta.toFixed(2)}°` },
-                        ],
-                        forces,
-                        result: {
-                          sumFx: result.sumFx,
-                          sumFy: result.sumFy,
-                          R: result.R,
-                          theta: result.theta,
-                        },
-                      };
-
-                      const res = await fetch("/api/export-pdf", {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify(payload),
-                      });
-
-                      if (!res.ok) {
-                        throw new Error("Failed to export PDF");
-                      }
-
-                      const blob = await res.blob();
-                      const url = window.URL.createObjectURL(blob);
-
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = "resultant-2d-solution.pdf";
-                      a.click();
-
-                      window.URL.revokeObjectURL(url);
-
-                      setStatus("done");
-                      setTimeout(() => setStatus("idle"), 2500);
-                    } catch (err) {
-                      console.error(err);
-                      setStatus("error");
-                      setTimeout(() => setStatus("idle"), 3000);
-                    }
-                  }}
+                  onClick={() => handleExportPDF(result)}
                   disabled={off}
-                  className={`w-full mt-4 rounded-xl px-4 py-3 font-semibold text-white transition ${off
-                      ? "cursor-not-allowed bg-[#1848a0]/60"
-                      : "bg-[#1848a0] hover:bg-[#163d8a]"
-                    }`}
+                  className={`w-full mt-4 rounded-xl px-4 py-3 font-semibold text-white transition ${
+                    off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+                  }`}
                 >
                   {labels[status]}
                 </button>
@@ -452,7 +433,6 @@ const labels: Record<typeof status, string> = {
                     <p className="font-medium text-[18px] mb-2">
                       Step 4: Final Free Body Diagram (All Forces + Resultant)
                     </p>
-                    {/* ✅ svgRef passed so PDF exporter can capture this diagram */}
                     <ResultantFBD forces={forces} result={result} svgRef={fbdRef} />
                   </div>
                 }
