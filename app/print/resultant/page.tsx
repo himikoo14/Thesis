@@ -1,10 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
 
-export default function PrintResultantPage() {
+function PrintResultantContent() {
   const searchParams = useSearchParams();
   const raw = searchParams.get("data");
 
@@ -215,5 +216,19 @@ export default function PrintResultantPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function PrintResultantPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center text-gray-500 text-sm">
+          Loading...
+        </div>
+      }
+    >
+      <PrintResultantContent />
+    </Suspense>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
@@ -109,12 +110,12 @@ function sanitizeTeX(tex: string): string {
   );
 }
 
-export default function PrintEquilibriumPage() {
+function PrintEquilibriumContent() {
   const searchParams = useSearchParams();
 
   const raw =
     searchParams.get("data") ||
-    localStorage.getItem("equilibriumPdfData");
+    (typeof window !== "undefined" ? localStorage.getItem("equilibriumPdfData") : null);
 
   if (!raw) {
     return (
@@ -220,5 +221,19 @@ export default function PrintEquilibriumPage() {
         </section>
       </div>
     </div>
+  );
+}
+
+export default function PrintEquilibriumPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center text-gray-500">
+          Loading...
+        </div>
+      }
+    >
+      <PrintEquilibriumContent />
+    </Suspense>
   );
 }

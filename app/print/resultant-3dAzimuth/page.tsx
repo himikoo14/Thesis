@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
@@ -29,11 +30,11 @@ function ResultantFBD3D({
   );
 }
 
-export default function PrintResultant3DAzimuthPage() {
+function PrintResultant3DAzimuthContent() {
   const searchParams = useSearchParams();
   const raw =
     searchParams.get("data") ||
-    localStorage.getItem("resultant3dAzimuthPdfData");
+    (typeof window !== "undefined" ? localStorage.getItem("resultant3dAzimuthPdfData") : null);
 
   if (!raw) {
     return (
@@ -210,5 +211,19 @@ export default function PrintResultant3DAzimuthPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function PrintResultant3DAzimuthPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center text-gray-500" style={{ fontSize: 12 }}>
+          Loading...
+        </div>
+      }
+    >
+      <PrintResultant3DAzimuthContent />
+    </Suspense>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
@@ -163,12 +164,12 @@ function PrintableShapeDiagram({ shapes }: { shapes: any[] }) {
     );
 }
 
-export default function PrintMOIPage() {
+function PrintMOIContent() {
     const searchParams = useSearchParams();
 
     const raw =
         searchParams.get("data") ||
-        localStorage.getItem("moiPdfData");
+        (typeof window !== "undefined" ? localStorage.getItem("moiPdfData") : null);
 
     if (!raw) {
         return (
@@ -291,5 +292,19 @@ export default function PrintMOIPage() {
                 </section>
             </div>
         </div>
+    );
+}
+
+export default function PrintMOIPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-screen flex items-center justify-center text-gray-500">
+                    Loading...
+                </div>
+            }
+        >
+            <PrintMOIContent />
+        </Suspense>
     );
 }

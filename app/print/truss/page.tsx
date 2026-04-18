@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
@@ -432,12 +433,12 @@ function TrussDiagram({
   );
 }
 
-export default function PrintTrussPage() {
+function PrintTrussContent() {
   const searchParams = useSearchParams();
 
   const raw =
     searchParams.get("data") ||
-    localStorage.getItem("trussPdfData");
+    (typeof window !== "undefined" ? localStorage.getItem("trussPdfData") : null);
 
   if (!raw) {
     return (
@@ -580,5 +581,19 @@ export default function PrintTrussPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function PrintTrussPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center text-gray-500" style={{ fontSize: 12 }}>
+          Loading...
+        </div>
+      }
+    >
+      <PrintTrussContent />
+    </Suspense>
   );
 }

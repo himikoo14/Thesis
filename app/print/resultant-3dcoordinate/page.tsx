@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
@@ -114,12 +115,12 @@ function CoordinateFBD({
   );
 }
 
-export default function PrintCoordinatePage() {
+function PrintCoordinateContent() {
   const searchParams = useSearchParams();
 
   const raw =
     searchParams.get("data") ||
-    localStorage.getItem("coordinatePdfData");
+    (typeof window !== "undefined" ? localStorage.getItem("coordinatePdfData") : null);
 
   if (!raw) {
     return (
@@ -249,5 +250,19 @@ export default function PrintCoordinatePage() {
 
       </div>
     </div>
+  );
+}
+
+export default function PrintCoordinatePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center text-gray-500" style={{ fontSize: 12 }}>
+          Loading...
+        </div>
+      }
+    >
+      <PrintCoordinateContent />
+    </Suspense>
   );
 }
