@@ -126,11 +126,11 @@ export function computeMOI(shapes: ShapeData[]) {
       Cy += d;
       Ix = I_parallel;
       Iy = I_perp;
-    } else if (shape.type === "Semi-circle-2") {
-      // Flat top, curves down → centroid shifts down
-      Cy -= d;
-      Ix = I_parallel;
-      Iy = I_perp;
+} else if (shape.type === "Semi-circle-2") {
+  Cy -= d;
+  Ix = I_parallel;
+  Iy = I_perp;
+
     } else if (shape.type === "Semi-circle-3") {
       // Flat right, curves left → centroid shifts left
       Cx -= d;
@@ -163,7 +163,7 @@ export function computeMOI(shapes: ShapeData[]) {
 
     let Cx = cx;
     let Cy = cy;
-    
+
     if (shape.type === "Quarter-circle-1") { Cx -= d; Cy -= d; } // corner at top-right
     if (shape.type === "Quarter-circle-2") { Cx += d; Cy -= d; } // corner at top-left
     if (shape.type === "Quarter-circle-3") { Cx += d; Cy += d; } // corner at bottom-left
@@ -195,21 +195,20 @@ export function computeMOI(shapes: ShapeData[]) {
       };
     }
 
-    if (shape.type === "Semi-circle-1" || shape.type === "Semi-circle-3") {
-      // Flat edge horizontal → Ix uses (π/8 - 8/9π)r⁴, Iy uses πr⁴/8
-      return {
-        Ix_formula: `\\left(\\dfrac{\\pi}{8} - \\dfrac{8}{9\\pi}\\right)(${fmtR(r)})^4`,
-        Iy_formula: `\\dfrac{\\pi (${fmtR(r)})^4}{8}`,
-      };
-    }
+if (shape.type === "Semi-circle-1" || shape.type === "Semi-circle-2") {
+  return {
+    Ix_formula: `\\left(\\dfrac{\\pi}{8} - \\dfrac{8}{9\\pi}\\right)(${fmtR(r)})^4`,
+    Iy_formula: `\\dfrac{\\pi (${fmtR(r)})^4}{8}`,
+  };
+}
 
-    if (shape.type === "Semi-circle-2" || shape.type === "Semi-circle-4") {
-      // Flat edge vertical → axes swapped: Ix uses πr⁴/8, Iy uses (π/8 - 8/9π)r⁴
-      return {
-        Ix_formula: `\\dfrac{\\pi (${fmtR(r)})^4}{8}`,
-        Iy_formula: `\\left(\\dfrac{\\pi}{8} - \\dfrac{8}{9\\pi}\\right)(${fmtR(r)})^4`,
-      };
-    }
+if (shape.type === "Semi-circle-3" || shape.type === "Semi-circle-4") {
+  return {
+    Ix_formula: `\\dfrac{\\pi (${fmtR(r)})^4}{8}`,
+    Iy_formula: `\\left(\\dfrac{\\pi}{8} - \\dfrac{8}{9\\pi}\\right)(${fmtR(r)})^4`,
+  };
+}
+
 
     if (shape.type.startsWith("Quarter")) {
       // Both axes identical for all quarter-circle orientations
@@ -301,9 +300,9 @@ export function computeMOI(shapes: ShapeData[]) {
     const dx = r.Cx - centroidX;
     const dy = r.Cy - centroidY;
 
-    const sign = step1[index].hollow === "Hollow" ? -1 : 1;
-    const Ix_transferred = r.Ix + sign * Math.abs(r.A) * dy * dy;
-    const Iy_transferred = r.Iy + sign * Math.abs(r.A) * dx * dx;
+const sign = step1[index].hollow === "Hollow" ? -1 : 1;
+const Ix_transferred = r.Ix + sign * Math.abs(r.A) * dy * dy;
+const Iy_transferred = r.Iy + sign * Math.abs(r.A) * dx * dx;
 
     Ix_final += Ix_transferred;
     Iy_final += Iy_transferred;

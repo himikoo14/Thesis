@@ -212,8 +212,12 @@ function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", 
         SH(`Shape ${i + 1}`);
         E(`d_{x,${i + 1}} = \\bar{X} - \\bar{x}_{${i + 1}} = ${fmtS(centroidX, 4)} - ${fmtS(sh.cx, 4)} = ${fmtS(dx, 4)}`);
         E(`d_{y,${i + 1}} = \\bar{Y} - \\bar{y}_{${i + 1}} = ${fmtS(centroidY, 4)} - ${fmtS(sh.cy, 4)} = ${fmtS(dy, 4)}`);
-        E(`I_{x,${i + 1}}' = ${fmtS(sh.Ix_own ?? 0, 4)} + (${fmtS(Math.abs(A), 3)})(${fmtS(dy, 4)})^2 = ${fmtS(sh.Ix_transferred ?? sh.Ix_own ?? 0, 4)}`);
-        E(`I_{y,${i + 1}}' = ${fmtS(sh.Iy_own ?? 0, 4)} + (${fmtS(Math.abs(A), 3)})(${fmtS(dx, 4)})^2 = ${fmtS(sh.Iy_transferred ?? sh.Iy_own ?? 0, 4)}`);
+        const hollow = sh.hollow === "Hollow";
+        const dIxOwn = hollow ? `-${fmtS(sh.Ix_own ?? 0, 4)}` : fmtS(sh.Ix_own ?? 0, 4);
+        const dIyOwn = hollow ? `-${fmtS(sh.Iy_own ?? 0, 4)}` : fmtS(sh.Iy_own ?? 0, 4);
+        const dA = hollow ? `-${fmtS(Math.abs(A), 3)}` : fmtS(Math.abs(A), 3);
+        E(`I_{x,${i + 1}}' = ${dIxOwn} + (${dA})(${fmtS(dy, 4)})^2 = ${fmtS(sh.Ix_transferred ?? sh.Ix_own ?? 0, 4)}`);
+        E(`I_{y,${i + 1}}' = ${dIyOwn} + (${dA})(${fmtS(dx, 4)})^2 = ${fmtS(sh.Iy_transferred ?? sh.Iy_own ?? 0, 4)}`);
         SP();
       });
     }
@@ -240,8 +244,12 @@ function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", 
       SH(`Shape ${i + 1}`);
       E(`d_{x,${i + 1}} = \\bar{x}_{${i + 1}} - x_{\\text{axis}} = ${fmtS(s1.cx)} - ${fmtS(Number(axisX))} = ${fmtS(sh.dx)}`);
       E(`d_{y,${i + 1}} = \\bar{y}_{${i + 1}} - y_{\\text{axis}} = ${fmtS(s1.cy)} - ${fmtS(Number(axisY))} = ${fmtS(sh.dy)}`);
-      E(`I_{x,${i + 1}}' = ${fmtS(s1.Ix_own)} + (${fmtS(Math.abs(s1.area))})(${fmtS(sh.dy)})^2 = ${fmtS(sh.Ix)}`);
-      E(`I_{y,${i + 1}}' = ${fmtS(s1.Iy_own)} + (${fmtS(Math.abs(s1.area))})(${fmtS(sh.dx)})^2 = ${fmtS(sh.Iy)}`);
+      const isHollow = s1.hollow === "Hollow";
+      const dispIxOwn = isHollow ? `-${fmtS(s1.Ix_own)}` : fmtS(s1.Ix_own);
+      const dispIyOwn = isHollow ? `-${fmtS(s1.Iy_own)}` : fmtS(s1.Iy_own);
+      const dispA = isHollow ? `-${fmtS(Math.abs(s1.area))}` : fmtS(Math.abs(s1.area));
+      E(`I_{x,${i + 1}}' = ${dispIxOwn} + (${dispA})(${fmtS(sh.dy)})^2 = ${fmtS(sh.Ix)}`);
+      E(`I_{y,${i + 1}}' = ${dispIyOwn} + (${dispA})(${fmtS(sh.dx)})^2 = ${fmtS(sh.Iy)}`);
       SP();
     });
 
@@ -290,12 +298,12 @@ export default function DistributedLoadPage() {
 
   const off = status === "generating";
 
-const labels: Record<typeof status, string> = {
-  idle: "⬇ Download Solution as PDF",
-  generating: "⏳ Opening print view…",
-  done: "✅ Done!",
-  error: "❌ Export failed — try again",
-};
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Opening print view…",
+    done: "✅ Done!",
+    error: "❌ Export failed — try again",
+  };
 
   const formatNumber = (num: number) => Number(num.toFixed(3));
 
@@ -316,7 +324,7 @@ const labels: Record<typeof status, string> = {
       const shapeMOIInputs = centroidal.step1.map((sh: any) => ({
         Ix: sh.Ix_own,
         Iy: sh.Iy_own,
-        area: sh.area,
+        area: sh.signedArea,  // ✅ was sh.area
         centroidX: sh.cx,
         centroidY: sh.cy,
       }));
@@ -576,22 +584,21 @@ const labels: Record<typeof status, string> = {
               <h3 className="text-[15px] font-semibold text-gray-800 tracking-wide">Step-by-Step Solution</h3>
             </div>
             <div className="px-6 py-5">
-<button
-  onClick={() => {
-    setStatus("generating");
-    const payload = { lines: stepLines, resultRows, shapes };
-    const encoded = encodeURIComponent(JSON.stringify(payload));
-    window.open(`/print/moi?data=${encoded}`, "_blank");
-    setStatus("done");
-    setTimeout(() => setStatus("idle"), 2500);
-  }}
-  disabled={off}
-  className={`w-full mb-4 py-3 rounded-xl font-semibold text-white transition ${
-    off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
-  }`}
->
-  {labels[status]}
-</button>
+              <button
+                onClick={() => {
+                  setStatus("generating");
+                  const payload = { lines: stepLines, resultRows, shapes };
+                  const encoded = encodeURIComponent(JSON.stringify(payload));
+                  window.open(`/print/moi?data=${encoded}`, "_blank");
+                  setStatus("done");
+                  setTimeout(() => setStatus("idle"), 2500);
+                }}
+                disabled={off}
+                className={`w-full mb-4 py-3 rounded-xl font-semibold text-white transition ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+                  }`}
+              >
+                {labels[status]}
+              </button>
               <MOIStepRenderer lines={stepLines} />
             </div>
           </div>

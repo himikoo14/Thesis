@@ -67,16 +67,16 @@ export function computeCustomAxis(
   let totalIy = 0;
 
   const shapeDetails: ShapeTransferDetail[] = shapes.map((shape) => {
-    // Distance from the custom axis to this shape's centroid.
-    // Sign doesn't affect the result (squared), but convention: axis - centroid.
     const dx = axisX - shape.centroidX;
     const dy = axisY - shape.centroidY;
 
-    // Parallel Axis Theorem per shape:
-    //   dy (vertical offset) drives the transfer for Ix
-    //   dx (horizontal offset) drives the transfer for Iy
-    const Ix = shape.Ix + shape.area * dy * dy;
-    const Iy = shape.Iy + shape.area * dx * dx;
+    // Parallel Axis Theorem:
+    // Centroidal Ix/Iy are always positive.
+    // shape.area is negative for hollow/cutout shapes,
+    // which naturally subtracts their contribution.
+const sign = shape.area < 0 ? -1 : 1;
+const Ix = sign * shape.Ix + sign * Math.abs(shape.area) * dy * dy;
+const Iy = sign * shape.Iy + sign * Math.abs(shape.area) * dx * dx;
 
     totalIx += Ix;
     totalIy += Iy;
