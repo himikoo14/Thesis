@@ -696,10 +696,10 @@ export default function DistributedLoadPage() {
                       {shape.type === "Polygon" && (
                         <div className="space-y-5">
                           <div>
-                            <h4 className="font-semibold mb-2">Joints</h4>
+                            <h4 className="font-semibold mb-2">Vertices</h4>
                             {shape.nodes.map((node, i) => (
                               <div key={i} className="flex items-center gap-2 mb-2">
-                                <span className="w-16">Joint {getJointLabel(index, i)}</span>
+                                <span className="w-16">Vertex {getJointLabel(index, i)}</span>
                                 <input placeholder="x" value={node.x}
                                   onChange={e => { const copy = [...shapes]; copy[index].nodes[i].x = e.target.value; setShapes(copy); }}
                                   className="w-20 rounded bg-gray-100 px-2 py-1 focus:outline-none" />
@@ -716,7 +716,7 @@ export default function DistributedLoadPage() {
                               </div>
                             ))}
                             <button onClick={() => { const copy = [...shapes]; copy[index].nodes.push({ x: "", y: "" }); setShapes(copy); }}
-                              className="bg-[#008409] text-white px-3 py-1 rounded-md shadow hover:bg-[#15711b] transition text-[16px]">+ Add Joint</button>
+                              className="bg-[#008409] text-white px-3 py-1 rounded-md shadow hover:bg-[#15711b] transition text-[16px]">+ Add Vertex</button>
                           </div>
 
                           <div>
@@ -727,12 +727,12 @@ export default function DistributedLoadPage() {
                                 <select value={side.a}
                                   onChange={e => { const copy = [...shapes]; copy[index].sides[i].a = Number(e.target.value); setShapes(copy); }}
                                   className="w-24 rounded bg-gray-100 px-2 py-1 focus:outline-none">
-                                  {shape.nodes.map((_, j) => <option key={j} value={j}>Joint {getJointLabel(index, j)}</option>)}
+                                  {shape.nodes.map((_, j) => <option key={j} value={j}>Vertex {getJointLabel(index, j)}</option>)}
                                 </select>
                                 <select value={side.b}
                                   onChange={e => { const copy = [...shapes]; copy[index].sides[i].b = Number(e.target.value); setShapes(copy); }}
                                   className="w-24 rounded bg-gray-100 px-2 py-1 focus:outline-none">
-                                  {shape.nodes.map((_, j) => <option key={j} value={j}>Joint {getJointLabel(index, j)}</option>)}
+                                  {shape.nodes.map((_, j) => <option key={j} value={j}>Vertex {getJointLabel(index, j)}</option>)}
                                 </select>
                                 <button onClick={() => { const copy = [...shapes]; copy[index].sides.splice(i, 1); setShapes(copy); }}
                                   className="bg-red-500 text-white px-3 py-1 rounded">–</button>
@@ -774,84 +774,12 @@ export default function DistributedLoadPage() {
               <h3 className="text-[15px] font-semibold text-gray-800 tracking-wide">Step-by-Step Solution</h3>
             </div>
             <div className="px-6 py-5">
-              <button
-                onClick={async () => {
-                  if (off) return;
-
-                  try {
-                    setStatus("generating");
-
-                    const payload = {
-                      lines: stepLines,
-                      resultRows,
-                      shapes,
-                      axisType,
-                      axisX,
-                      axisY,
-                    };
-
-                    localStorage.setItem(
-                      "moiPdfData",
-                      JSON.stringify(payload)
-                    );
-
-                    const res = await fetch("/api/export-pdf-moi", {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify(payload),
-                    });
-
-                    if (!res.ok) {
-                      throw new Error("Failed to export PDF");
-                    }
-
-                    const blob = await res.blob();
-                    const url = window.URL.createObjectURL(blob);
-
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = "moi-solution.pdf";
-                    a.click();
-
-                    window.URL.revokeObjectURL(url);
-
-                    setStatus("done");
-                    setTimeout(() => setStatus("idle"), 2500);
-                  } catch (err) {
-                    console.error(err);
-                    setStatus("error");
-                    setTimeout(() => setStatus("idle"), 3000);
-                  }
-                }}
-                disabled={off}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  width: "100%",
-                  padding: "12px 0",
-                  border: "none",
-                  borderRadius: 10,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  transition: "all 0.2s",
-                  background: off
-                    ? "linear-gradient(135deg, #64748b, #94a3b8)"
-                    : "linear-gradient(135deg, #0f2d6b, #1848a0)",
-                  color: "#fff",
-                  boxShadow: off
-                    ? "none"
-                    : "0 4px 14px rgba(24,72,160,0.25)",
-                  marginBottom: 14,
-                  opacity: off ? 0.7 : 1,
-                  cursor: off ? "not-allowed" : "pointer",
-                }}
-              >
-                {labels[status]}
-              </button>
+<PDFExportButton
+  lines={stepLines}
+  resultRows={resultRows}
+  title="Moment of Inertia — Step-by-Step Solution"
+  filename="moi-solution.pdf"
+/>
               <MOIStepRenderer lines={stepLines} />
             </div>
           </div>

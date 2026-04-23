@@ -55,6 +55,26 @@ class ForceSystem3D {
       `\\alpha&=\\sin^{-1}\\!\\left(\\dfrac{\\Sigma F_z}{R}\\right)=${elevation.toFixed(2)}^\\circ` +
       `\\end{align*}`
     );
+    if (R > 0.0001) {
+      const alpha = (Math.acos(sumFx / R) * 180) / Math.PI;
+      const beta = (Math.acos(sumFy / R) * 180) / Math.PI;
+      const gamma = (Math.acos(sumFz / R) * 180) / Math.PI;
+
+      steps.push("Step 4: Direction angles (α, β, γ):");
+      steps.push(
+        `\\alpha = \\cos^{-1}\\!\\left(\\dfrac{\\Sigma F_x}{R}\\right) = \\cos^{-1}\\!\\left(\\dfrac{${sumFx.toFixed(3)}}{${R.toFixed(3)}}\\right) = ${alpha.toFixed(2)}^\\circ`
+      );
+      steps.push(
+        `\\beta = \\cos^{-1}\\!\\left(\\dfrac{\\Sigma F_y}{R}\\right) = \\cos^{-1}\\!\\left(\\dfrac{${sumFy.toFixed(3)}}{${R.toFixed(3)}}\\right) = ${beta.toFixed(2)}^\\circ`
+      );
+      steps.push(
+        `\\gamma = \\cos^{-1}\\!\\left(\\dfrac{\\Sigma F_z}{R}\\right) = \\cos^{-1}\\!\\left(\\dfrac{${sumFz.toFixed(3)}}{${R.toFixed(3)}}\\right) = ${gamma.toFixed(2)}^\\circ`
+      );
+      steps.push(
+        `\\cos^2\\alpha + \\cos^2\\beta + \\cos^2\\gamma = ${((sumFx / R) ** 2 + (sumFy / R) ** 2 + (sumFz / R) ** 2).toFixed(3)} \\approx 1 \\checkmark`
+      );
+    }
+
     return { steps, sumFx, sumFy, sumFz, R, azimuth, elevation };
   }
 }
@@ -140,10 +160,11 @@ function FBD3D({ forces }: { forces: any[] }) {
       const m = parseFloat(f.magnitude), az = parseFloat(f.azimuth), el = parseFloat(f.elevation);
       if (isNaN(m) || isNaN(az) || isNaN(el) || m === 0) return;
       const azR = az * Math.PI / 180, elR = el * Math.PI / 180;
+      // ✅ Fix
       const vec = new THREE.Vector3(
-        m * Math.cos(elR) * Math.cos(azR), // X
-        m * Math.cos(elR) * Math.sin(azR), // Y
-        m * Math.sin(elR)                  // Z
+        m * Math.cos(elR) * Math.cos(azR), // statics X → THREE X
+        m * Math.sin(elR),                  // statics Z → THREE Y (up)
+        m * Math.cos(elR) * Math.sin(azR)  // statics Y → THREE Z
       );
       const arr = new THREE.ArrowHelper(vec.clone().normalize(), new THREE.Vector3(0, 0, 0), m * scale, FORCE_COLORS[i % FORCE_COLORS.length], m * scale * 0.2, m * scale * 0.12);
       scene.add(arr); arrowsRef.current.push(arr);
@@ -183,11 +204,8 @@ function ResultantFBD3D({ forces, result }: { forces: any[]; result: any }) {
       scene.add(new THREE.ArrowHelper(vec.clone().normalize(), new THREE.Vector3(0, 0, 0), m * scale, FORCE_COLORS[i % FORCE_COLORS.length], m * scale * 0.2, m * scale * 0.12));
     });
     if (result.R > 0.001) {
-      const rv = new THREE.Vector3(
-        result.sumFx,
-        result.sumFy,
-        result.sumFz
-      );
+      // ✅ Fix
+      const rv = new THREE.Vector3(result.sumFx, result.sumFz, result.sumFy);
       scene.add(new THREE.ArrowHelper(rv.clone().normalize(), new THREE.Vector3(0, 0, 0), result.R * scale, 0x009900, result.R * scale * 0.2, result.R * scale * 0.12));
     }
     const orbit = { theta: -0.6, phi: 0.85, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } };
@@ -257,6 +275,40 @@ export default function AnglesTab() {
     done: "✅ Downloaded!",
     error: "❌ Export failed — try again",
   };
+  const handleExportPDF = () => {
+    if (!result) return;
+    setStatus("generating");
+
+    const payload = {
+      steps: result.steps,
+      resultRows,
+      forces,
+      result: {
+        sumFx: result.sumFx,
+        sumFy: result.sumFy,
+        sumFz: result.sumFz,
+        R: result.R,
+        azimuth: result.azimuth,
+        elevation: result.elevation,
+      },
+    };
+
+    const encoded = encodeURIComponent(JSON.stringify(payload));
+    const win = window.open(`/print/resultant-3dAzimuth?data=${encoded}`, "_blank");
+
+    if (win) {
+      win.addEventListener("load", () => {
+        setTimeout(() => {
+          win.print();
+          setStatus("done");
+          setTimeout(() => setStatus("idle"), 2500);
+        }, 800);
+      });
+    } else {
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
+    }
+  };
   const katexOk = useMathJax();
 
   const resultRows = result ? [
@@ -266,6 +318,9 @@ export default function AnglesTab() {
     { label: "Magnitude (R)", value: `${result.R.toFixed(3)} kN` },
     { label: "Azimuth (φ)", value: `${result.azimuth.toFixed(2)}°` },
     { label: "Elevation (α)", value: `${result.elevation.toFixed(2)}°` },
+    { label: "α (angle with X)", value: `${(Math.acos(result.sumFx / result.R) * 180 / Math.PI).toFixed(2)}°` },
+    { label: "β (angle with Y)", value: `${(Math.acos(result.sumFy / result.R) * 180 / Math.PI).toFixed(2)}°` },
+    { label: "γ (angle with Z)", value: `${(Math.acos(result.sumFz / result.R) * 180 / Math.PI).toFixed(2)}°` },
   ] : [];
 
   const update = (i: number, field: string, value: string) =>
@@ -358,69 +413,11 @@ export default function AnglesTab() {
           <h2 style={{ fontSize: 18, fontWeight: 600, marginTop: 0, marginBottom: 12 }}>Step-by-Step Solution</h2>
 
           <button
-            onClick={async () => {
-              if (off) return;
-
-              try {
-                setStatus("generating");
-
-                const payload = {
-                  steps: result.steps,
-                  resultRows,
-                  forces,
-                  result: {
-                    sumFx: result.sumFx,
-                    sumFy: result.sumFy,
-                    sumFz: result.sumFz,
-                    R: result.R,
-                    azimuth: result.azimuth,
-                    elevation: result.elevation,
-                  },
-                };
-
-                const res = await fetch("/api/export-pdf-3dAzimuth", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify(payload),
-                });
-
-                if (!res.ok) {
-                  throw new Error("Failed to export PDF");
-                }
-
-                const blob = await res.blob();
-                const url = window.URL.createObjectURL(blob);
-
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "resultant-3d-solution.pdf";
-                a.click();
-
-                window.URL.revokeObjectURL(url);
-
-                setStatus("done");
-                setTimeout(() => setStatus("idle"), 2500);
-              } catch (err) {
-                console.error(err);
-                setStatus("error");
-                setTimeout(() => setStatus("idle"), 3000);
-              }
-            }}
+            onClick={() => handleExportPDF()}
             disabled={off}
-            style={{
-              width: "100%",
-              marginBottom: 16,
-              borderRadius: 12,
-              padding: "12px 16px",
-              fontWeight: 600,
-              color: "#fff",
-              border: "none",
-              cursor: off ? "not-allowed" : "pointer",
-              background: off ? "rgba(24,72,160,0.6)" : "#1848a0",
-              transition: "0.2s",
-            }}
+            className={`w-full mt-4 rounded-xl px-4 py-3 font-normal text-white transition ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+              }`}
+            style={{ marginBottom: 16 }}
           >
             {labels[status]}
           </button>

@@ -105,7 +105,7 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
         new THREE.SphereGeometry(0.1, 16, 16),
         new THREE.MeshStandardMaterial({ color: COLORS[i % COLORS.length] })
       );
-      mesh.position.set(parseFloat(p.x) || 0, parseFloat(p.y) || 0, parseFloat(p.z) || 0);
+      mesh.position.set(parseFloat(p.y) || 0, parseFloat(p.z) || 0, parseFloat(p.x) || 0);
       group.add(mesh);
     });
     forces.forEach((f) => {
@@ -113,8 +113,8 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
       if (!mag) return;
       const a = points[f.from], b = points[f.to];
       if (!a || !b) return;
-      const from = new THREE.Vector3(parseFloat(a.x) || 0, parseFloat(a.y) || 0, parseFloat(a.z) || 0);
-      const to = new THREE.Vector3(parseFloat(b.x) || 0, parseFloat(b.y) || 0, parseFloat(b.z) || 0);
+      const from = new THREE.Vector3(parseFloat(a.y) || 0, parseFloat(a.z) || 0, parseFloat(a.x) || 0);
+      const to = new THREE.Vector3(parseFloat(b.y) || 0, parseFloat(b.z) || 0, parseFloat(b.x) || 0);
       const len = from.distanceTo(to);
       if (len < 0.001) return;
       group.add(new THREE.ArrowHelper(new THREE.Vector3().subVectors(to, from).normalize(), from, len, 0xf4a261, 0.25, 0.14));
@@ -469,6 +469,27 @@ function buildSolution(details: any[], Rx: number, Ry: number, Rz: number, R: nu
     `R = \\sqrt{(${Rx.toFixed(2)})^2+(${Ry.toFixed(2)})^2+(${Rz.toFixed(2)})^2} = ${R.toFixed(2)}`
   );
 
+  // Step 6: Direction angles
+  if (R > 0.0001) {
+    const alpha = (Math.acos(Rx / R) * 180) / Math.PI;
+    const beta  = (Math.acos(Ry / R) * 180) / Math.PI;
+    const gamma = (Math.acos(Rz / R) * 180) / Math.PI;
+
+    steps.push("Step 6: Direction angles (α, β, γ)");
+    steps.push(
+      `\\alpha = \\cos^{-1}\\!\\left(\\frac{R_x}{R}\\right) = \\cos^{-1}\\!\\left(\\frac{${Rx.toFixed(2)}}{${R.toFixed(2)}}\\right) = ${alpha.toFixed(2)}^\\circ`
+    );
+    steps.push(
+      `\\beta = \\cos^{-1}\\!\\left(\\frac{R_y}{R}\\right) = \\cos^{-1}\\!\\left(\\frac{${Ry.toFixed(2)}}{${R.toFixed(2)}}\\right) = ${beta.toFixed(2)}^\\circ`
+    );
+    steps.push(
+      `\\gamma = \\cos^{-1}\\!\\left(\\frac{R_z}{R}\\right) = \\cos^{-1}\\!\\left(\\frac{${Rz.toFixed(2)}}{${R.toFixed(2)}}\\right) = ${gamma.toFixed(2)}^\\circ`
+    );
+    steps.push(
+      `\\cos^2\\alpha + \\cos^2\\beta + \\cos^2\\gamma = ${((Rx/R)**2 + (Ry/R)**2 + (Rz/R)**2).toFixed(3)} \\approx 1 \\checkmark`
+    );
+  }
+
   return steps;
 }
 
@@ -524,23 +545,32 @@ export default function CoordinateTab() {
       Rx += Fx; Ry += Fy; Rz += Fz;
       details.push({ mag, from: points[f.from].label, to: points[f.to].label, ax, ay, az, bx, by, bz, dx, dy, dz, Fx, Fy, Fz, len });
     });
-    const R = Math.sqrt(Rx * Rx + Ry * Ry + Rz * Rz);
-    const rawSteps = buildSolution(details, Rx, Ry, Rz, R);
-    setResult({
-      details, Rx, Ry, Rz, R,
-      steps: rawSteps,
-      stepLines: fromLegacySteps(rawSteps),
-      resultRows: [
-        { label: "Resultant Rx", value: `${Rx.toFixed(3)} N` },
-        { label: "Resultant Ry", value: `${Ry.toFixed(3)} N` },
-        { label: "Resultant Rz", value: `${Rz.toFixed(3)} N` },
-        { label: "Magnitude |R|", value: `${R.toFixed(3)} N` },
-      ],
-    });
-    setShowSolution(true);
-  };
 
-  const inp: React.CSSProperties = { background: "white", border: "1px solid #e0e0e0", borderRadius: 8, padding: "6px 8px", fontSize: 13, width: "100%", outline: "none" };
+const R = Math.sqrt(Rx * Rx + Ry * Ry + Rz * Rz);
+const rawSteps = buildSolution(details, Rx, Ry, Rz, R);
+
+const alpha = (Math.acos(Rx / R) * 180) / Math.PI;
+const beta  = (Math.acos(Ry / R) * 180) / Math.PI;
+const gamma = (Math.acos(Rz / R) * 180) / Math.PI;
+
+  setResult({
+    details, Rx, Ry, Rz, R,
+    steps: rawSteps,
+    stepLines: fromLegacySteps(rawSteps),
+    resultRows: [
+      { label: "Resultant Rx", value: `${Rx.toFixed(3)} N` },
+      { label: "Resultant Ry", value: `${Ry.toFixed(3)} N` },
+      { label: "Resultant Rz", value: `${Rz.toFixed(3)} N` },
+      { label: "Magnitude |R|", value: `${R.toFixed(3)} N` },
+      { label: "α (angle with X)", value: `${alpha.toFixed(2)}°` },
+      { label: "β (angle with Y)", value: `${beta.toFixed(2)}°` },
+      { label: "γ (angle with Z)", value: `${gamma.toFixed(2)}°` },
+    ],
+  });
+  setShowSolution(true);
+};
+
+const inp: React.CSSProperties = { background: "white", border: "1px solid #e0e0e0", borderRadius: 8, padding: "6px 8px", fontSize: 13, width: "100%", outline: "none" };
   const sel: React.CSSProperties = { ...inp, width: "auto", minWidth: 90 };
   const card: React.CSSProperties = { background: "#fff", borderRadius: 14, border: "1px solid #ebebeb", padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" };
 
@@ -656,11 +686,6 @@ export default function CoordinateTab() {
                         },
                       };
 
-                      localStorage.setItem(
-                        "coordinatePdfData",
-                        JSON.stringify(payload)
-                      );
-
                       const res = await fetch("/api/export-pdf-3dcoordinates", {
                         method: "POST",
                         headers: {
@@ -736,5 +761,5 @@ export default function CoordinateTab() {
         </div>
       )}
     </div>
-  );
+    );
 }

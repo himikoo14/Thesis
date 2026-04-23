@@ -122,25 +122,25 @@ export function computeMOI(shapes: ShapeData[]) {
     let Iy: number;
 
     if (shape.type === "Semi-circle-1") {
-      // Flat edge at bottom, curved side up → centroid shifts up by d
+      // Flat bottom, curves up → centroid shifts up
       Cy += d;
-      Ix = I_parallel; // x-axis is parallel to the flat edge
+      Ix = I_parallel;
       Iy = I_perp;
     } else if (shape.type === "Semi-circle-2") {
-      // Flat edge at left, curved side right → centroid shifts right by d
-      Cx += d;
-      Ix = I_perp;
-      Iy = I_parallel; // y-axis is parallel to the flat edge
-    } else if (shape.type === "Semi-circle-3") {
-      // Flat edge at top, curved side down → centroid shifts down by d
+      // Flat top, curves down → centroid shifts down
       Cy -= d;
-      Ix = I_parallel; // x-axis is parallel to the flat edge
+      Ix = I_parallel;
       Iy = I_perp;
-    } else {
-      // Semi-circle-4: flat edge at right, curved side left → centroid shifts left by d
+    } else if (shape.type === "Semi-circle-3") {
+      // Flat right, curves left → centroid shifts left
       Cx -= d;
       Ix = I_perp;
-      Iy = I_parallel; // y-axis is parallel to the flat edge
+      Iy = I_parallel;
+    } else {
+      // Semi-circle-4: flat left, curves right → centroid shifts right
+      Cx += d;
+      Ix = I_perp;
+      Iy = I_parallel;
     }
 
     return { A, Cx, Cy, Ix, Iy };
@@ -163,13 +163,11 @@ export function computeMOI(shapes: ShapeData[]) {
 
     let Cx = cx;
     let Cy = cy;
-
-    // Centroid is offset by d from each straight edge toward the arc
-    if (shape.type === "Quarter-circle-1") { Cx += d; Cy += d; } // corner at bottom-left
-    if (shape.type === "Quarter-circle-2") { Cx -= d; Cy += d; } // corner at bottom-right
-    if (shape.type === "Quarter-circle-3") { Cx -= d; Cy -= d; } // corner at top-right
-    if (shape.type === "Quarter-circle-4") { Cx += d; Cy -= d; } // corner at top-left
-
+    
+    if (shape.type === "Quarter-circle-1") { Cx -= d; Cy -= d; } // corner at top-right
+    if (shape.type === "Quarter-circle-2") { Cx += d; Cy -= d; } // corner at top-left
+    if (shape.type === "Quarter-circle-3") { Cx += d; Cy += d; } // corner at bottom-left
+    if (shape.type === "Quarter-circle-4") { Cx -= d; Cy += d; } // corner at bottom-right
     return { A, Cx, Cy, Ix: I_centroidal, Iy: I_centroidal };
   }
 
@@ -303,8 +301,9 @@ export function computeMOI(shapes: ShapeData[]) {
     const dx = r.Cx - centroidX;
     const dy = r.Cy - centroidY;
 
-    const Ix_transferred = r.Ix + r.A * dy * dy;
-    const Iy_transferred = r.Iy + r.A * dx * dx;
+    const sign = step1[index].hollow === "Hollow" ? -1 : 1;
+    const Ix_transferred = r.Ix + sign * Math.abs(r.A) * dy * dy;
+    const Iy_transferred = r.Iy + sign * Math.abs(r.A) * dx * dx;
 
     Ix_final += Ix_transferred;
     Iy_final += Iy_transferred;

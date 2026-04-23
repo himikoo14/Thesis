@@ -390,7 +390,7 @@ export default function Solver2D() {
                 <button
                   onClick={() => handleExportPDF(result)}
                   disabled={off}
-                  className={`w-full mt-4 rounded-xl px-4 py-3 font-semibold text-white transition ${
+                  className={`w-full mt-4 rounded-xl px-4 py-3 font-normal text-white transition ${
                     off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
                   }`}
                 >
