@@ -244,12 +244,12 @@ export default function Solver2D() {
 
   const off = status === "generating";
 
-  const labels: Record<typeof status, string> = {
-    idle: "⬇ Download Solution as PDF",
-    generating: "⏳ Opening print view…",
-    done: "✅ Done!",
-    error: "❌ Export failed — try again",
-  };
+const labels: Record<typeof status, string> = {
+  idle: "⬇ Download Solution as PDF",
+  generating: "⏳ Generating PDF…",   // ← was "Opening print view…"
+  done: "✅ Downloaded!",
+  error: "❌ Export failed — try again",
+};
 
   const fbdRef = useRef<SVGSVGElement>(null);
 
@@ -275,43 +275,142 @@ export default function Solver2D() {
   };
 
   // ✅ Replaced fetch("/api/export-pdf") with browser print — works on Netlify
-  const handleExportPDF = (result: ForceResult) => {
-    if (!result) return;
-    setStatus("generating");
+const handleExportPDF = (result: ForceResult) => {
+  if (!result) return;
+  setStatus("generating");
 
-    const payload = {
-      steps: result.steps,
-      resultRows: [
-        { label: "Horizontal component (Fx)", value: `${fmt2(result.sumFx)} kN` },
-        { label: "Vertical component (Fy)", value: `${fmt2(result.sumFy)} kN` },
-        { label: "Magnitude (R)", value: `${fmt2(result.R)} kN` },
-        { label: "Angle (θ)", value: `${result.theta.toFixed(2)}°` },
-      ],
-      forces,
-      result: {
-        sumFx: result.sumFx,
-        sumFy: result.sumFy,
-        R: result.R,
-        theta: result.theta,
-      },
+  try {
+    const { jsPDF } = require("jspdf");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+    const PW = 210, PH = 297, M = 18, CW = PW - M * 2, MAXY = PH - 22;
+    let y = 0;
+
+    const guard = (need: number) => {
+      if (y + need > MAXY) { pdf.addPage(); y = M; }
     };
 
-    const encoded = encodeURIComponent(JSON.stringify(payload));
-    const win = window.open(`/print/resultant?data=${encoded}`, "_blank");
+    // Header bar
+    pdf.setFillColor(24, 72, 160);
+    pdf.rect(0, 0, PW, 10, "F");
+    y = 18;
 
-    if (win) {
-      win.addEventListener("load", () => {
-        setTimeout(() => {
-          win.print();
-          setStatus("done");
-          setTimeout(() => setStatus("idle"), 2500);
-        }, 800);
-      });
-    } else {
-      setStatus("error");
-      setTimeout(() => setStatus("idle"), 3000);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(14);
+    pdf.setTextColor(24, 72, 160);
+    pdf.text("2D Resultant Force — Step-by-Step Solution", M, y);
+    y += 6;
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9);
+    pdf.setTextColor(100, 116, 139);
+    pdf.text(
+      `Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`,
+      M, y
+    );
+    y += 5;
+
+    pdf.setDrawColor(220, 228, 245);
+    pdf.setLineWidth(0.4);
+    pdf.line(M, y, PW - M, y);
+    y += 9;
+
+    // Results summary
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(12);
+    pdf.setTextColor(20, 20, 20);
+    pdf.text("Results Summary", M, y);
+    y += 8;
+
+    const resultRows = [
+      { label: "Horizontal component (ΣFx)", value: `${fmt2(result.sumFx)} kN` },
+      { label: "Vertical component (ΣFy)",   value: `${fmt2(result.sumFy)} kN` },
+      { label: "Magnitude (R)",               value: `${result.R.toFixed(3)} kN` },
+      { label: "Angle (θ)",                   value: `${result.theta.toFixed(2)}°` },
+    ];
+
+    for (const { label, value } of resultRows) {
+      guard(10);
+      pdf.setFillColor(245, 248, 255);
+      pdf.roundedRect(M, y - 5, CW, 9, 2, 2, "F");
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      pdf.setTextColor(50, 50, 50);
+      pdf.text(label, M + 4, y);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(24, 72, 160);
+      pdf.text(value, PW - M - 4, y, { align: "right" });
+      y += 11;
     }
-  };
+
+    y += 4;
+    pdf.setDrawColor(220, 228, 245);
+    pdf.setLineWidth(0.4);
+    pdf.line(M, y, PW - M, y);
+    y += 8;
+
+    // Step-by-step
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(12);
+    pdf.setTextColor(20, 20, 20);
+    pdf.text("Step-by-Step Solution", M, y);
+    y += 9;
+
+    for (const step of result.steps) {
+      const plain = step
+        .replace(/\\begin\{align\*\}|\\end\{align\*\}/g, "")
+        .replace(/&=/g, "=")
+        .replace(/\\\\/g, "  ")
+        .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, "($1)/($2)")
+        .replace(/\\text\{([^}]+)\}/g, "$1")
+        .replace(/\\[a-zA-Z]+/g, "")
+        .replace(/\{|\}/g, "")
+        .trim();
+
+      if (!plain) continue;
+
+      const isStep = plain.startsWith("Step");
+      guard(isStep ? 12 : 8);
+
+      if (isStep) {
+        y += 2;
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(11);
+        pdf.setTextColor(24, 72, 160);
+        pdf.text(plain, M, y);
+        y += 8;
+      } else {
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(10);
+        pdf.setTextColor(60, 60, 60);
+        const wrapped = pdf.splitTextToSize(plain, CW);
+        pdf.text(wrapped, M, y);
+        y += wrapped.length * 6 + 2;
+      }
+    }
+
+    // Page numbers + footer
+    const total = pdf.internal.getNumberOfPages();
+    for (let pg = 1; pg <= total; pg++) {
+      pdf.setPage(pg);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8);
+      pdf.setTextColor(148, 163, 184);
+      pdf.text(`Page ${pg} of ${total}`, PW - M, PH - 8, { align: "right" });
+      pdf.setFillColor(24, 72, 160);
+      pdf.rect(0, PH - 4, PW, 4, "F");
+    }
+
+    pdf.save("resultant-2d-solution.pdf");
+    setStatus("done");
+    setTimeout(() => setStatus("idle"), 2500);
+
+  } catch (err) {
+    console.error("PDF export error:", err);
+    setStatus("error");
+    setTimeout(() => setStatus("idle"), 3000);
+  }
+};
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900 text-[18px]">
