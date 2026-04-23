@@ -526,12 +526,12 @@ export default function Equilibrium() {
 
   const off = status === "generating";
 
-const labels: Record<typeof status, string> = {
-  idle: "⬇ Download Solution as PDF",
-  generating: "⏳ Opening print view…",
-  done: "✅ Done!",
-  error: "❌ Export failed — try again",
-};
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Opening print view…",
+    done: "✅ Done!",
+    error: "❌ Export failed — try again",
+  };
   const [activeTab, setActiveTab] = useState<"concurrent" | "nonconcurrent">("concurrent");
 
   const toggleUnknown = (index: number, field: "magnitude" | "angle") => {
@@ -591,10 +591,11 @@ const labels: Record<typeof status, string> = {
         {activeTab === "concurrent" && (
           <>
             <h1 className="text-3xl font-bold text-center mb-2">
-              Concurrent Force System Calculator
+              Concurrent Force System
             </h1>
 
             <div className="mb-8 relative z-10">
+              <h2 style={{ fontSize: 18, fontWeight: 600, textAlign: "center", marginBottom: 8 }}>Unkown Forces and Angles Calculator</h2>
               <p style={{ color: "#888", fontSize: 13, marginTop: 6, textAlign: "center" }}>Real-Time Free Body Diagram</p>
               <FBD forces={forces} setForces={setForces} />
               <p style={{ color: "#888", fontSize: 13, marginTop: 6, textAlign: "center" }}>Drag arrows to change angles</p>
@@ -606,6 +607,9 @@ const labels: Record<typeof status, string> = {
 
             <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 space-y-6 relative z-10">
               <h2 className="text-[20px] font-semibold">Force Setup</h2>
+              <p className="text-[13px] text-gray-500">
+                Enter the magnitude (kN) and angle (°) of each force. Click <span className="inline-flex items-center justify-center w-6 h-6 rounded border border-gray-300 font-bold text-[#1848a0] text-sm">?</span> to set the unknown value.
+              </p>
 
               {forces.map((f, i) => (
                 <div key={i} className="flex gap-4 items-end">
@@ -685,27 +689,26 @@ const labels: Record<typeof status, string> = {
                   </div>
                 )}
 
-<button
-  onClick={() => {
-    setStatus("generating");
-    const payload = {
-      steps: solution.steps,
-      resultRows: solution.resultRows,
-      solvedLabel: solution.solvedLabel,
-      forces,
-    };
-    const encoded = encodeURIComponent(JSON.stringify(payload));
-    window.open(`/print/equilibrium?data=${encoded}`, "_blank");
-    setStatus("done");
-    setTimeout(() => setStatus("idle"), 2500);
-  }}
-  disabled={off}
-  className={`w-full mb-4 py-3 rounded-xl font-semibold text-white transition ${
-    off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
-  }`}
->
-  {labels[status]}
-</button>
+                <button
+                  onClick={() => {
+                    setStatus("generating");
+                    const payload = {
+                      steps: solution.steps,
+                      resultRows: solution.resultRows,
+                      solvedLabel: solution.solvedLabel,
+                      forces,
+                    };
+                    const encoded = encodeURIComponent(JSON.stringify(payload));
+                    window.open(`/print/equilibrium?data=${encoded}`, "_blank");
+                    setStatus("done");
+                    setTimeout(() => setStatus("idle"), 2500);
+                  }}
+                  disabled={off}
+                  className={`w-full mb-4 py-3 rounded-xl font-semibold text-white transition ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+                    }`}
+                >
+                  {labels[status]}
+                </button>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
                   {solution.resultRows?.map((row: { label: string; value: string }, i: number) => (
