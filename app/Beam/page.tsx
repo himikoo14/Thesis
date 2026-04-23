@@ -104,187 +104,6 @@ function StepByStepSolution({ steps, title = "Step-by-Step Solution" }: {
   );
 }
 
-/* ================================================================
-   PDF EXPORT
-================================================================ */
-declare global {
-  interface Window {
-    jspdf: { jsPDF: new (opts: Record<string, unknown>) => any };
-    katex: any;
-  }
-}
-
-const JSPDF_URL = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-const MM_PER_PX = 0.264583;
-const RENDER_SCALE = 3;
-
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
-    const s = document.createElement("script");
-    s.src = src; s.onload = () => resolve(); s.onerror = () => reject(new Error(`Failed to load ${src}`));
-    document.head.appendChild(s);
-  });
-}
-
-function upgradeFracs(tex: string): string {
-  if (!tex.includes("\\frac") || tex.includes("\\displaystyle")) return tex;
-  return `{\\displaystyle ${tex.replace(/\\tfrac(?=\{)/g, "\\dfrac").replace(/(?<![dt])\\frac(?=\{)/g, "\\dfrac")}}`;
-}
-
-async function latexToPng(tex: string): Promise<{ dataUrl: string; wMm: number; hMm: number } | null> {
-  const html2canvas = (await import("html2canvas")).default;
-  try {
-    const processedTex = upgradeFracs(tex);
-    const wrapper = document.createElement("div");
-    wrapper.style.cssText = "position:absolute;left:-9999px;top:0;background:#ffffff;color:#000000;padding:0;margin:0;display:inline-block;";
-    const inner = document.createElement("span");
-    inner.style.cssText = "display:inline-block;padding:10px 14px;";
-    wrapper.appendChild(inner);
-    document.body.appendChild(wrapper);
-    window.katex.render(processedTex, inner, { displayMode: true, throwOnError: false, output: "html" });
-    const targetEl = (inner.querySelector(".katex-html") as HTMLElement) || (inner.querySelector(".katex") as HTMLElement) || inner;
-    const innerRect = targetEl.getBoundingClientRect();
-    const wrapRect = wrapper.getBoundingClientRect();
-    const offsetLeft = innerRect.left - wrapRect.left;
-    const canvas = await html2canvas(wrapper, { backgroundColor: "#ffffff", scale: RENDER_SCALE, useCORS: true, logging: false });
-    document.body.removeChild(wrapper);
-    const PAD = 18, EXTRA_LEFT = -8;
-    const sx = Math.max(0, Math.round(offsetLeft * RENDER_SCALE) - PAD - EXTRA_LEFT);
-    const sw = Math.round(innerRect.width * RENDER_SCALE) + PAD * 2 + EXTRA_LEFT;
-    const cropped = document.createElement("canvas");
-    cropped.width = sw; cropped.height = canvas.height;
-    const ctx = cropped.getContext("2d");
-    if (!ctx) return null;
-    ctx.drawImage(canvas, sx, 0, sw, canvas.height, 0, 0, sw, canvas.height);
-    return { dataUrl: cropped.toDataURL("image/png"), wMm: (cropped.width / RENDER_SCALE) * MM_PER_PX, hMm: (cropped.height / RENDER_SCALE) * MM_PER_PX };
-  } catch (e) {
-    console.warn("latexToPng failed:", tex, e);
-    return null;
-  }
-}
-
-async function writePDF(p: { steps: string[]; resultRows?: { label: string; value: string }[]; title: string; filename: string }) {
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const PW = 210, PH = 297, M = 18, CW = PW - M * 2, MAXY = PH - 22;
-  let y = 0;
-
-  const guard = (need: number) => { if (y + need > MAXY) { pdf.addPage(); y = M; } };
-  const mathLine = async (tex: string) => {
-    const r = await latexToPng(tex);
-    if (!r) return;
-    const MAX_WIDTH = CW * 0.9;
-    let { wMm: width, hMm: height } = r;
-    if (width > MAX_WIDTH) { const sc = MAX_WIDTH / width; width *= sc; height *= sc; }
-    guard(height + 6);
-    pdf.addImage(r.dataUrl, "PNG", (PW - width) / 2, y, width, height);
-    y += height + 6;
-  };
-
-  pdf.setFillColor(24, 72, 160); pdf.rect(0, 0, PW, 10, "F");
-  y = 18;
-  pdf.setFont("helvetica", "bold"); pdf.setFontSize(14); pdf.setTextColor(24, 72, 160);
-  pdf.text(p.title, M, y); y += 6;
-  pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(100, 116, 139);
-  pdf.text(`Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`, M, y); y += 5;
-  pdf.setDrawColor(220, 228, 245); pdf.setLineWidth(0.4); pdf.line(M, y, PW - M, y); y += 9;
-  pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(20, 20, 20);
-  pdf.text("Step-by-Step Solution", M, y); y += 10;
-
-  for (const raw of p.steps) {
-    const s = raw.trim();
-    if (s.startsWith("Step")) {
-      guard(10); y += 2;
-      pdf.setFont("helvetica", "bold"); pdf.setFontSize(11); pdf.setTextColor(24, 72, 160);
-      pdf.text(s, M, y); y += 14; continue;
-    }
-    if (!s.includes("\\")) {
-      guard(8);
-      pdf.setFont("helvetica", "normal"); pdf.setFontSize(11); pdf.setTextColor(50, 50, 50);
-      const wrapped = pdf.splitTextToSize(s, CW);
-      pdf.text(wrapped, M, y); y += wrapped.length * 6 + 2; continue;
-    }
-    await mathLine(s); y += 2;
-  }
-
-  if (p.resultRows && p.resultRows.length > 0) {
-    guard(20 + p.resultRows.length * 11); y += 4;
-    pdf.setDrawColor(220, 228, 245); pdf.setLineWidth(0.4); pdf.line(M, y, PW - M, y); y += 8;
-    pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(20, 20, 20);
-    pdf.text("Results Summary", M, y); y += 9;
-    for (const { label: lbl, value } of p.resultRows) {
-      guard(11);
-      pdf.setFillColor(245, 248, 255); pdf.roundedRect(M, y - 5, CW, 9, 2, 2, "F");
-      pdf.setFont("helvetica", "normal"); pdf.setFontSize(11); pdf.setTextColor(50, 50, 50);
-      pdf.text(lbl, M + 4, y);
-      pdf.setFont("helvetica", "bold"); pdf.setTextColor(24, 72, 160);
-      pdf.text(value, PW - M - 4, y, { align: "right" }); y += 11;
-    }
-  }
-
-  const total = pdf.internal.getNumberOfPages();
-  for (let pg = 1; pg <= total; pg++) {
-    pdf.setPage(pg);
-    pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(148, 163, 184);
-    pdf.text(`Page ${pg} of ${total}`, PW - M, PH - 8, { align: "right" });
-    pdf.setFillColor(24, 72, 160); pdf.rect(0, PH - 4, PW, 4, "F");
-  }
-  pdf.save(p.filename);
-}
-
-function PDFExportButton({ steps, resultRows, title, filename }: {
-  steps: string[];
-  resultRows?: { label: string; value: string }[];
-  title: string;
-  filename: string;
-}) {
-  const [libReady, setLibReady] = useState(false);
-  const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
-
-  useEffect(() => {
-    loadScript(JSPDF_URL).then(() => setLibReady(true)).catch(console.error);
-  }, []);
-
-  const handleExport = useCallback(async () => {
-    if (!libReady || status === "generating") return;
-    setStatus("generating");
-    try {
-      await writePDF({ steps, resultRows, title, filename });
-      setStatus("done");
-      setTimeout(() => setStatus("idle"), 2500);
-    } catch (err) {
-      console.error("PDF export failed:", err);
-      setStatus("error");
-      setTimeout(() => setStatus("idle"), 3000);
-    }
-  }, [libReady, status, steps, resultRows, title, filename]);
-
-  const off = !libReady || status === "generating";
-  const labels: Record<typeof status, string> = {
-    idle: "⬇ Download Solution as PDF",
-    generating: "⏳ Generating PDF…",
-    done: "✅ Downloaded!",
-    error: "❌ Export failed — try again",
-  };
-
-  return (
-    <button
-      style={{
-        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-        width: "100%", padding: "12px 0", border: "none", borderRadius: 10,
-        fontSize: 14, fontWeight: 600, fontFamily: "inherit", transition: "all 0.2s",
-        background: "linear-gradient(135deg, #0f2d6b, #1848a0)",
-        color: "#fff", boxShadow: "0 4px 14px rgba(24,72,160,0.25)",
-        marginBottom: 14, opacity: off ? 0.65 : 1, cursor: off ? "not-allowed" : "pointer",
-      }}
-      onClick={handleExport}
-      disabled={off}
-    >
-      {labels[status]}
-    </button>
-  );
-}
 
 /* ===================== SVG FREE BODY DIAGRAM ===================== */
 
@@ -459,12 +278,12 @@ export default function BeamSolverUI() {
 
   const off = status === "generating";
 
-  const labels: Record<typeof status, string> = {
-    idle: "⬇ Download Solution as PDF",
-    generating: "⏳ Generating PDF…",
-    done: "✅ Downloaded!",
-    error: "❌ Export failed — try again",
-  };
+const labels: Record<typeof status, string> = {
+  idle: "⬇ Download Solution as PDF",
+  generating: "⏳ Opening print view…",
+  done: "✅ Done!",
+  error: "❌ Export failed — try again",
+};
 
   /* ---------- STYLES ---------- */
   const inputStyle: React.CSSProperties = { width: "100%", marginTop: 4, borderRadius: 8, border: "1px solid #d1d5db", fontSize: 16, padding: "8px 10px", outline: "none", boxSizing: "border-box", fontFamily: "inherit", background: "#ffffff", boxShadow: "none" };
@@ -648,83 +467,44 @@ export default function BeamSolverUI() {
         {/* STEP BY STEP */}
         {result && (
           <div style={{ ...cardStyle, marginBottom: 20 }}>
-            {/* PDF export button */}
-            <button
-              onClick={async () => {
-                if (off) return;
-
-                try {
-                  setStatus("generating");
-
-                  const payload = {
-                    beamLength,
-                    supports,
-                    pointLoads,
-                    distributedLoads,
-                    reactions: result.reactions,
-                    steps: result.steps,
-                    resultRows,
-                  };
-
-                  localStorage.setItem(
-                    "beamPdfData",
-                    JSON.stringify(payload)
-                  );
-
-                  const res = await fetch("/api/export-pdf-beam", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(payload),
-                  });
-
-                  if (!res.ok) {
-                    throw new Error("Failed to export PDF");
-                  }
-
-                  const blob = await res.blob();
-                  const url = window.URL.createObjectURL(blob);
-
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = "beam-solution.pdf";
-                  a.click();
-
-                  window.URL.revokeObjectURL(url);
-
-                  setStatus("done");
-                  setTimeout(() => setStatus("idle"), 2500);
-                } catch (err) {
-                  console.error(err);
-                  setStatus("error");
-                  setTimeout(() => setStatus("idle"), 3000);
-                }
-              }}
-              disabled={off}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                width: "100%",
-                padding: "12px 0",
-                border: "none",
-                borderRadius: 10,
-                fontSize: 14,
-                fontWeight: 600,
-                fontFamily: "inherit",
-                transition: "all 0.2s",
-                background: "linear-gradient(135deg, #0f2d6b, #1848a0)",
-                color: "#fff",
-                boxShadow: "0 4px 14px rgba(24,72,160,0.25)",
-                marginBottom: 14,
-                opacity: off ? 0.65 : 1,
-                cursor: off ? "not-allowed" : "pointer",
-              }}
-            >
-              {labels[status]}
-            </button>
+{/* PDF export button */}
+{/* PDF export button */}
+<button
+  onClick={() => {
+    setStatus("generating");
+    const payload = {
+      beamLength,
+      supports,
+      pointLoads,
+      distributedLoads,
+      reactions: result.reactions,
+      steps: result.steps,
+      resultRows,
+    };
+    const encoded = encodeURIComponent(JSON.stringify(payload));
+    window.open(`/print/beam?data=${encoded}`, "_blank");
+    setStatus("done");
+    setTimeout(() => setStatus("idle"), 2500);
+  }}
+  disabled={off}
+  style={{
+    width: "100%",
+    padding: "12px 0",
+    border: "none",
+    borderRadius: 10,
+    fontSize: 14,
+    fontWeight: 600,
+    fontFamily: "inherit",
+    background: off ? "#94a3b8" : "linear-gradient(135deg, #0f2d6b, #1848a0)",
+    color: "#fff",
+    boxShadow: off ? "none" : "0 4px 14px rgba(24,72,160,0.25)",
+    marginBottom: 14,
+    opacity: off ? 0.65 : 1,
+    cursor: off ? "not-allowed" : "pointer",
+  }}
+>
+  {labels[status]}
+</button>
 
             {/* StepByStep renderer */}
             <StepByStepSolution

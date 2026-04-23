@@ -269,46 +269,33 @@ export default function AnglesTab() {
 
   const off = status === "generating";
 
-  const labels: Record<typeof status, string> = {
-    idle: "⬇ Download Solution as PDF",
-    generating: "⏳ Generating PDF…",
-    done: "✅ Downloaded!",
-    error: "❌ Export failed — try again",
+const labels: Record<typeof status, string> = {
+  idle: "⬇ Download Solution as PDF",
+  generating: "⏳ Opening print view…",
+  done: "✅ Done!",
+  error: "❌ Export failed — try again",
+};
+const handleExportPDF = () => {
+  if (!result) return;
+  setStatus("generating");
+  const payload = {
+    steps: result.steps,
+    resultRows,
+    forces,
+    result: {
+      sumFx: result.sumFx,
+      sumFy: result.sumFy,
+      sumFz: result.sumFz,
+      R: result.R,
+      azimuth: result.azimuth,
+      elevation: result.elevation,
+    },
   };
-  const handleExportPDF = () => {
-    if (!result) return;
-    setStatus("generating");
-
-    const payload = {
-      steps: result.steps,
-      resultRows,
-      forces,
-      result: {
-        sumFx: result.sumFx,
-        sumFy: result.sumFy,
-        sumFz: result.sumFz,
-        R: result.R,
-        azimuth: result.azimuth,
-        elevation: result.elevation,
-      },
-    };
-
-    const encoded = encodeURIComponent(JSON.stringify(payload));
-    const win = window.open(`/print/resultant-3dAzimuth?data=${encoded}`, "_blank");
-
-    if (win) {
-      win.addEventListener("load", () => {
-        setTimeout(() => {
-          win.print();
-          setStatus("done");
-          setTimeout(() => setStatus("idle"), 2500);
-        }, 800);
-      });
-    } else {
-      setStatus("error");
-      setTimeout(() => setStatus("idle"), 3000);
-    }
-  };
+  const encoded = encodeURIComponent(JSON.stringify(payload));
+  window.open(`/print/resultant-3dAzimuth?data=${encoded}`, "_blank");
+  setStatus("done");
+  setTimeout(() => setStatus("idle"), 2500);
+};
   const katexOk = useMathJax();
 
   const resultRows = result ? [
@@ -412,15 +399,16 @@ export default function AnglesTab() {
         <div style={{ ...card, maxWidth: 580 }}>
           <h2 style={{ fontSize: 18, fontWeight: 600, marginTop: 0, marginBottom: 12 }}>Step-by-Step Solution</h2>
 
-          <button
-            onClick={() => handleExportPDF()}
-            disabled={off}
-            className={`w-full mt-4 rounded-xl px-4 py-3 font-normal text-white transition ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
-              }`}
-            style={{ marginBottom: 16 }}
-          >
-            {labels[status]}
-          </button>
+<button
+  onClick={handleExportPDF}
+  disabled={off}
+  className={`w-full mt-4 rounded-xl px-4 py-3 font-semibold text-white transition ${
+    off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+  }`}
+  style={{ marginBottom: 16 }}
+>
+  {labels[status]}
+</button>
 
           <div style={{ lineHeight: 1.8 }}>
             {result.steps.map((line: string, i: number) =>

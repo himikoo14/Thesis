@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
+
 
 function PrintResultantContent() {
   const searchParams = useSearchParams();
@@ -18,6 +19,12 @@ function PrintResultantContent() {
   }
 
   const parsed = JSON.parse(decodeURIComponent(raw));
+    useEffect(() => {
+    const timer = setTimeout(() => {
+      window.print();
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div

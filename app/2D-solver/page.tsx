@@ -7,9 +7,6 @@ import Solver3D from "../solver/page";
 import "katex/dist/katex.min.css";
 import { useStepByStepPDF } from "../ToPDF/Page";
 import { StepByStepSolution, fromLegacySteps } from "../../components/StepByStep";
-import jsPDF from "jspdf";
-
-
 
 const fmt2 = (v: number): string => {
   if (Math.abs(v - Math.round(v)) < 1e-9) return Math.round(v).toString();
@@ -247,12 +244,12 @@ export default function Solver2D() {
 
   const off = status === "generating";
 
-const labels: Record<typeof status, string> = {
-  idle: "⬇ Download Solution as PDF",
-  generating: "⏳ Generating PDF…",   // ← was "Opening print view…"
-  done: "✅ Downloaded!",
-  error: "❌ Export failed — try again",
-};
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Opening print view…",
+    done: "✅ Done!",
+    error: "❌ Export failed — try again",
+  };
 
   const fbdRef = useRef<SVGSVGElement>(null);
 
@@ -278,131 +275,176 @@ const labels: Record<typeof status, string> = {
   };
 
   // ✅ Replaced fetch("/api/export-pdf") with browser print — works on Netlify
-const handleExportPDF = (result: ForceResult) => {
-  if (!result) return;
-  setStatus("generating");
+  const handleExportPDF = (result: ForceResult) => {
+    if (!result) return;
+    setStatus("generating");
 
-  try {
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
-    const PW = 210, PH = 297, M = 18, CW = PW - M * 2, MAXY = PH - 22;
-    let y = 0;
-
-    const guard = (need: number) => {
-      if (y + need > MAXY) { pdf.addPage(); y = M; }
+    const payload = {
+      steps: result.steps,
+      resultRows: [
+        { label: "Horizontal component (Fx)", value: `${fmt2(result.sumFx)} kN` },
+        { label: "Vertical component (Fy)", value: `${fmt2(result.sumFy)} kN` },
+        { label: "Magnitude (R)", value: `${fmt2(result.R)} kN` },
+        { label: "Angle (θ)", value: `${result.theta.toFixed(2)}°` },
+      ],
+      forces,
+      result: {
+        sumFx: result.sumFx,
+        sumFy: result.sumFy,
+        R: result.R,
+        theta: result.theta,
+      },
     };
 
-    pdf.setFillColor(24, 72, 160);
-    pdf.rect(0, 0, PW, 10, "F");
-    y = 18;
+    const encoded = encodeURIComponent(JSON.stringify(payload));
+    const win = window.open(`/print/resultant?data=${encoded}`, "_blank");
 
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(14);
-    pdf.setTextColor(24, 72, 160);
-    pdf.text("2D Resultant Force — Step-by-Step Solution", M, y);
-    y += 6;
-
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(9);
-    pdf.setTextColor(100, 116, 139);
-    pdf.text(`Generated: ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`, M, y);
-    y += 5;
-
-    pdf.setDrawColor(220, 228, 245);
-    pdf.setLineWidth(0.4);
-    pdf.line(M, y, PW - M, y);
-    y += 9;
-
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(12);
-    pdf.setTextColor(20, 20, 20);
-    pdf.text("Results Summary", M, y);
-    y += 8;
-
-    const resultRows = [
-      { label: "Horizontal component (ΣFx)", value: `${fmt2(result.sumFx)} kN` },
-      { label: "Vertical component (ΣFy)",   value: `${fmt2(result.sumFy)} kN` },
-      { label: "Magnitude (R)",               value: `${result.R.toFixed(3)} kN` },
-      { label: "Angle (θ)",                   value: `${result.theta.toFixed(2)}°` },
-    ];
-
-    for (const { label, value } of resultRows) {
-      guard(10);
-      pdf.setFillColor(245, 248, 255);
-      pdf.roundedRect(M, y - 5, CW, 9, 2, 2, "F");
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(10);
-      pdf.setTextColor(50, 50, 50);
-      pdf.text(label, M + 4, y);
-      pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(24, 72, 160);
-      pdf.text(value, PW - M - 4, y, { align: "right" });
-      y += 11;
+    if (win) {
+      win.addEventListener("load", () => {
+        setTimeout(() => {
+          win.print();
+          setStatus("done");
+          setTimeout(() => setStatus("idle"), 2500);
+        }, 800);
+      });
+    } else {
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
     }
+  };
 
-    y += 4;
-    pdf.setDrawColor(220, 228, 245);
-    pdf.setLineWidth(0.4);
-    pdf.line(M, y, PW - M, y);
-    y += 8;
+  return (
+    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900 text-[18px]">
+      <Header />
 
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(12);
-    pdf.setTextColor(20, 20, 20);
-    pdf.text("Step-by-Step Solution", M, y);
-    y += 9;
+      <main className="flex-grow flex flex-col items-center px-4 py-10">
+        {/* ── TABS ── */}
+        <div className="flex justify-center mb-6 gap-4">
+          <button onClick={() => setActiveTab("2d")}
+            className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "2d" ? "bg-[#1848a0] text-white" : "bg-gray-200"}`}>
+            2D Resultant
+          </button>
+          <button onClick={() => setActiveTab("3d")}
+            className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "3d" ? "bg-[#1848a0] text-white" : "bg-gray-200"}`}>
+            3D Resultant
+          </button>
+        </div>
 
-    for (const step of result.steps) {
-      const plain = step
-        .replace(/\\begin\{align\*\}|\\end\{align\*\}/g, "")
-        .replace(/&=/g, "=")
-        .replace(/\\\\/g, "  ")
-        .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, "($1)/($2)")
-        .replace(/\\text\{([^}]+)\}/g, "$1")
-        .replace(/\\[a-zA-Z]+/g, "")
-        .replace(/\{|\}/g, "")
-        .trim();
+        {activeTab === "2d" && (
+          <>
+            <h1 className="text-[32px] font-bold mb-6">2D Resultant Force Calculator</h1>
 
-      if (!plain) continue;
+            {/* ── Live FBD ── */}
+            <div className="mb-8 relative z-10">
+              <p style={{ color: "#888", fontSize: 13, textAlign: "center", marginBottom: 12 }}>
+                Real-Time Free Body Diagram
+              </p>
+              <FBD forces={forces} setForces={setForces} />
+            </div>
 
-      const isStep = plain.startsWith("Step");
-      guard(isStep ? 12 : 8);
+            <p className="w-full max-w-xl text-sm text-gray-700 mb-4 text-left">
+              <span className="font-semibold">Note:</span> The angle is measured from the positive x-axis, counterclockwise.
+            </p>
 
-      if (isStep) {
-        y += 2;
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(11);
-        pdf.setTextColor(24, 72, 160);
-        pdf.text(plain, M, y);
-        y += 8;
-      } else {
-        pdf.setFont("helvetica", "normal");
-        pdf.setFontSize(10);
-        pdf.setTextColor(60, 60, 60);
-        const wrapped = pdf.splitTextToSize(plain, CW);
-        pdf.text(wrapped, M, y);
-        y += wrapped.length * 6 + 2;
-      }
-    }
+            {/* ── Inputs ── */}
+            <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 space-y-6 relative z-10">
+              <h2 className="text-[20px] font-semibold">Force setup</h2>
+              <div className="grid grid-cols-2 gap-4">
+                {forces.map((f, i) => (
+                  <div key={i} className="col-span-2 flex gap-4 items-end">
+                    <div className="flex-1">
+                      <label className="block font-medium text-[18px]">Force {i + 1} (kN)</label>
+                      <input type="number" value={f.magnitude}
+                        onChange={(e) => handleInputChange(i, "magnitude", e.target.value)}
+                        placeholder="Magnitude (kN)"
+                        className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block font-medium text-[18px]">Angle {i + 1} (°)</label>
+                      <input type="number" value={f.angle}
+                        onChange={(e) => handleInputChange(i, "angle", e.target.value)}
+                        placeholder="Angle (deg)"
+                        className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
+                    </div>
+                    {forces.length > 1 && (
+                      <button onClick={() => setForces(forces.filter((_, idx) => idx !== i))}
+                        className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-[18px]">–</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setForces([...forces, { magnitude: "", angle: "" }])}
+                className="w-full bg-[#008409] text-white py-3 rounded-lg hover:bg-[#15711b] transition text-[18px]">
+                + Add Force
+              </button>
+              <button onClick={calculateResultant}
+                className="w-full bg-[#1848a0] text-white py-3 rounded-lg hover:bg-[#163d8a] transition text-[18px]">
+                Calculate
+              </button>
+            </div>
 
-    const total = pdf.getNumberOfPages();
-    for (let pg = 1; pg <= total; pg++) {
-      pdf.setPage(pg);
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(8);
-      pdf.setTextColor(148, 163, 184);
-      pdf.text(`Page ${pg} of ${total}`, PW - M, PH - 8, { align: "right" });
-      pdf.setFillColor(24, 72, 160);
-      pdf.rect(0, PH - 4, PW, 4, "F");
-    }
+            {/* ── Output card ── */}
+            {result && (
+              <div ref={solutionRef as React.Ref<HTMLDivElement>}>
 
-    pdf.save("resultant-2d-solution.pdf");
-    setStatus("done");
-    setTimeout(() => setStatus("idle"), 2500);
+                <button
+                  onClick={() => handleExportPDF(result)}
+                  disabled={off}
+                  className={`w-full mt-4 rounded-xl px-4 py-3 font-semibold text-white transition ${
+                    off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+                  }`}
+                >
+                  {labels[status]}
+                </button>
 
-  } catch (err) {
-    console.error("PDF export error:", err);
-    setStatus("error");
-    setTimeout(() => setStatus("idle"), 3000);
-  }
-};}
+                <div className="w-full max-w-xl mt-6 bg-white rounded-2xl shadow p-6 space-y-4">
+                  <h2 className="text-[20px] font-semibold">Resultant Force (kN)</h2>
+                  <div>
+                    <label className="block font-medium text-[18px]">Horizontal component (Fx)</label>
+                    <input type="text" value={`${fmt2(result.sumFx)} kN`} readOnly
+                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
+                  </div>
+                  <div>
+                    <label className="block font-medium text-[18px]">Vertical component (Fy)</label>
+                    <input type="text" value={`${fmt2(result.sumFy)} kN`} readOnly
+                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
+                  </div>
+                  <div>
+                    <label className="block font-medium text-[18px]">Magnitude of resultant force (R)</label>
+                    <input type="text" value={`${result.R.toFixed(3)} kN`} readOnly
+                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
+                  </div>
+                  <div>
+                    <label className="block font-medium text-[18px]">Direction of resultant force (θ)</label>
+                    <input type="text" value={`${result.theta.toFixed(2)}°`} readOnly
+                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Step-by-Step Solution (on screen) ── */}
+            {result && (
+              <StepByStepSolution
+                steps={fromLegacySteps(result.steps)}
+                title="Step-by-Step Solution"
+                footer={
+                  <div>
+                    <p className="font-medium text-[18px] mb-2">
+                      Step 4: Final Free Body Diagram (All Forces + Resultant)
+                    </p>
+                    <ResultantFBD forces={forces} result={result} svgRef={fbdRef} />
+                  </div>
+                }
+              />
+            )}
+          </>
+        )}
+
+        {activeTab === "3d" && <Solver3D />}
+      </main>
+
+      <Footer />
+    </div>
+  );
+}

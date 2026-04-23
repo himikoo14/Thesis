@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
@@ -449,6 +449,12 @@ function PrintTrussContent() {
   }
 
   const parsed = JSON.parse(decodeURIComponent(raw));
+    useEffect(() => {
+    const timer = setTimeout(() => {
+      window.print();
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] py-4 px-4" style={{ fontSize: 12 }}>
