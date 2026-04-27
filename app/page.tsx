@@ -4,20 +4,21 @@ import Footer from "../components/Footer";
 
 export default function HomePage() {
   return (
-    <main className="bg-gray-50 min-h-screen flex flex-col relative">
-<div
-/>
+    <main className="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col relative">
+      <div />
       <Header />
 
-      {/* Landing Page*/}
-      <section className="flex flex-col items-center text-center py-12 bg-gray-50 flex-grow">
-        <h1 className="text-[20px] md:text-[80px] font-bold mb-2 text-black">
+      {/* Landing Page */}
+      <section className="flex flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
+        
+        <h1 className="text-[20px] md:text-[80px] font-bold mb-2 text-black dark:text-white">
           Stati
-          <span className="text-[#1848a0]">
+          <span className="text-[#1848a0] dark:text-blue-400">
             Calcs
           </span>
         </h1>
-        <p className="text-gray-600 mb-12 text-[18px]">
+
+        <p className="text-gray-600 dark:text-gray-300 mb-12 text-[18px]">
           Interactive calculators for learning and solving Statics of Rigid Bodies.
         </p>
 
@@ -26,48 +27,53 @@ export default function HomePage() {
           <div className="grid grid-cols-2 gap-4 items-center">
 
             {/* Chapter 1 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold">Chapter 1: Modules to Statics</p>
-            <Link
-              href="/Introduction"
-              className="bg-[#1848a0] text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] transition text-[18px]"
-            >
-              Statics Modules
+            <p className="text-left text-black dark:text-white text-[18px] font-bold">
+              Chapter 1: Modules to Statics
+            </p>
+            <Link href="/Introduction" legacyBehavior>
+              <a className="bg-[#1848a0] dark:bg-blue-600 text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] dark:hover:bg-blue-700 transition text-[18px]">
+                Statics Modules
+              </a>
             </Link>
 
             {/* Chapter 2 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold">Chapter 2: Force Systems</p>
-            <Link
-              href="/2D-solver"
-              className="bg-[#1848a0] text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] transition text-[18px]"
-            >
-              Resultant Force  Calculator
+            <p className="text-left text-black dark:text-white text-[18px] font-bold">
+              Chapter 2: Force Systems
+            </p>
+            <Link href="/2D-solver" legacyBehavior>
+              <a className="bg-[#1848a0] dark:bg-blue-600 text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] dark:hover:bg-blue-700 transition text-[18px]">
+                Resultant Force Calculator
+              </a>
             </Link>
 
             {/* Chapter 3 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold">Chapter 3: Equilibrium</p>
-            <Link
-              href="/Equilibrium"
-              className="bg-[#1848a0] text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] transition text-[18px]"
-            >
-              Equilibrium Calculator
+            <p className="text-left text-black dark:text-white text-[18px] font-bold">
+              Chapter 3: Equilibrium
+            </p>
+            <Link href="/Equilibrium" legacyBehavior>
+              <a className="bg-[#1848a0] dark:bg-blue-600 text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] dark:hover:bg-blue-700 transition text-[18px]">
+                Equilibrium Calculator
+              </a>
             </Link>
 
             {/* Chapter 4 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Chapter 4: Structures</p>
-            <Link
-              href="/Structures"
-              className="bg-[#1848a0] text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] transition text-[18px]"
-            >
-              Truss Calculator
+            <p className="text-left text-black dark:text-white text-[18px] font-bold">
+              Chapter 4: Structures
+            </p>
+            <Link href="/Structures" legacyBehavior>
+              <a className="bg-[#1848a0] dark:bg-blue-600 text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] dark:hover:bg-blue-700 transition text-[18px]">
+                Truss Calculator
+              </a>
             </Link>
 
             {/* Chapter 5 */}
-            <p className="text-left text-black text-[18px] font-bold font-bold font-bold">Chapter 5: Distributed Loads</p>
-            <Link
-              href="/Distributed-Loads"
-              className="bg-[#1848a0] text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] transition text-[18px]"
-            >
-              Structures Calculator
+            <p className="text-left text-black dark:text-white text-[18px] font-bold">
+              Chapter 5: Distributed Loads
+            </p>
+            <Link href="/Distributed-Loads" legacyBehavior>
+              <a className="bg-[#1848a0] dark:bg-blue-600 text-white px-6 py-3 rounded-md shadow hover:bg-[#163d8a] dark:hover:bg-blue-700 transition text-[18px]">
+                Structures Calculator
+              </a>
             </Link>
 
           </div>
