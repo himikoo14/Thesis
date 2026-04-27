@@ -131,7 +131,7 @@ function ResultantFBD({
       ref={svgRef}
       width="300"
       height="300"
-      className="border rounded-lg bg-white shadow mx-auto"
+      className="border rounded-lg bg-white dark:bg-gray-800 dark:border-gray-600 shadow mx-auto"
     >
       <g transform="translate(150,150)">
         <line x1={-140} y1={0} x2={140} y2={0} stroke="gray" strokeWidth="1" />
@@ -199,7 +199,7 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
     <svg
       ref={svgRef}
       width="300" height="300"
-      className="border rounded-lg bg-white shadow"
+      className="border rounded-lg bg-white dark:bg-gray-800 dark:border-gray-600 shadow"
       style={{ background: "white" }}
       onMouseMove={handleMouseMove}
       onMouseUp={() => setDragIndex(null)}
@@ -220,7 +220,7 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
                 onMouseDown={() => setDragIndex(i)} />
               <text x={x + (x / Math.hypot(x, y)) * offset}
                 y={y + (y / Math.hypot(x, y)) * offset}
-                fontSize="14" fill="black" fontWeight="bold">F{i + 1}</text>
+                fontSize="14" fill="currentColor" fontWeight="bold">F{i + 1}</text>
             </g>
           );
         })}
@@ -314,18 +314,18 @@ export default function Solver2D() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 text-gray-900 text-[18px]">
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-[18px]">
       <Header />
 
       <main className="flex-grow flex flex-col items-center px-4 py-10">
         {/* ── TABS ── */}
         <div className="flex justify-center mb-6 gap-4">
           <button onClick={() => setActiveTab("2d")}
-            className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "2d" ? "bg-[#1848a0] text-white" : "bg-gray-200"}`}>
+            className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "2d" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
             2D Resultant
           </button>
           <button onClick={() => setActiveTab("3d")}
-            className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "3d" ? "bg-[#1848a0] text-white" : "bg-gray-200"}`}>
+            className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "3d" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
             3D Resultant
           </button>
         </div>
@@ -342,12 +342,12 @@ export default function Solver2D() {
               <FBD forces={forces} setForces={setForces} />
             </div>
 
-            <p className="w-full max-w-xl text-sm text-gray-700 mb-4 text-left">
+            <p className="w-full max-w-xl text-sm text-gray-700 dark:text-gray-300 mb-4 text-left">
               <span className="font-semibold">Note:</span> The angle is measured from the positive x-axis, counterclockwise.
             </p>
 
             {/* ── Inputs ── */}
-            <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 space-y-6 relative z-10">
+            <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 space-y-6 relative z-10">
               <h2 className="text-[20px] font-semibold">Force setup</h2>
               <div className="grid grid-cols-2 gap-4">
                 {forces.map((f, i) => (
@@ -357,14 +357,14 @@ export default function Solver2D() {
                       <input type="number" value={f.magnitude}
                         onChange={(e) => handleInputChange(i, "magnitude", e.target.value)}
                         placeholder="Magnitude (kN)"
-                        className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
+                        className="w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 text-[18px] p-2 bg-white dark:bg-gray-700 dark:text-white" />
                     </div>
                     <div className="flex-1">
                       <label className="block font-medium text-[18px]">Angle {i + 1} (°)</label>
                       <input type="number" value={f.angle}
                         onChange={(e) => handleInputChange(i, "angle", e.target.value)}
                         placeholder="Angle (deg)"
-                        className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
+                        className="w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 text-[18px] p-2 bg-white dark:bg-gray-700 dark:text-white" />
                     </div>
                     {forces.length > 1 && (
                       <button onClick={() => setForces(forces.filter((_, idx) => idx !== i))}
@@ -397,27 +397,27 @@ export default function Solver2D() {
                   {labels[status]}
                 </button>
 
-                <div className="w-full max-w-xl mt-6 bg-white rounded-2xl shadow p-6 space-y-4">
+                <div className="w-full max-w-xl mt-6 bg-white dark:bg-gray-800 rounded-2xl shadow p-6 space-y-4">
                   <h2 className="text-[20px] font-semibold">Resultant Force (kN)</h2>
                   <div>
                     <label className="block font-medium text-[18px]">Horizontal component (Fx)</label>
                     <input type="text" value={`${fmt2(result.sumFx)} kN`} readOnly
-                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
+                      className="w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 text-[18px] p-2 bg-white dark:bg-gray-700 dark:text-white" />
                   </div>
                   <div>
                     <label className="block font-medium text-[18px]">Vertical component (Fy)</label>
                     <input type="text" value={`${fmt2(result.sumFy)} kN`} readOnly
-                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
+                      className="w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 text-[18px] p-2 bg-white dark:bg-gray-700 dark:text-white" />
                   </div>
                   <div>
                     <label className="block font-medium text-[18px]">Magnitude of resultant force (R)</label>
                     <input type="text" value={`${result.R.toFixed(3)} kN`} readOnly
-                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
+                      className="w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 text-[18px] p-2 bg-white dark:bg-gray-700 dark:text-white" />
                   </div>
                   <div>
                     <label className="block font-medium text-[18px]">Direction of resultant force (θ)</label>
                     <input type="text" value={`${result.theta.toFixed(2)}°`} readOnly
-                      className="w-full mt-1 rounded-lg border border-gray-300 text-[18px] p-2 bg-white" />
+                      className="w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 text-[18px] p-2 bg-white dark:bg-gray-700 dark:text-white" />
                   </div>
                 </div>
               </div>
