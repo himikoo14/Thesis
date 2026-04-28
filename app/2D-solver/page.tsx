@@ -134,8 +134,9 @@ function ResultantFBD({
       className="border rounded-lg bg-white dark:bg-gray-800 dark:border-gray-600 shadow mx-auto"
     >
       <g transform="translate(150,150)">
-        <line x1={-140} y1={0} x2={140} y2={0} stroke="gray" strokeWidth="1" />
-        <line x1={0} y1={-140} x2={0} y2={140} stroke="gray" strokeWidth="1" />
+        {/* FIX: use currentColor + opacity so axes adapt to dark/light mode */}
+        <line x1={-140} y1={0} x2={140} y2={0} stroke="currentColor" strokeWidth="1" opacity="0.3" />
+        <line x1={0} y1={-140} x2={0} y2={140} stroke="currentColor" strokeWidth="1" opacity="0.3" />
 
         {vectors.map((v, i) => {
           const x = v.x * scale;
@@ -199,15 +200,16 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
     <svg
       ref={svgRef}
       width="300" height="300"
+      // FIX: removed hardcoded style={{ background: "white" }} — Tailwind dark classes now work
       className="border rounded-lg bg-white dark:bg-gray-800 dark:border-gray-600 shadow"
-      style={{ background: "white" }}
       onMouseMove={handleMouseMove}
       onMouseUp={() => setDragIndex(null)}
       onMouseLeave={() => setDragIndex(null)}
     >
       <g transform="translate(150,150)">
-        <line x1={-140} y1={0} x2={140} y2={0} stroke="gray" strokeWidth="1" />
-        <line x1={0} y1={-140} x2={0} y2={140} stroke="gray" strokeWidth="1" />
+        {/* FIX: use currentColor + opacity so axes adapt to dark/light mode */}
+        <line x1={-140} y1={0} x2={140} y2={0} stroke="currentColor" strokeWidth="1" opacity="0.3" />
+        <line x1={0} y1={-140} x2={0} y2={140} stroke="currentColor" strokeWidth="1" opacity="0.3" />
 
         {vectors.map((v, i) => {
           const x = v.x * scale;
@@ -274,7 +276,6 @@ export default function Solver2D() {
     setResult(system.stepByStepSolution());
   };
 
-  // ✅ Replaced fetch("/api/export-pdf") with browser print — works on Netlify
   const handleExportPDF = (result: ForceResult) => {
     if (!result) return;
     setStatus("generating");

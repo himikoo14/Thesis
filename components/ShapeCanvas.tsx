@@ -97,7 +97,7 @@ export default function ShapeCanvas({ shapes, axisType, axisX, axisY }: Props) {
 
   if (points.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm w-full max-w-[400px] aspect-square mb-6 overflow-hidden mx-auto relative z-10">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm w-full max-w-[400px] aspect-square mb-6 overflow-hidden mx-auto relative z-10 border border-gray-200 dark:border-gray-700">
         <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet" />
       </div>
     );
@@ -112,50 +112,56 @@ export default function ShapeCanvas({ shapes, axisType, axisX, axisY }: Props) {
   const spanX = maxX - minX || 1;
   const spanY = maxY - minY || 1;
 
-const scale = Math.min(
-  (SIZE - 2 * PADDING) / spanX,
-  (SIZE - 2 * PADDING) / spanY
-);
+  const scale = Math.min(
+    (SIZE - 2 * PADDING) / spanX,
+    (SIZE - 2 * PADDING) / spanY
+  );
 
   const GRID_STEP = scale;
   const GRID_COUNT = Math.floor((SIZE - 2 * PADDING) / GRID_STEP);
 
   // Center the drawing within the canvas
-const drawnW = spanX * scale;
-const drawnH = spanY * scale;
-const offsetX = (SIZE - drawnW) / 2;
-const offsetY = (SIZE - drawnH) / 2;
+  const drawnW = spanX * scale;
+  const drawnH = spanY * scale;
+  const offsetX = (SIZE - drawnW) / 2;
+  const offsetY = (SIZE - drawnH) / 2;
 
-const map = (x: number, y: number) => ({
-  x: (x - minX) * scale + offsetX,
-  y: (SIZE - offsetY) - (y - minY) * scale,
-});
-
-  // Colors
-  const COLOR_SOLID_FILL = "rgba(59,130,246,0.15)";
-  const COLOR_SOLID_STROKE = "#1e40af";
-  const COLOR_HOLLOW_FILL = "rgba(148,163,184,0.18)";
-  const COLOR_HOLLOW_STROKE = "#475569";
-  const COLOR_NODE = "#ef4444";
-  const COLOR_LABEL = "#1e293b";
-  const COLOR_DIST = "#0f172a";
-  const COLOR_RADIUS = "#16a34a";
-  const COLOR_CENTER = "#dc2626";
-  const COLOR_GRID_MINOR = "#e2e8f0";
-  const COLOR_GRID_MAJOR = "#cbd5e1";
-  const COLOR_AXIS = "#94a3b8";
+  const map = (x: number, y: number) => ({
+    x: (x - minX) * scale + offsetX,
+    y: (SIZE - offsetY) - (y - minY) * scale,
+  });
 
   return (
-    <div className="bg-white rounded-xl shadow-sm w-full max-w-[400px] aspect-square mb-6 overflow-hidden mx-auto relative z-10"
-      style={{ border: "1.5px solid #e2e8f0" }}>
+    <div
+      className="rounded-xl shadow-sm w-full max-w-[400px] aspect-square mb-6 overflow-hidden mx-auto relative z-10 border border-gray-200 dark:border-gray-700"
+      style={{ background: "var(--canvas-bg, white)" }}
+    >
+      {/* Inject CSS vars for dark mode — SVG can't read Tailwind classes directly */}
+      <style>{`
+        @media (prefers-color-scheme: dark) {
+          :root {
+            --canvas-bg: #1e293b;
+            --canvas-inner: #0f172a;
+            --grid-minor: #1e3a5f;
+            --grid-major: #334155;
+          }
+        }
+        .dark {
+          --canvas-bg: #1e293b;
+          --canvas-inner: #0f172a;
+          --grid-minor: #1e3a5f;
+          --grid-major: #334155;
+        }
+      `}</style>
       <svg
         viewBox={`0 0 ${SIZE} ${SIZE}`}
         className="w-full h-full"
         preserveAspectRatio="xMidYMid meet"
       >
         {/* ── BACKGROUND ── */}
-        <rect x={0} y={0} width={SIZE} height={SIZE} fill="#f8fafc" />
-        <rect x={PADDING} y={PADDING} width={SIZE - 2 * PADDING} height={SIZE - 2 * PADDING} fill="white" />
+        {/* Light mode colours are inline; dark mode overrides via CSS vars on the wrapper div */}
+        <rect x={0} y={0} width={SIZE} height={SIZE} fill="var(--canvas-bg, #f8fafc)" />
+        <rect x={PADDING} y={PADDING} width={SIZE - 2 * PADDING} height={SIZE - 2 * PADDING} fill="var(--canvas-inner, white)" />
 
         {/* ── MINOR GRID ── */}
         {Array.from({ length: GRID_COUNT + 1 }).map((_, i) => {
@@ -163,8 +169,8 @@ const map = (x: number, y: number) => ({
           const py = SIZE - (PADDING + i * GRID_STEP);
           return (
             <g key={`grid-${i}`}>
-              <line x1={px} y1={PADDING} x2={px} y2={SIZE - PADDING} stroke={COLOR_GRID_MINOR} strokeWidth={1} />
-              <line x1={PADDING} y1={py} x2={SIZE - PADDING} y2={py} stroke={COLOR_GRID_MINOR} strokeWidth={1} />
+              <line x1={px} y1={PADDING} x2={px} y2={SIZE - PADDING} stroke="var(--grid-minor, #e2e8f0)" strokeWidth={1} />
+              <line x1={PADDING} y1={py} x2={SIZE - PADDING} y2={py} stroke="var(--grid-minor, #e2e8f0)" strokeWidth={1} />
             </g>
           );
         })}
@@ -173,9 +179,8 @@ const map = (x: number, y: number) => ({
         <rect
           x={PADDING} y={PADDING}
           width={SIZE - 2 * PADDING} height={SIZE - 2 * PADDING}
-          fill="none" stroke={COLOR_GRID_MAJOR} strokeWidth={2}
+          fill="none" stroke="var(--grid-major, #cbd5e1)" strokeWidth={2}
         />
-
 
         {/* ── SHAPES ── */}
         {[...shapes]
@@ -185,6 +190,19 @@ const map = (x: number, y: number) => ({
             return a.shape.hollow === "Hollow" ? 1 : -1;
           })
           .map(({ shape, i: si }) => {
+            // Colors — same hues but readable on both light and dark backgrounds
+            // The SVG sits on top of the CSS-var-coloured rects, so we keep shape
+            // colours constant (they have enough contrast on both bg shades).
+            const COLOR_SOLID_FILL    = "rgba(59,130,246,0.20)";
+            const COLOR_SOLID_STROKE  = "#3b82f6";
+            const COLOR_HOLLOW_FILL   = "rgba(148,163,184,0.22)";
+            const COLOR_HOLLOW_STROKE = "#94a3b8";
+            const COLOR_NODE          = "#ef4444";
+            const COLOR_LABEL         = "#e2e8f0";   // light text — readable on dark inner bg
+            const COLOR_DIST          = "#f1f5f9";
+            const COLOR_RADIUS        = "#4ade80";
+            const COLOR_CENTER        = "#f87171";
+
             /* ── SEMI-CIRCLES ── */
             if (shape.type?.startsWith("Semi-circle")) {
               const cx = Number(shape.x), cy = Number(shape.y), r = Number(shape.radius);
@@ -208,8 +226,7 @@ const map = (x: number, y: number) => ({
 
               return (
                 <g key={si}>
-                  {/* Shadow */}
-                  <path d={pathData} fill="rgba(0,0,0,0.06)" transform="translate(4,4)" />
+                  <path d={pathData} fill="rgba(0,0,0,0.10)" transform="translate(4,4)" />
                   <path
                     d={pathData}
                     fill={isHollow ? COLOR_HOLLOW_FILL : COLOR_SOLID_FILL}
@@ -217,20 +234,15 @@ const map = (x: number, y: number) => ({
                     strokeWidth={2.5}
                     strokeDasharray={isHollow ? "10 6" : "0"}
                   />
-                  {/* Center */}
                   <circle cx={mapped.x} cy={mapped.y} r={8} fill={COLOR_CENTER} stroke="white" strokeWidth={2} />
-                  {/* Center label pill */}
                   <text x={mapped.x + 18} y={mapped.y - 14} fontSize="22" fontWeight="700" fill={COLOR_CENTER} fontFamily="monospace">
                     C({cx}, {cy})
                   </text>
-                  {/* Radius line */}
                   <line x1={mapped.x} y1={mapped.y} x2={startX} y2={startY} stroke={COLOR_RADIUS} strokeWidth={2} strokeDasharray="6 4" />
-                  {/* Radius label pill */}
                   <text x={(mapped.x + midRX) / 2} y={(mapped.y + midRY) / 2 - 12}
                     fontSize="22" fontWeight="700" fill={COLOR_RADIUS} textAnchor="middle" fontFamily="monospace">
                     r={r}
                   </text>
-                  {/* Endpoints */}
                   <circle cx={startX} cy={startY} r={7} fill="#2563eb" stroke="white" strokeWidth={2} />
                   <circle cx={endX} cy={endY} r={7} fill="#2563eb" stroke="white" strokeWidth={2} />
                 </g>
@@ -258,7 +270,7 @@ const map = (x: number, y: number) => ({
 
               return (
                 <g key={si}>
-                  <path d={pathData} fill="rgba(0,0,0,0.06)" transform="translate(4,4)" />
+                  <path d={pathData} fill="rgba(0,0,0,0.10)" transform="translate(4,4)" />
                   <path
                     d={pathData}
                     fill={isHollow ? COLOR_HOLLOW_FILL : COLOR_SOLID_FILL}
@@ -269,8 +281,7 @@ const map = (x: number, y: number) => ({
                   <circle cx={mapped.x} cy={mapped.y} r={8} fill={COLOR_CENTER} stroke="white" strokeWidth={2} />
                   <line x1={mapped.x} y1={mapped.y} x2={startX} y2={startY} stroke={COLOR_RADIUS} strokeWidth={2} strokeDasharray="6 4" />
                   <line x1={mapped.x} y1={mapped.y} x2={endX} y2={endY} stroke={COLOR_RADIUS} strokeWidth={2} strokeDasharray="6 4" />
-                  {/* Radius label */}
-                  <rect x={(mapped.x + startX) / 2 - 4} y={(mapped.y + startY) / 2 - 30} width={80} height={26} rx={5} fill="white" fillOpacity={0.85} />
+                  <rect x={(mapped.x + startX) / 2 - 4} y={(mapped.y + startY) / 2 - 30} width={80} height={26} rx={5} fill="rgba(0,0,0,0.45)" />
                   <text x={(mapped.x + startX) / 2} y={(mapped.y + startY) / 2 - 14}
                     fontSize="22" fontWeight="700" fill={COLOR_RADIUS} textAnchor="middle" fontFamily="monospace">
                     r={r}
@@ -290,8 +301,7 @@ const map = (x: number, y: number) => ({
 
               return (
                 <g key={si}>
-                  {/* Shadow */}
-                  <circle cx={mc.x + 4} cy={mc.y + 4} r={sr} fill="rgba(0,0,0,0.06)" />
+                  <circle cx={mc.x + 4} cy={mc.y + 4} r={sr} fill="rgba(0,0,0,0.10)" />
                   <circle
                     cx={mc.x} cy={mc.y} r={sr}
                     fill={isHollow ? COLOR_HOLLOW_FILL : COLOR_SOLID_FILL}
@@ -299,17 +309,13 @@ const map = (x: number, y: number) => ({
                     strokeWidth={2.5}
                     strokeDasharray={isHollow ? "10 6" : "0"}
                   />
-                  {/* Radius line */}
                   <line x1={mc.x} y1={mc.y} x2={mc.x + sr} y2={mc.y} stroke={COLOR_RADIUS} strokeWidth={2} strokeDasharray="6 4" />
-                  {/* Radius label */}
-                  <rect x={mc.x + sr / 2 - 38} y={mc.y - 30} width={76} height={26} rx={5} fill="white" fillOpacity={0.88} />
+                  <rect x={mc.x + sr / 2 - 38} y={mc.y - 30} width={76} height={26} rx={5} fill="rgba(0,0,0,0.45)" />
                   <text x={mc.x + sr / 2} y={mc.y - 13} fontSize="22" fontWeight="700" fill={COLOR_RADIUS} textAnchor="middle" fontFamily="monospace">
                     r={r}
                   </text>
-                  {/* Center */}
                   <circle cx={mc.x} cy={mc.y} r={8} fill={COLOR_CENTER} stroke="white" strokeWidth={2} />
-                  {/* Center label */}
-                  <rect x={mc.x + 12} y={mc.y - 34} width={140} height={28} rx={6} fill="white" fillOpacity={0.85} />
+                  <rect x={mc.x + 12} y={mc.y - 34} width={140} height={28} rx={6} fill="rgba(0,0,0,0.45)" />
                   <text x={mc.x + 20} y={mc.y - 16} fontSize="22" fontWeight="700" fill={COLOR_CENTER} fontFamily="monospace">
                     C({cx}, {cy})
                   </text>
@@ -336,14 +342,12 @@ const map = (x: number, y: number) => ({
 
             return (
               <g key={si}>
-                {/* Shadow */}
                 {isClosed && validMapped.length >= 3 && (
                   <polygon
                     points={validMapped.map(p => `${p.x + 4},${p.y + 4}`).join(" ")}
-                    fill="rgba(0,0,0,0.07)"
+                    fill="rgba(0,0,0,0.10)"
                   />
                 )}
-                {/* Fill */}
                 {isClosed && validMapped.length >= 3 && (
                   <polygon
                     points={validMapped.map(p => `${p.x},${p.y}`).join(" ")}
@@ -369,14 +373,11 @@ const map = (x: number, y: number) => ({
 
                   const midX = (p1.x + p2.x) / 2;
                   const midY = (p1.y + p2.y) / 2;
-                  // Offset label perpendicular to edge, slightly outward
                   const dx = p2.x - p1.x, dy = p2.y - p1.y;
                   const len = Math.sqrt(dx * dx + dy * dy) || 1;
-                  const nx = -dy / len, ny = dx / len; // normal
+                  const nx = -dy / len, ny = dx / len;
                   const offsetX = midX + nx * 22;
                   const offsetY = midY + ny * 22;
-
-                  const pillW = label.length * 14 + 16;
 
                   return (
                     <g key={i}>
@@ -389,7 +390,6 @@ const map = (x: number, y: number) => ({
                           strokeLinecap="round"
                         />
                       )}
-
                       <text
                         x={offsetX} y={offsetY + 3}
                         fontSize="22" fontWeight="700" fill={COLOR_DIST}
@@ -411,10 +411,8 @@ const map = (x: number, y: number) => ({
 
                   return (
                     <g key={i}>
-                      {/* Outer glow ring */}
-                      <circle cx={p.x} cy={p.y} r={13} fill={COLOR_NODE} fillOpacity={0.18} />
+                      <circle cx={p.x} cy={p.y} r={13} fill={COLOR_NODE} fillOpacity={0.25} />
                       <circle cx={p.x} cy={p.y} r={8} fill={COLOR_NODE} stroke="white" strokeWidth={2.5} />
-                      {/* Label pill */}
                       <text x={p.x + 18} y={p.y - 13} fontSize="24" fontWeight="800" fill={COLOR_LABEL} fontFamily="monospace">
                         {label}
                       </text>
@@ -430,11 +428,11 @@ const map = (x: number, y: number) => ({
           const p = map(axisX, axisY);
           return (
             <g>
-              <line x1={PADDING} y1={p.y} x2={SIZE - PADDING} y2={p.y} stroke="#ef4444" strokeWidth={2.5} strokeDasharray="12 7" />
-              <line x1={p.x} y1={PADDING} x2={p.x} y2={SIZE - PADDING} stroke="#2563eb" strokeWidth={2.5} strokeDasharray="12 7" />
-              <circle cx={p.x} cy={p.y} r={9} fill="#1e293b" stroke="white" strokeWidth={2} />
-              <rect x={p.x + 12} y={p.y - 34} width={120} height={28} rx={6} fill="white" fillOpacity={0.88} />
-              <text x={p.x + 18} y={p.y - 16} fontSize="22" fontWeight="700" fill="#1e293b" fontFamily="monospace">
+              <line x1={PADDING} y1={p.y} x2={SIZE - PADDING} y2={p.y} stroke="#f87171" strokeWidth={2.5} strokeDasharray="12 7" />
+              <line x1={p.x} y1={PADDING} x2={p.x} y2={SIZE - PADDING} stroke="#60a5fa" strokeWidth={2.5} strokeDasharray="12 7" />
+              <circle cx={p.x} cy={p.y} r={9} fill="#e2e8f0" stroke="white" strokeWidth={2} />
+              <rect x={p.x + 12} y={p.y - 34} width={120} height={28} rx={6} fill="rgba(0,0,0,0.45)" />
+              <text x={p.x + 18} y={p.y - 16} fontSize="22" fontWeight="700" fill="#f1f5f9" fontFamily="monospace">
                 ({axisX}, {axisY})
               </text>
             </g>

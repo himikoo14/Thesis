@@ -3,6 +3,13 @@
 import { useRef, useEffect, useState, useCallback, ReactNode } from "react";
 import * as THREE from "three";
 
+const DARK_BG  = 0x1f2937;
+const LIGHT_BG = 0xffffff;
+
+function isDark() {
+  return typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+}
+
 /* ================================================================
    THREE.JS CANVAS
 ================================================================ */
@@ -15,41 +22,36 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
   useEffect(() => {
     const el = mountRef.current;
     if (!el) return;
+    const dark = isDark();
     const W = el.clientWidth || 500, H = el.clientHeight || 320;
+
     const renderer = new THREE.WebGLRenderer({ antialias: true });
+    // FIX: setClearColor ensures WebGL background matches dark/light mode
+    renderer.setClearColor(dark ? DARK_BG : LIGHT_BG, 1);
     renderer.setSize(W, H);
     renderer.setPixelRatio(window.devicePixelRatio);
     el.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xffffff);
-    scene.add(new THREE.GridHelper(6, 12, 0xdddddd, 0xeeeeee));
+    scene.background = new THREE.Color(dark ? DARK_BG : LIGHT_BG);
+    scene.add(new THREE.GridHelper(6, 12, dark ? 0x4b5563 : 0xdddddd, dark ? 0x374151 : 0xeeeeee));
     scene.add(new THREE.HemisphereLight(0xffffff, 0xe0e0e0, 1.2));
-    scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.08, 24, 24), new THREE.MeshStandardMaterial({ color: 0x222222 })));
-    // Axis lines (no arrows)
+    scene.add(new THREE.Mesh(
+      new THREE.SphereGeometry(0.08, 24, 24),
+      new THREE.MeshStandardMaterial({ color: dark ? 0xd1d5db : 0x222222 })
+    ));
+
     const axes: [number[], number][] = [
-      [[1, 0, 0], 0x2a9d8f],  // THREE X → labeled Y (teal)
-      [[0, 1, 0], 0x4361ee],  // THREE Y → labeled Z (blue)
-      [[0, 0, 1], 0xe63946],  // THREE Z → labeled X (red)
+      [[1, 0, 0], 0x2a9d8f],
+      [[0, 1, 0], 0x4361ee],
+      [[0, 0, 1], 0xe63946],
     ];
     axes.forEach(([dir, color]) => {
-      const material = new THREE.LineBasicMaterial({ color });
       const [dx, dy, dz] = dir;
-
-      const points = [
-        new THREE.Vector3(-dx * 2, -dy * 2, -dz * 2),
-        new THREE.Vector3(dx * 2, dy * 2, dz * 2)
-      ];
-
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const line = new THREE.Line(geometry, material);
-
-      scene.add(line);
+      const pts = [new THREE.Vector3(-dx * 2, -dy * 2, -dz * 2), new THREE.Vector3(dx * 2, dy * 2, dz * 2)];
+      scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color })));
     });
-    // Axis arrows: direction stays the same in 3D space, but labels are remapped
-    // THREE.js X-axis [1,0,0] is now labeled "Y" (red)
-    // THREE.js Y-axis [0,1,0] is now labeled "Z" (teal)
-    // THREE.js Z-axis [0,0,1] is now labeled "X" (blue)
+
     const dynGroup = new THREE.Group();
     scene.add(dynGroup);
     dynamicGroupRef.current = dynGroup;
@@ -114,7 +116,7 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
       const a = points[f.from], b = points[f.to];
       if (!a || !b) return;
       const from = new THREE.Vector3(parseFloat(a.y) || 0, parseFloat(a.z) || 0, parseFloat(a.x) || 0);
-      const to = new THREE.Vector3(parseFloat(b.y) || 0, parseFloat(b.z) || 0, parseFloat(b.x) || 0);
+      const to   = new THREE.Vector3(parseFloat(b.y) || 0, parseFloat(b.z) || 0, parseFloat(b.x) || 0);
       const len = from.distanceTo(to);
       if (len < 0.001) return;
       group.add(new THREE.ArrowHelper(new THREE.Vector3().subVectors(to, from).normalize(), from, len, 0xf4a261, 0.25, 0.14));
@@ -122,21 +124,25 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
   }, [points, forces]);
 
   return (
-    <div style={{ position: "relative", borderRadius: 14, overflow: "hidden", border: "1px solid #e8e8e8", background: "transparent" }}>
-      <div ref={mountRef} style={{ width: "100%", height: 320, cursor: "grab" }} />
-      <div style={{ position: "absolute", top: 10, left: 12, display: "flex", gap: 6, pointerEvents: "none" }}>
-        {/* Labels remapped: THREE X→Y (red), THREE Y→Z (teal), THREE Z→X (blue) */}
-        {([["X", "#e63946", "#fff0f1"], ["Y", "#2a9d8f", "#f0faf9"], ["Z", "#4361ee", "#f0f2ff"]] as [string, string, string][]).map(([l, c, bg]) => (
-          <span key={l} style={{ background: bg, color: c, border: `1.5px solid ${c}33`, borderRadius: 6, padding: "2px 8px", fontSize: 13, fontWeight: 700 }}>{l}</span>
+    <div className="relative rounded-[14px] overflow-hidden border border-gray-200 dark:border-gray-600">
+      <div ref={mountRef} className="w-full h-[320px] cursor-grab" />
+      <div className="absolute top-2.5 left-3 flex gap-1.5 pointer-events-none">
+        {([["X", "#e63946", "#fff0f1", "#fecdd3"], ["Y", "#2a9d8f", "#f0faf9", "#99f6e4"], ["Z", "#4361ee", "#f0f2ff", "#c7d2fe"]] as [string, string, string, string][]).map(([l, c, bg, border]) => (
+          <span key={l} className="rounded-md px-2 py-0.5 text-[13px] font-bold"
+            style={{ background: bg, color: c, border: `1.5px solid ${border}` }}>
+            {l}
+          </span>
         ))}
       </div>
-      <div style={{ position: "absolute", bottom: 8, right: 12, fontSize: 10, color: "#bbb", pointerEvents: "none" }}>Drag to rotate · Scroll to zoom</div>
+      <div className="absolute bottom-2 right-3 text-[10px] text-gray-300 dark:text-gray-500 pointer-events-none">
+        Drag to rotate · Scroll to zoom
+      </div>
     </div>
   );
 }
 
 /* ================================================================
-   KATEX (inline renderer for solution panel)
+   KATEX
 ================================================================ */
 function useKatex() {
   const [ok, setOk] = useState(false);
@@ -164,11 +170,11 @@ function KTX({ tex }: { tex: string }) {
     try { katex.render(tex, el.current, { displayMode: true, throwOnError: false }); }
     catch (_) { if (el.current) el.current.innerText = tex; }
   }, [tex, katexReady]);
-  return <div ref={el} style={{ margin: "3px 0", overflowX: "auto" }} />;
+  return <div ref={el} className="my-0.5 overflow-x-auto dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white" />;
 }
 
 /* ================================================================
-   STEP LINE TYPES  (from StepByStep.tsx)
+   STEP LINE TYPES
 ================================================================ */
 type StepLine =
   | { type: "heading"; text: string }
@@ -176,7 +182,6 @@ type StepLine =
   | { type: "text"; text: string }
   | { type: "diagram"; label?: string; node: ReactNode };
 
-/** Converts the legacy string[] from buildSolution into StepLine[] */
 function fromLegacySteps(steps: string[]): StepLine[] {
   return steps.map((line) => {
     const trimmed = line.trim();
@@ -186,7 +191,7 @@ function fromLegacySteps(steps: string[]): StepLine[] {
 }
 
 /* ================================================================
-   STEP-BY-STEP SOLUTION RENDERER  (from StepByStep.tsx)
+   STEP-BY-STEP SOLUTION RENDERER
 ================================================================ */
 function StepByStepSolution({
   steps,
@@ -197,39 +202,23 @@ function StepByStepSolution({
   title?: string;
   containerRef?: React.RefObject<HTMLDivElement>;
 }) {
-  const card: React.CSSProperties = {
-    background: "#fff",
-    borderRadius: 14,
-    border: "1px solid #ebebeb",
-    padding: "18px 20px",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-  };
-
   return (
-    <div ref={containerRef} style={card}>
-      <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16, marginTop: 0 }}>{title}</h2>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div ref={containerRef} className="bg-white dark:bg-gray-800 rounded-[14px] border border-gray-200 dark:border-gray-600 p-5 shadow-sm">
+      {title && <h2 className="text-[18px] font-semibold mb-4 mt-0 text-gray-900 dark:text-white">{title}</h2>}
+      <div className="flex flex-col gap-2">
         {steps.map((line, i) => {
           switch (line.type) {
             case "heading":
-              return (
-                <p key={i} style={{ fontWeight: 600, fontSize: 16, marginTop: 10, marginBottom: 2, color: "#111" }}>
-                  {line.text}
-                </p>
-              );
+              return <p key={i} className="font-semibold text-[16px] mt-2.5 mb-0.5 text-gray-900 dark:text-white">{line.text}</p>;
             case "math":
               return <KTX key={i} tex={line.tex} />;
             case "text":
-              return (
-                <p key={i} style={{ fontSize: 15, color: "#444", margin: 0 }}>
-                  {line.text}
-                </p>
-              );
+              return <p key={i} className="text-[15px] text-gray-600 dark:text-gray-300 m-0">{line.text}</p>;
             case "diagram":
               return (
-                <div key={i} style={{ marginTop: 16 }}>
-                  {line.label && <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 8 }}>{line.label}</p>}
-                  <div style={{ display: "flex", justifyContent: "center" }}>{line.node}</div>
+                <div key={i} className="mt-4">
+                  {line.label && <p className="font-semibold text-[15px] mb-2 dark:text-white">{line.label}</p>}
+                  <div className="flex justify-center">{line.node}</div>
                 </div>
               );
             default:
@@ -241,70 +230,32 @@ function StepByStepSolution({
   );
 }
 
-
 /* ================================================================
    SOLUTION BUILDER
 ================================================================ */
 function buildSolution(details: any[], Rx: number, Ry: number, Rz: number, R: number): string[] {
   const steps: string[] = [];
-
   steps.push("Step 1: Determine position vectors");
-  details.forEach(d => {
-    steps.push(
-      `\\vec r_{${d.from}${d.to}} = (${d.bx}-${d.ax})\\hat i + (${d.by}-${d.ay})\\hat j + (${d.bz}-${d.az})\\hat k`
-    );
-  });
-
+  details.forEach(d => steps.push(`\\vec r_{${d.from}${d.to}} = (${d.bx}-${d.ax})\\hat i + (${d.by}-${d.ay})\\hat j + (${d.bz}-${d.az})\\hat k`));
   steps.push("Step 2: Magnitudes");
-  details.forEach(d => {
-    steps.push(
-      `|\\vec r_{${d.from}${d.to}}| = \\sqrt{${d.dx}^2+${d.dy}^2+${d.dz}^2} = ${d.len.toFixed(2)}`
-    );
-  });
-
+  details.forEach(d => steps.push(`|\\vec r_{${d.from}${d.to}}| = \\sqrt{${d.dx}^2+${d.dy}^2+${d.dz}^2} = ${d.len.toFixed(2)}`));
   steps.push("Step 3: Unit vectors");
-  details.forEach(d => {
-    steps.push(
-      `\\hat u_{${d.from}${d.to}} = \\frac{${d.dx}\\hat i+${d.dy}\\hat j+${d.dz}\\hat k}{${d.len.toFixed(2)}}`
-    );
-  });
-
+  details.forEach(d => steps.push(`\\hat u_{${d.from}${d.to}} = \\frac{${d.dx}\\hat i+${d.dy}\\hat j+${d.dz}\\hat k}{${d.len.toFixed(2)}}`));
   steps.push("Step 4: Force vectors");
-  details.forEach(d => {
-    steps.push(
-      `\\vec F_{${d.to}} = ${d.mag}\\,\\hat u_{${d.from}${d.to}} = ${d.Fx.toFixed(2)}\\hat i + ${d.Fy.toFixed(2)}\\hat j + ${d.Fz.toFixed(2)}\\hat k`
-    );
-  });
-
+  details.forEach(d => steps.push(`\\vec F_{${d.to}} = ${d.mag}\\,\\hat u_{${d.from}${d.to}} = ${d.Fx.toFixed(2)}\\hat i + ${d.Fy.toFixed(2)}\\hat j + ${d.Fz.toFixed(2)}\\hat k`));
   steps.push("Step 5: Resultant");
-  steps.push(
-    `\\vec R = ${Rx.toFixed(2)}\\hat i + ${Ry.toFixed(2)}\\hat j + ${Rz.toFixed(2)}\\hat k`
-  );
-  steps.push(
-    `R = \\sqrt{(${Rx.toFixed(2)})^2+(${Ry.toFixed(2)})^2+(${Rz.toFixed(2)})^2} = ${R.toFixed(2)}`
-  );
-
-  // Step 6: Direction angles
+  steps.push(`\\vec R = ${Rx.toFixed(2)}\\hat i + ${Ry.toFixed(2)}\\hat j + ${Rz.toFixed(2)}\\hat k`);
+  steps.push(`R = \\sqrt{(${Rx.toFixed(2)})^2+(${Ry.toFixed(2)})^2+(${Rz.toFixed(2)})^2} = ${R.toFixed(2)}`);
   if (R > 0.0001) {
     const alpha = (Math.acos(Rx / R) * 180) / Math.PI;
     const beta  = (Math.acos(Ry / R) * 180) / Math.PI;
     const gamma = (Math.acos(Rz / R) * 180) / Math.PI;
-
     steps.push("Step 6: Direction angles (α, β, γ)");
-    steps.push(
-      `\\alpha = \\cos^{-1}\\!\\left(\\frac{R_x}{R}\\right) = \\cos^{-1}\\!\\left(\\frac{${Rx.toFixed(2)}}{${R.toFixed(2)}}\\right) = ${alpha.toFixed(2)}^\\circ`
-    );
-    steps.push(
-      `\\beta = \\cos^{-1}\\!\\left(\\frac{R_y}{R}\\right) = \\cos^{-1}\\!\\left(\\frac{${Ry.toFixed(2)}}{${R.toFixed(2)}}\\right) = ${beta.toFixed(2)}^\\circ`
-    );
-    steps.push(
-      `\\gamma = \\cos^{-1}\\!\\left(\\frac{R_z}{R}\\right) = \\cos^{-1}\\!\\left(\\frac{${Rz.toFixed(2)}}{${R.toFixed(2)}}\\right) = ${gamma.toFixed(2)}^\\circ`
-    );
-    steps.push(
-      `\\cos^2\\alpha + \\cos^2\\beta + \\cos^2\\gamma = ${((Rx/R)**2 + (Ry/R)**2 + (Rz/R)**2).toFixed(3)} \\approx 1 \\checkmark`
-    );
+    steps.push(`\\alpha = \\cos^{-1}\\!\\left(\\frac{R_x}{R}\\right) = \\cos^{-1}\\!\\left(\\frac{${Rx.toFixed(2)}}{${R.toFixed(2)}}\\right) = ${alpha.toFixed(2)}^\\circ`);
+    steps.push(`\\beta = \\cos^{-1}\\!\\left(\\frac{R_y}{R}\\right) = \\cos^{-1}\\!\\left(\\frac{${Ry.toFixed(2)}}{${R.toFixed(2)}}\\right) = ${beta.toFixed(2)}^\\circ`);
+    steps.push(`\\gamma = \\cos^{-1}\\!\\left(\\frac{R_z}{R}\\right) = \\cos^{-1}\\!\\left(\\frac{${Rz.toFixed(2)}}{${R.toFixed(2)}}\\right) = ${gamma.toFixed(2)}^\\circ`);
+    steps.push(`\\cos^2\\alpha + \\cos^2\\beta + \\cos^2\\gamma = ${((Rx/R)**2 + (Ry/R)**2 + (Rz/R)**2).toFixed(3)} \\approx 1 \\checkmark`);
   }
-
   return steps;
 }
 
@@ -317,18 +268,15 @@ export default function CoordinateTab() {
   const [forces, setForces] = useState([{ mag: "", from: 0, to: 1 }]);
   const [result, setResult] = useState<any>(null);
   const [showSolution, setShowSolution] = useState(false);
-  const [status, setStatus] = useState<
-    "idle" | "generating" | "done" | "error"
-  >("idle");
+  const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
 
   const off = status === "generating";
-
-const labels: Record<typeof status, string> = {
-  idle: "⬇ Download Solution as PDF",
-  generating: "⏳ Opening print view…",
-  done: "✅ Done!",
-  error: "❌ Export failed — try again",
-};
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Opening print view…",
+    done: "✅ Done!",
+    error: "❌ Export failed — try again",
+  };
 
   const addPoint = () => setPoints(p => [...p, { label: ptLabel(p.length), x: "", y: "", z: "" }]);
   const removePoint = (i: number) => {
@@ -337,7 +285,6 @@ const labels: Record<typeof status, string> = {
   };
   const updatePoint = (i: number, field: string, val: string) =>
     setPoints(p => p.map((v, j) => j === i ? { ...v, [field]: val } : v));
-
   const addForce = () => setForces(f => [...f, { mag: "", from: 0, to: Math.min(1, points.length - 1) }]);
   const removeForce = (i: number) => { if (forces.length <= 1) return; setForces(f => f.filter((_, j) => j !== i)); };
   const updateForce = (i: number, field: string, val: any) =>
@@ -360,179 +307,164 @@ const labels: Record<typeof status, string> = {
       Rx += Fx; Ry += Fy; Rz += Fz;
       details.push({ mag, from: points[f.from].label, to: points[f.to].label, ax, ay, az, bx, by, bz, dx, dy, dz, Fx, Fy, Fz, len });
     });
+    const R = Math.sqrt(Rx * Rx + Ry * Ry + Rz * Rz);
+    const rawSteps = buildSolution(details, Rx, Ry, Rz, R);
+    const alpha = (Math.acos(Rx / R) * 180) / Math.PI;
+    const beta  = (Math.acos(Ry / R) * 180) / Math.PI;
+    const gamma = (Math.acos(Rz / R) * 180) / Math.PI;
+    setResult({
+      details, Rx, Ry, Rz, R,
+      steps: rawSteps,
+      stepLines: fromLegacySteps(rawSteps),
+      resultRows: [
+        { label: "Resultant Rx", value: `${Rx.toFixed(3)} N` },
+        { label: "Resultant Ry", value: `${Ry.toFixed(3)} N` },
+        { label: "Resultant Rz", value: `${Rz.toFixed(3)} N` },
+        { label: "Magnitude |R|", value: `${R.toFixed(3)} N` },
+        { label: "α (angle with X)", value: `${alpha.toFixed(2)}°` },
+        { label: "β (angle with Y)", value: `${beta.toFixed(2)}°` },
+        { label: "γ (angle with Z)", value: `${gamma.toFixed(2)}°` },
+      ],
+    });
+    setShowSolution(true);
+  };
 
-const R = Math.sqrt(Rx * Rx + Ry * Ry + Rz * Rz);
-const rawSteps = buildSolution(details, Rx, Ry, Rz, R);
-
-const alpha = (Math.acos(Rx / R) * 180) / Math.PI;
-const beta  = (Math.acos(Ry / R) * 180) / Math.PI;
-const gamma = (Math.acos(Rz / R) * 180) / Math.PI;
-
-  setResult({
-    details, Rx, Ry, Rz, R,
-    steps: rawSteps,
-    stepLines: fromLegacySteps(rawSteps),
-    resultRows: [
-      { label: "Resultant Rx", value: `${Rx.toFixed(3)} N` },
-      { label: "Resultant Ry", value: `${Ry.toFixed(3)} N` },
-      { label: "Resultant Rz", value: `${Rz.toFixed(3)} N` },
-      { label: "Magnitude |R|", value: `${R.toFixed(3)} N` },
-      { label: "α (angle with X)", value: `${alpha.toFixed(2)}°` },
-      { label: "β (angle with Y)", value: `${beta.toFixed(2)}°` },
-      { label: "γ (angle with Z)", value: `${gamma.toFixed(2)}°` },
-    ],
-  });
-  setShowSolution(true);
-};
-
-const inp: React.CSSProperties = { background: "white", border: "1px solid #e0e0e0", borderRadius: 8, padding: "6px 8px", fontSize: 13, width: "100%", outline: "none" };
-  const sel: React.CSSProperties = { ...inp, width: "auto", minWidth: 90 };
-  const card: React.CSSProperties = { background: "#fff", borderRadius: 14, border: "1px solid #ebebeb", padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" };
+  const inputCls = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-[13px] w-full outline-none text-gray-900 dark:text-white";
+  const selectCls = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-[13px] outline-none text-gray-900 dark:text-white";
+  const cardCls = "bg-white dark:bg-gray-800 rounded-[14px] border border-gray-200 dark:border-gray-600 p-5 shadow-sm";
+  const labelCls = "text-[13px] text-gray-500 dark:text-gray-400 flex-1";
+  const h3Cls = "text-[15px] font-semibold mt-0 mb-3 text-gray-900 dark:text-white";
 
   return (
-    <div style={{ width: "100%", background: "transparent" }}>
+    <div className="w-full bg-transparent">
 
-      {/* 3D Canvas */}
-      <div style={{ width: "100%", maxWidth: 580, margin: "0 auto 20px" }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, textAlign: "center", marginBottom: 8 }}>Cartesian Vector Method</h2>
-        <p style={{ color: "#888", fontSize: 13, textAlign: "center", marginTop: 0, marginBottom: 12 }}>Real-Time Free Body Diagram</p>
+      {/* ── 3D Canvas ── */}
+      <div className="w-full max-w-[580px] mx-auto mb-5">
+        <h2 className="text-[18px] font-semibold text-center mb-2 text-gray-900 dark:text-white">Cartesian Vector Method</h2>
+        <p className="text-[13px] text-gray-500 dark:text-gray-400 text-center mt-0 mb-3">Real-Time Free Body Diagram</p>
         <CoordThreeCanvas points={points} forces={forces} />
       </div>
 
-      {/* Inputs */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+      {/* ── Inputs ── */}
+      <div className="grid grid-cols-2 gap-4 mb-4">
 
-        {/* Points */}
-        <div style={card}>
-          <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 12px" }}>Coordinates of Points</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "52px 1fr 1fr 1fr 32px", gap: 6, marginBottom: 6 }}>
-            <span />{["x", "y", "z"].map(l => <span key={l} style={{ fontSize: 11, color: "#999", textAlign: "center" }}>{l}</span>)}<span />
+        <div className={cardCls}>
+          <h3 className={h3Cls}>Coordinates of Points</h3>
+          <div className="grid grid-cols-[52px_1fr_1fr_1fr_32px] gap-1.5 mb-1.5">
+            <span />
+            {["x", "y", "z"].map(l => <span key={l} className="text-[11px] text-gray-400 text-center">{l}</span>)}
+            <span />
           </div>
           {points.map((p, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: "52px 1fr 1fr 1fr 32px", gap: 6, alignItems: "center", marginBottom: 6 }}>
-              <span style={{ fontSize: 13, color: "#555" }}>Point {p.label}</span>
+            <div key={i} className="grid grid-cols-[52px_1fr_1fr_1fr_32px] gap-1.5 items-center mb-1.5">
+              <span className="text-[13px] text-gray-500 dark:text-gray-400">Point {p.label}</span>
               {["x", "y", "z"].map(field => (
-                <input key={field} style={inp} placeholder={field} value={(p as any)[field]} onChange={e => updatePoint(i, field, e.target.value)} />
+                <input key={field} className={inputCls} placeholder={field}
+                  value={(p as any)[field]} onChange={e => updatePoint(i, field, e.target.value)} />
               ))}
-              <button onClick={() => removePoint(i)} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: 7, width: 30, height: 30, cursor: "pointer", fontWeight: 700 }}>–</button>
+              <button onClick={() => removePoint(i)}
+                className="bg-red-500 text-white border-none rounded-[7px] w-[30px] h-[30px] cursor-pointer font-bold hover:bg-red-600">–</button>
             </div>
           ))}
-          <button onClick={addPoint} style={{ background: "#008409", color: "#fff", border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, cursor: "pointer", marginTop: 4 }}>+ Add Point</button>
+          <button onClick={addPoint}
+            className="bg-[#008409] hover:bg-[#15711b] text-white border-none rounded-lg px-3.5 py-1.5 text-[13px] cursor-pointer mt-1 transition">
+            + Add Point
+          </button>
         </div>
 
-        {/* Forces */}
-        <div style={card}>
-          <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 12px" }}>Forces</h3>
+        <div className={cardCls}>
+          <h3 className={h3Cls}>Forces</h3>
           {forces.map((f, i) => (
-            <div key={i} style={{ background: "white", borderRadius: 10, border: "1px solid #ebebeb", padding: "10px 12px", marginBottom: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
-                <span style={{ fontSize: 13, color: "#555", flex: 1 }}>Magnitude (kN):</span>
-                <input style={{ ...inp, width: 80 }} placeholder="kN" value={f.mag} onChange={e => updateForce(i, "mag", e.target.value)} />
+            <div key={i} className="bg-white dark:bg-gray-700 rounded-[10px] border border-gray-200 dark:border-gray-600 p-3 mb-2.5">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className={labelCls}>Magnitude (kN):</span>
+                <input className={`${selectCls} w-20`} placeholder="kN" value={f.mag}
+                  onChange={e => updateForce(i, "mag", e.target.value)} />
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
-                <span style={{ fontSize: 13, color: "#555", flex: 1 }}>From:</span>
-                <select style={sel} value={f.from} onChange={e => updateForce(i, "from", +e.target.value)}>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className={labelCls}>From:</span>
+                <select className={selectCls} value={f.from} onChange={e => updateForce(i, "from", +e.target.value)}>
                   {points.map((p, j) => <option key={j} value={j}>Point {p.label}</option>)}
                 </select>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 13, color: "#555", flex: 1 }}>To:</span>
-                <select style={sel} value={f.to} onChange={e => updateForce(i, "to", +e.target.value)}>
+              <div className="flex items-center gap-2">
+                <span className={labelCls}>To:</span>
+                <select className={selectCls} value={f.to} onChange={e => updateForce(i, "to", +e.target.value)}>
                   {points.map((p, j) => <option key={j} value={j}>Point {p.label}</option>)}
                 </select>
               </div>
               {forces.length > 1 && (
-                <div style={{ textAlign: "right", marginTop: 8 }}>
-                  <button onClick={() => removeForce(i)} style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: 7, padding: "4px 12px", fontSize: 12, cursor: "pointer" }}>– Remove</button>
+                <div className="text-right mt-2">
+                  <button onClick={() => removeForce(i)}
+                    className="bg-red-500 hover:bg-red-600 text-white border-none rounded-[7px] px-3 py-1 text-[12px] cursor-pointer transition">
+                    – Remove
+                  </button>
                 </div>
               )}
             </div>
           ))}
-          <button onClick={addForce} style={{ background: "#008409", color: "#fff", border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, cursor: "pointer" }}>+ Add Force</button>
+          <button onClick={addForce}
+            className="bg-[#008409] hover:bg-[#15711b] text-white border-none rounded-lg px-3.5 py-1.5 text-[13px] cursor-pointer transition">
+            + Add Force
+          </button>
         </div>
       </div>
 
-      {/* Calculate */}
-      <button onClick={calculate} style={{ width: "100%", background: "#1848a0", color: "#fff", border: "none", borderRadius: 10, padding: "13px 0", fontSize: 16, fontWeight: 600, cursor: "pointer", marginBottom: 16 }}>
+      {/* ── Calculate ── */}
+      <button onClick={calculate}
+        className="w-full bg-[#1848a0] hover:bg-[#163d8a] text-white border-none rounded-[10px] py-3.5 text-[16px] font-semibold cursor-pointer mb-4 transition">
         Calculate
       </button>
 
-      {/* Solution — now uses StepByStepSolution + toggle + PDF export */}
+      {/* ── Solution ── */}
       {result && (
-        <div>
-          {/* Toggle header */}
-          <div style={card}>
-            <button
-              onClick={() => setShowSolution(s => !s)}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 8,
-                fontSize: 16, fontWeight: 600, color: "#111",
-                padding: 0, width: "100%",
-              }}
-            >
-              <span style={{ background: "#1848a0", color: "#fff", borderRadius: 8, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>
-                {showSolution ? "▲ Hide" : "▼ Show"}
-              </span>
-              <span>Step-by-Step Solution</span>
-            </button>
+        <div className={cardCls}>
+          <button
+            onClick={() => setShowSolution(s => !s)}
+            className="bg-transparent border-none cursor-pointer flex items-center gap-2 text-[16px] font-semibold text-gray-900 dark:text-white p-0 w-full"
+          >
+            <span className="bg-[#1848a0] text-white rounded-lg px-2.5 py-0.5 text-[12px] font-bold">
+              {showSolution ? "▲ Hide" : "▼ Show"}
+            </span>
+            <span>Step-by-Step Solution</span>
+          </button>
 
-            {showSolution && (
-              <div style={{ marginTop: 20 }}>
-                {/* PDF export button */}
-<button
-  onClick={() => {
-    setStatus("generating");
-    const payload = {
-      steps: result.steps,
-      resultRows: result.resultRows,
-      points,
-      forces,
-      result: {
-        Rx: result.Rx,
-        Ry: result.Ry,
-        Rz: result.Rz,
-        R: result.R,
-        details: result.details,
-      },
-    };
-    const encoded = encodeURIComponent(JSON.stringify(payload));
-    window.open(`/print/coordinate?data=${encoded}`, "_blank");
-    setStatus("done");
-    setTimeout(() => setStatus("idle"), 2500);
-  }}
-  disabled={off}
-  style={{
-    width: "100%", padding: "13px 0", border: "none", borderRadius: 10,
-    fontSize: 15, fontWeight: 600,
-    background: off ? "#94a3b8" : "linear-gradient(135deg, #0f2d6b, #1848a0)",
-    color: "#fff", boxShadow: off ? "none" : "0 4px 14px rgba(24,72,160,0.25)",
-    marginBottom: 12, opacity: off ? 0.65 : 1, cursor: off ? "not-allowed" : "pointer",
-  }}
->
-  {labels[status]}
-</button>
+          {showSolution && (
+            <div className="mt-5">
+              <button
+                onClick={() => {
+                  setStatus("generating");
+                  const payload = {
+                    steps: result.steps, resultRows: result.resultRows, points, forces,
+                    result: { Rx: result.Rx, Ry: result.Ry, Rz: result.Rz, R: result.R, details: result.details },
+                  };
+                  const encoded = encodeURIComponent(JSON.stringify(payload));
+                  window.open(`/print/coordinate?data=${encoded}`, "_blank");
+                  setStatus("done");
+                  setTimeout(() => setStatus("idle"), 2500);
+                }}
+                disabled={off}
+                className={`w-full py-3.5 border-none rounded-[10px] text-[15px] font-semibold text-white mb-3 transition ${
+                  off ? "opacity-60 cursor-not-allowed bg-[#1848a0]" : "cursor-pointer bg-[#1848a0] hover:bg-[#163d8a]"
+                }`}
+              >
+                {labels[status]}
+              </button>
 
-                {/* Results summary strip */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
-                  {result.resultRows.map((row: { label: string; value: string }, i: number) => (
-                    <div key={i} style={{ background: "#f5f8ff", borderRadius: 10, border: "1px solid #dce8ff", padding: "10px 14px" }}>
-                      <div style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>{row.label}</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: "#1848a0" }}>{row.value}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* StepByStepSolution renderer */}
-                <StepByStepSolution
-                  steps={result.stepLines}
-                  title=""
-                />
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {result.resultRows.map((row: { label: string; value: string }, i: number) => (
+                  <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[10px] border border-blue-100 dark:border-gray-600 px-3.5 py-2.5">
+                    <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">{row.label}</div>
+                    <div className="text-[16px] font-bold text-[#1848a0] dark:text-blue-400">{row.value}</div>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
+
+              <StepByStepSolution steps={result.stepLines} title="" />
+            </div>
+          )}
         </div>
       )}
     </div>
-    );
+  );
 }

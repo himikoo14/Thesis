@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useCallback, ReactNode } from "react";
 import { solveBeam, BeamResult } from "../../lib/beamEngine";
 
 /* ===================== TYPES ===================== */
-
 type Support = { type: "Pinned" | "Roller"; location: string };
 type PointLoad = { magnitude: string; location: string };
 type DistributedLoad = { start: string; end: string; startMag: string; endMag: string };
@@ -29,6 +28,7 @@ function fromLegacySteps(steps: string[]): StepLine[] {
     return { type: "math", tex: trimmed };
   });
 }
+
 /* ================================================================
    KATEX INLINE RENDERER
 ================================================================ */
@@ -58,7 +58,8 @@ function KTX({ tex }: { tex: string }) {
     try { katex.render(tex, el.current, { displayMode: true, throwOnError: false }); }
     catch (_) { if (el.current) el.current.innerText = tex; }
   }, [tex, katexReady]);
-  return <div ref={el} style={{ margin: "3px 0", overflowX: "auto" }} />;
+  // FIX: dark mode KaTeX
+  return <div ref={el} className="my-0.5 overflow-x-auto dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white" />;
 }
 
 /* ================================================================
@@ -70,29 +71,21 @@ function StepByStepSolution({ steps, title = "Step-by-Step Solution" }: {
 }) {
   return (
     <div>
-      {title && <h2 style={{ fontSize: 18, fontWeight: 600, marginTop: 0, marginBottom: 12 }}>{title}</h2>}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, lineHeight: 1.8 }}>
+      {title && <h2 className="text-[18px] font-semibold mt-0 mb-3 text-gray-900 dark:text-white">{title}</h2>}
+      <div className="flex flex-col gap-1.5 leading-relaxed">
         {steps.map((line, i) => {
           switch (line.type) {
             case "heading":
-              return (
-                <p key={i} style={{ fontWeight: 600, fontSize: 16, marginTop: 14, marginBottom: 2, color: "#1848a0" }}>
-                  {line.text}
-                </p>
-              );
+              return <p key={i} className="font-semibold text-[16px] mt-3.5 mb-0.5 text-[#1848a0] dark:text-blue-400">{line.text}</p>;
             case "math":
               return <KTX key={i} tex={line.tex} />;
             case "text":
-              return (
-                <p key={i} style={{ fontSize: 15, color: "#333", margin: "2px 0" }}>
-                  {line.text}
-                </p>
-              );
+              return <p key={i} className="text-[15px] text-gray-700 dark:text-gray-300 my-0.5">{line.text}</p>;
             case "diagram":
               return (
-                <div key={i} style={{ marginTop: 12 }}>
-                  {line.label && <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 8 }}>{line.label}</p>}
-                  <div style={{ display: "flex", justifyContent: "center" }}>{line.node}</div>
+                <div key={i} className="mt-3">
+                  {line.label && <p className="font-semibold text-[15px] mb-2 dark:text-white">{line.label}</p>}
+                  <div className="flex justify-center">{line.node}</div>
                 </div>
               );
             default:
@@ -104,9 +97,7 @@ function StepByStepSolution({ steps, title = "Step-by-Step Solution" }: {
   );
 }
 
-
 /* ===================== SVG FREE BODY DIAGRAM ===================== */
-
 function BeamFBD({ beamLength, supports, pointLoads, distributedLoads, result }: {
   beamLength: string;
   supports: Support[];
@@ -117,7 +108,7 @@ function BeamFBD({ beamLength, supports, pointLoads, distributedLoads, result }:
   const L = parseFloat(beamLength);
   if (!L || L <= 0) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "200px", width: "100%", textAlign: "center", color: "#9ca3af", fontSize: 14, background: "#ffffff", borderRadius: 12 }}>
+      <div className="flex items-center justify-center h-[200px] w-full text-center text-gray-400 dark:text-gray-500 text-[14px] bg-white dark:bg-gray-800 rounded-xl">
         Enter a beam length to see the diagram
       </div>
     );
@@ -160,10 +151,8 @@ function BeamFBD({ beamLength, supports, pointLoads, distributedLoads, result }:
         const ws = parseFloat(d.startMag), we = parseFloat(d.endMag);
         if (isNaN(xs) || isNaN(xe) || isNaN(ws) || isNaN(we) || xe <= xs) return null;
         const x1 = toX(xs), x2 = toX(xe);
-        const hs = arrowH(Math.abs(ws));
-        const he = arrowH(Math.abs(we));
-        const topYs = beamY - hs;
-        const topYe = beamY - he;
+        const hs = arrowH(Math.abs(ws)), he = arrowH(Math.abs(we));
+        const topYs = beamY - hs, topYe = beamY - he;
         const numLines = Math.max(2, Math.round((x2 - x1) / 18));
         const lines = [];
         for (let j = 0; j <= numLines; j++) {
@@ -192,27 +181,24 @@ function BeamFBD({ beamLength, supports, pointLoads, distributedLoads, result }:
           </g>
         );
       })}
+
       {pointLoads.map((p, i) => {
         const m = parseFloat(p.magnitude), x = parseFloat(p.location);
         if (isNaN(m) || isNaN(x) || m === 0) return null;
         const px = toX(x);
-
-        // Check if this point load overlaps any distributed load
         const overlapDist = distributedLoads.find(d => {
           const xs = parseFloat(d.start), xe = parseFloat(d.end);
           const ws = parseFloat(d.startMag), we = parseFloat(d.endMag);
           if (isNaN(xs) || isNaN(xe) || isNaN(ws) || isNaN(we) || xe <= xs) return false;
           return x >= xs && x <= xe;
         });
-
         let baseY = beamY;
         if (overlapDist) {
           const ws = parseFloat(overlapDist.startMag), we = parseFloat(overlapDist.endMag);
           baseY = beamY - arrowH(Math.max(Math.abs(ws), Math.abs(we)));
         }
-
         const h = arrowH(m);
-        const labelGap = overlapDist ? 20 : 0; // extra space above dist load top line
+        const labelGap = overlapDist ? 20 : 0;
         return (
           <g key={i}>
             <line x1={px} y1={baseY - h - labelGap} x2={px} y2={baseY - 7 - labelGap} stroke="#059669" strokeWidth="2.5" />
@@ -222,6 +208,7 @@ function BeamFBD({ beamLength, supports, pointLoads, distributedLoads, result }:
         );
       })}
 
+      {/* Beam body — uses a neutral gray that works in both modes */}
       <rect x={padL} y={beamY} width={drawW} height={beamH} fill="#d1d5db" stroke="#374151" strokeWidth="2" rx="2" />
       <line x1={padL} y1={beamY + beamH + 22} x2={padL + drawW} y2={beamY + beamH + 22} stroke="#9ca3af" strokeWidth="1" />
       <line x1={padL} y1={beamY + beamH + 16} x2={padL} y2={beamY + beamH + 28} stroke="#9ca3af" strokeWidth="1.5" />
@@ -232,9 +219,6 @@ function BeamFBD({ beamLength, supports, pointLoads, distributedLoads, result }:
         const x = parseFloat(s.location);
         if (isNaN(x)) return null;
         const sx = toX(x), sy = beamY + beamH;
-        const reaction = result?.reactions.find(r => Math.abs(r.location - x) < 0.01);
-        const rv = reaction?.vertical ?? 0;
-        const rh = reactionArrowH(rv);
         return (
           <g key={i}>
             {s.type === "Pinned" && (
@@ -251,7 +235,7 @@ function BeamFBD({ beamLength, supports, pointLoads, distributedLoads, result }:
                 <circle cx={sx + 7} cy={sy + 21} r={3} fill="none" stroke="#6b7280" strokeWidth={1.5} />
               </>
             )}
-            <text x={sx} y={beamY + beamH + (result ? 18 : 0) + 52} textAnchor="middle" fontSize="11" fill="#374151" fontFamily="monospace">{x} m</text>
+            <text x={sx} y={beamY + beamH + (result ? 18 : 0) + 52} textAnchor="middle" fontSize="11" fill="#6b7280" fontFamily="monospace">{x} m</text>
           </g>
         );
       })}
@@ -263,7 +247,6 @@ function BeamFBD({ beamLength, supports, pointLoads, distributedLoads, result }:
 }
 
 /* ===================== MAIN COMPONENT ===================== */
-
 export default function BeamSolverUI() {
   const [beamLength, setBeamLength] = useState("");
   const [supports, setSupports] = useState<Support[]>([{ type: "Pinned", location: "" }]);
@@ -271,28 +254,22 @@ export default function BeamSolverUI() {
   const [distributedLoads, setDistributedLoads] = useState<DistributedLoad[]>([{ start: "", end: "", startMag: "", endMag: "" }]);
   const [result, setResult] = useState<BeamResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const [status, setStatus] = useState<
-    "idle" | "generating" | "done" | "error"
-  >("idle");
+  const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
 
   const off = status === "generating";
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Opening print view…",
+    done: "✅ Done!",
+    error: "❌ Export failed — try again",
+  };
 
-const labels: Record<typeof status, string> = {
-  idle: "⬇ Download Solution as PDF",
-  generating: "⏳ Opening print view…",
-  done: "✅ Done!",
-  error: "❌ Export failed — try again",
-};
-
-  /* ---------- STYLES ---------- */
-  const inputStyle: React.CSSProperties = { width: "100%", marginTop: 4, borderRadius: 8, border: "1px solid #d1d5db", fontSize: 16, padding: "8px 10px", outline: "none", boxSizing: "border-box", fontFamily: "inherit", background: "#ffffff", boxShadow: "none" };
-  const labelStyle: React.CSSProperties = { display: "block", fontWeight: 500, fontSize: 16 };
-  const cardStyle: React.CSSProperties = { background: "#ffffff", borderRadius: 16, border: "1px solid #e5e7eb", padding: 24 };
-  const greenButtonStyle: React.CSSProperties = { background: "#008409", color: "#fff", border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 15, cursor: "pointer", fontFamily: "inherit", marginTop: 8 };
-  const redButtonStyle: React.CSSProperties = { background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, padding: "4px 12px", cursor: "pointer", fontSize: 18, fontFamily: "inherit", alignSelf: "end", marginBottom: 4 };
-  const sectionHeadingStyle: React.CSSProperties = { fontSize: 18, fontWeight: 600, marginTop: 0, marginBottom: 16 };
-  const subHeadingStyle: React.CSSProperties = { fontSize: 15, fontWeight: 600, marginTop: 20, marginBottom: 8, color: "#374151" };
+  // Shared Tailwind class strings
+  const inputCls = "w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 text-[16px] px-2.5 py-2 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-[inherit] box-border";
+  const labelCls = "block font-medium text-[16px] text-gray-800 dark:text-gray-200";
+  const cardCls  = "bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6";
+  const h3Cls    = "text-[18px] font-semibold mt-0 mb-4 text-gray-900 dark:text-white";
+  const subHCls  = "text-[15px] font-semibold mt-5 mb-2 text-gray-700 dark:text-gray-300";
 
   /* ---------- GENERIC HANDLERS ---------- */
   const handleChange = <T extends GenericObject>(arr: T[], setArr: React.Dispatch<React.SetStateAction<T[]>>, index: number, field: keyof T, value: T[keyof T]) => {
@@ -317,200 +294,193 @@ const labels: Record<typeof status, string> = {
     }
   };
 
-  /* ---------- RESULT ROWS for PDF / summary ---------- */
-  const resultRows = result ? [
-    ...result.reactions.map(r => ({ label: `${r.type} at x = ${fmt(r.location)} m`, value: `${fmt(r.vertical)} kN` })),
-  ] : [];
+  const resultRows = result ? result.reactions.map(r => ({ label: `${r.type} at x = ${fmt(r.location)} m`, value: `${fmt(r.vertical)} kN` })) : [];
 
-  /* ===================== JSX ===================== */
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "transparent", fontFamily: "Georgia, 'Times New Roman', serif", color: "#111", alignItems: "center" }}>
-      <div style={{ width: "100%", maxWidth: 760, padding: "0 16px 40px" }}>
+    // FIX: removed hardcoded inline styles, replaced with Tailwind dark-aware classes
+    <div className="flex flex-col min-h-screen bg-transparent text-gray-900 dark:text-white items-center font-serif">
+      <div className="w-full max-w-[760px] px-4 pb-10">
 
-        <h1 style={{ fontSize: 28, fontWeight: 700, textAlign: "center", marginTop: 28, marginBottom: 4 }}>Non-Concurrent Parallel Force System</h1>
-        <h2 style={{ fontSize: 18, fontWeight: 600, textAlign: "center", marginBottom: 8 }}>Beam Analysis Calculator</h2>
-        <p style={{ color: "#888", fontSize: 13, marginTop: 6, textAlign: "center" }}>Real-Time Free Body Diagram</p>
+        <h1 className="text-[28px] font-bold text-center mt-7 mb-1 text-gray-900 dark:text-white">Non-Concurrent Parallel Force System</h1>
+        <h2 className="text-[18px] font-semibold text-center mb-2 text-gray-900 dark:text-white">Beam Analysis Calculator</h2>
+        <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Real-Time Free Body Diagram</p>
 
-        {/* FBD */}
-        <div style={{ ...cardStyle, marginBottom: 24, padding: 16, border: "1px solid #e5e7eb", minHeight: 200, background: "#ffffff", position: "relative", zIndex: 1 }}>
+        {/* ── FBD ── */}
+        <div className={`${cardCls} mb-6 p-4 min-h-[200px] relative z-[1]`}>
           <BeamFBD beamLength={beamLength} supports={supports} pointLoads={pointLoads} distributedLoads={distributedLoads} result={result} />
         </div>
 
-        {/* INPUT PANELS */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20, position: "relative", zIndex: 1 }}>
+        {/* ── Input panels ── */}
+        <div className="grid grid-cols-2 gap-5 mb-5 relative z-[1]">
 
           {/* BEAM PROPERTIES */}
-          <div style={{ ...cardStyle, background: "#ffffff" }}>
-            <h3 style={sectionHeadingStyle}>Beam Properties</h3>
-            <label style={labelStyle}>Beam Length</label>
-            <input type="number" placeholder="m" value={beamLength} onChange={(e) => { setBeamLength(e.target.value); setResult(null); }} style={inputStyle} />
+          <div className={cardCls}>
+            <h3 className={h3Cls}>Beam Properties</h3>
+            <label className={labelCls}>Beam Length</label>
+            <input type="number" placeholder="m" value={beamLength}
+              onChange={(e) => { setBeamLength(e.target.value); setResult(null); }}
+              className={inputCls} />
 
-            <p style={subHeadingStyle}>Supports</p>
+            <p className={subHCls}>Supports</p>
             {supports.map((s, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, alignItems: "end", marginBottom: 10 }}>
+              <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end mb-2.5">
                 <div>
-                  <label style={labelStyle}>Type</label>
-                  <select value={s.type} onChange={(e) => handleChange(supports, setSupports, i, "type", e.target.value as Support["type"])} style={inputStyle}>
+                  <label className={labelCls}>Type</label>
+                  <select value={s.type} onChange={(e) => handleChange(supports, setSupports, i, "type", e.target.value as Support["type"])} className={inputCls}>
                     <option>Pinned</option>
                     <option>Roller</option>
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>Location (m)</label>
-                  <input type="number" placeholder="m" value={s.location} onChange={(e) => handleChange(supports, setSupports, i, "location", e.target.value)} style={inputStyle} />
+                  <label className={labelCls}>Location (m)</label>
+                  <input type="number" placeholder="m" value={s.location}
+                    onChange={(e) => handleChange(supports, setSupports, i, "location", e.target.value)}
+                    className={inputCls} />
                 </div>
-                {supports.length > 1 && <button onClick={() => removeItem(supports, setSupports, i)} style={redButtonStyle}>–</button>}
+                {supports.length > 1 && (
+                  <button onClick={() => removeItem(supports, setSupports, i)}
+                    className="self-end mb-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-lg px-3 py-1 cursor-pointer text-[18px] transition">–</button>
+                )}
               </div>
             ))}
-            <button onClick={() => addItem(supports, setSupports, { type: "Pinned", location: "" })} style={greenButtonStyle}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#15711b")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#008409")}>+ Add Support</button>
+            <button onClick={() => addItem(supports, setSupports, { type: "Pinned", location: "" })}
+              className="bg-[#008409] hover:bg-[#15711b] text-white border-none rounded-lg px-4 py-2 text-[15px] cursor-pointer mt-2 transition">
+              + Add Support
+            </button>
           </div>
 
           {/* LOADS */}
-          <div style={{ ...cardStyle, background: "#ffffff" }}>
-            <h3 style={sectionHeadingStyle}>Loads</h3>
+          <div className={cardCls}>
+            <h3 className={h3Cls}>Loads</h3>
 
-            <p style={{ ...subHeadingStyle, marginTop: 0 }}>Point Loads</p>
+            <p className={`${subHCls} mt-0`}>Point Loads</p>
             {pointLoads.map((p, i) => (
-              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, alignItems: "end", marginBottom: 10 }}>
+              <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end mb-2.5">
                 <div>
-                  <label style={labelStyle}>Magnitude (kN)</label>
-                  <input type="number" placeholder="kN" value={p.magnitude} onChange={(e) => handleChange(pointLoads, setPointLoads, i, "magnitude", e.target.value)} style={inputStyle} />
+                  <label className={labelCls}>Magnitude (kN)</label>
+                  <input type="number" placeholder="kN" value={p.magnitude}
+                    onChange={(e) => handleChange(pointLoads, setPointLoads, i, "magnitude", e.target.value)}
+                    className={inputCls} />
                 </div>
                 <div>
-                  <label style={labelStyle}>Location (m)</label>
-                  <input type="number" placeholder="m" value={p.location} onChange={(e) => handleChange(pointLoads, setPointLoads, i, "location", e.target.value)} style={inputStyle} />
+                  <label className={labelCls}>Location (m)</label>
+                  <input type="number" placeholder="m" value={p.location}
+                    onChange={(e) => handleChange(pointLoads, setPointLoads, i, "location", e.target.value)}
+                    className={inputCls} />
                 </div>
-                {pointLoads.length > 1 && <button onClick={() => removeItem(pointLoads, setPointLoads, i)} style={redButtonStyle}>–</button>}
+                {pointLoads.length > 1 && (
+                  <button onClick={() => removeItem(pointLoads, setPointLoads, i)}
+                    className="self-end mb-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-lg px-3 py-1 cursor-pointer text-[18px] transition">–</button>
+                )}
               </div>
             ))}
-            <button onClick={() => addItem(pointLoads, setPointLoads, { magnitude: "", location: "" })} style={greenButtonStyle}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#15711b")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#008409")}>+ Add Point Load</button>
+            <button onClick={() => addItem(pointLoads, setPointLoads, { magnitude: "", location: "" })}
+              className="bg-[#008409] hover:bg-[#15711b] text-white border-none rounded-lg px-4 py-2 text-[15px] cursor-pointer mt-2 transition">
+              + Add Point Load
+            </button>
 
-            <p style={subHeadingStyle}>Distributed Loads</p>
+            <p className={subHCls}>Distributed Loads</p>
             {distributedLoads.map((d, i) => (
-              <div key={i} style={{ marginBottom: 14 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 8, alignItems: "end", marginBottom: 6 }}>
+              <div key={i} className="mb-3.5">
+                <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end mb-1.5">
                   <div>
-                    <label style={labelStyle}>Start Position (m)</label>
-                    <input type="number" placeholder="m" value={d.start} onChange={(e) => handleChange(distributedLoads, setDistributedLoads, i, "start", e.target.value)} style={inputStyle} />
+                    <label className={labelCls}>Start Position (m)</label>
+                    <input type="number" placeholder="m" value={d.start}
+                      onChange={(e) => handleChange(distributedLoads, setDistributedLoads, i, "start", e.target.value)}
+                      className={inputCls} />
                   </div>
                   <div>
-                    <label style={labelStyle}>End Position (m)</label>
-                    <input type="number" placeholder="m" value={d.end} onChange={(e) => handleChange(distributedLoads, setDistributedLoads, i, "end", e.target.value)} style={inputStyle} />
+                    <label className={labelCls}>End Position (m)</label>
+                    <input type="number" placeholder="m" value={d.end}
+                      onChange={(e) => handleChange(distributedLoads, setDistributedLoads, i, "end", e.target.value)}
+                      className={inputCls} />
                   </div>
-                  {distributedLoads.length > 1 && <button onClick={() => removeItem(distributedLoads, setDistributedLoads, i)} style={redButtonStyle}>–</button>}
-                  {distributedLoads.length === 1 && <div />}
+                  {distributedLoads.length > 1 ? (
+                    <button onClick={() => removeItem(distributedLoads, setDistributedLoads, i)}
+                      className="self-end mb-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-lg px-3 py-1 cursor-pointer text-[18px] transition">–</button>
+                  ) : <div />}
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label style={labelStyle}>Start Mag. (kN/m)</label>
-                    <input type="number" placeholder="kN/m" value={d.startMag} onChange={(e) => handleChange(distributedLoads, setDistributedLoads, i, "startMag", e.target.value)} style={inputStyle} />
+                    <label className={labelCls}>Start Mag. (kN/m)</label>
+                    <input type="number" placeholder="kN/m" value={d.startMag}
+                      onChange={(e) => handleChange(distributedLoads, setDistributedLoads, i, "startMag", e.target.value)}
+                      className={inputCls} />
                   </div>
                   <div>
-                    <label style={labelStyle}>End Mag. (kN/m)</label>
-                    <input type="number" placeholder="kN/m" value={d.endMag} onChange={(e) => handleChange(distributedLoads, setDistributedLoads, i, "endMag", e.target.value)} style={inputStyle} />
+                    <label className={labelCls}>End Mag. (kN/m)</label>
+                    <input type="number" placeholder="kN/m" value={d.endMag}
+                      onChange={(e) => handleChange(distributedLoads, setDistributedLoads, i, "endMag", e.target.value)}
+                      className={inputCls} />
                   </div>
                 </div>
               </div>
             ))}
-            <button onClick={() => addItem(distributedLoads, setDistributedLoads, { start: "", end: "", startMag: "", endMag: "" })} style={greenButtonStyle}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#15711b")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#008409")}>+ Add Distributed Load</button>
+            <button onClick={() => addItem(distributedLoads, setDistributedLoads, { start: "", end: "", startMag: "", endMag: "" })}
+              className="bg-[#008409] hover:bg-[#15711b] text-white border-none rounded-lg px-4 py-2 text-[15px] cursor-pointer mt-2 transition">
+              + Add Distributed Load
+            </button>
           </div>
         </div>
 
-        {/* ERROR */}
+        {/* ── Error ── */}
         {error && (
-          <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, padding: "12px 16px", marginBottom: 16, color: "#991b1b", fontSize: 15 }}>
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg px-4 py-3 mb-4 text-red-800 dark:text-red-300 text-[15px]">
             ⚠ {error}
           </div>
         )}
 
-        {/* CALCULATE */}
-        <button
-          onClick={calculate}
-          style={{ width: "100%", background: "#1848a0", color: "#fff", border: "none", borderRadius: 8, padding: "14px 0", fontSize: 16, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", marginBottom: 20 }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#163d8a")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#1848a0")}
-        >
+        {/* ── Calculate ── */}
+        <button onClick={calculate}
+          className="w-full bg-[#1848a0] hover:bg-[#163d8a] text-white border-none rounded-lg py-3.5 text-[16px] font-semibold cursor-pointer mb-5 transition font-[inherit]">
           Calculate
         </button>
 
-        {/* RESULTS */}
+        {/* ── Results ── */}
         {result && (
-          <div style={{ ...cardStyle, marginBottom: 20 }}>
-            <h2 style={{ fontSize: 18, fontWeight: 600, marginTop: 0, marginBottom: 14 }}>Reactions</h2>
+          <div className={`${cardCls} mb-5`}>
+            <h2 className="text-[18px] font-semibold mt-0 mb-3.5 text-gray-900 dark:text-white">Reactions</h2>
             {result.reactions.map((r, i) => (
-              <div key={i} style={{ marginBottom: 10 }}>
-                <label style={labelStyle}>{r.type} at x = {r.location} m</label>
+              <div key={i} className="mb-2.5">
+                <label className={labelCls}>{r.type} at x = {r.location} m</label>
                 <input type="text" readOnly value={`R = ${fmt(r.vertical)} kN`}
-                  style={{ ...inputStyle, background: "#f9fafb", color: "#374151" }} />
+                  className="w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 text-[16px] px-2.5 py-2 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 outline-none" />
               </div>
             ))}
 
-
-            {/* Results summary tiles */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 16 }}>
+            {/* Result tiles */}
+            <div className="grid grid-cols-2 gap-2 mt-4">
               {resultRows.map((row, i) => (
-                <div key={i} style={{ background: "#f5f8ff", borderRadius: 10, border: "1px solid #dce8ff", padding: "10px 14px" }}>
-                  <div style={{ fontSize: 11, color: "#888", marginBottom: 2 }}>{row.label}</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#1848a0" }}>{row.value}</div>
+                <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[10px] border border-blue-100 dark:border-gray-600 px-3.5 py-2.5">
+                  <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">{row.label}</div>
+                  <div className="text-[15px] font-bold text-[#1848a0] dark:text-blue-400">{row.value}</div>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* STEP BY STEP */}
+        {/* ── Step by Step ── */}
         {result && (
-          <div style={{ ...cardStyle, marginBottom: 20 }}>
-{/* PDF export button */}
-{/* PDF export button */}
-<button
-  onClick={() => {
-    setStatus("generating");
-    const payload = {
-      beamLength,
-      supports,
-      pointLoads,
-      distributedLoads,
-      reactions: result.reactions,
-      steps: result.steps,
-      resultRows,
-    };
-    const encoded = encodeURIComponent(JSON.stringify(payload));
-    window.open(`/print/beam?data=${encoded}`, "_blank");
-    setStatus("done");
-    setTimeout(() => setStatus("idle"), 2500);
-  }}
-  disabled={off}
-  style={{
-    width: "100%",
-    padding: "12px 0",
-    border: "none",
-    borderRadius: 10,
-    fontSize: 14,
-    fontWeight: 600,
-    fontFamily: "inherit",
-    background: off ? "#94a3b8" : "linear-gradient(135deg, #0f2d6b, #1848a0)",
-    color: "#fff",
-    boxShadow: off ? "none" : "0 4px 14px rgba(24,72,160,0.25)",
-    marginBottom: 14,
-    opacity: off ? 0.65 : 1,
-    cursor: off ? "not-allowed" : "pointer",
-  }}
->
-  {labels[status]}
-</button>
+          <div className={`${cardCls} mb-5`}>
+            <button
+              onClick={() => {
+                setStatus("generating");
+                const payload = { beamLength, supports, pointLoads, distributedLoads, reactions: result.reactions, steps: result.steps, resultRows };
+                const encoded = encodeURIComponent(JSON.stringify(payload));
+                window.open(`/print/beam?data=${encoded}`, "_blank");
+                setStatus("done");
+                setTimeout(() => setStatus("idle"), 2500);
+              }}
+              disabled={off}
+              className={`w-full py-3 border-none rounded-[10px] text-[14px] font-semibold text-white mb-3.5 transition font-[inherit] ${
+                off ? "opacity-60 cursor-not-allowed bg-[#1848a0]" : "cursor-pointer bg-[#1848a0] hover:bg-[#163d8a]"
+              }`}
+            >
+              {labels[status]}
+            </button>
 
-            {/* StepByStep renderer */}
-            <StepByStepSolution
-              steps={fromLegacySteps(result.steps)}
-              title="Step-by-Step Solution"
-            />
+            <StepByStepSolution steps={fromLegacySteps(result.steps)} title="Step-by-Step Solution" />
           </div>
         )}
 
@@ -523,4 +493,3 @@ const fmt = (n: number): string => {
   if (Math.abs(n - Math.round(n)) < 1e-9) return Math.round(n).toString();
   return n.toFixed(2);
 };
-

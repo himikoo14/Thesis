@@ -10,9 +10,7 @@ import { computeCustomAxis } from "../../lib/MOIcustom";
 import ShapeSelectDropdown from "../../components/ShapeSelectDropdown";
 import type { ShapeType } from "../../types/shapes";
 
-
 /* ── KaTeX via CDN ─────────────────────────────────────────────────────────── */
-
 function useKatexScript() {
   const [ok, setOk] = useState(false);
   useEffect(() => {
@@ -45,12 +43,12 @@ function KTX({ tex }: { tex: string }) {
   }, [tex]);
   const ready = useKatexScript();
   if (!ready) return null;
-  return <div ref={ref} style={{ margin: "3px 0", overflowX: "auto" }} />;
+  // FIX: dark mode KaTeX text
+  return <div ref={ref} className="my-0.5 overflow-x-auto dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white" />;
 }
 
 /* ===================== TYPES ===================== */
 type XY = { x: string; y: string };
-
 type ShapeData = {
   type: ShapeType;
   hollow: "Hollow" | "Solid";
@@ -61,7 +59,6 @@ type ShapeData = {
   x: string;
   y: string;
 };
-
 type MOIResult = {
   step1: any[];
   centroid: { totalArea: number; centroidX: number; centroidY: number };
@@ -70,7 +67,6 @@ type MOIResult = {
   customMOI?: { Ix: number; Iy: number; shapes: { dx: number; dy: number; Ix: number; Iy: number }[] };
   final: { Ix: number; Iy: number };
 };
-
 type StepLine =
   | { kind: "heading"; text: string }
   | { kind: "subheading"; text: string }
@@ -82,37 +78,29 @@ type StepLine =
 /* ===================== STEP RENDERER ===================== */
 function MOIStepRenderer({ lines }: { lines: StepLine[] }) {
   return (
-    <div style={{ lineHeight: 1.8 }}>
+    <div className="leading-relaxed">
       {lines.map((line, idx) => {
         switch (line.kind) {
           case "heading":
-            return (
-              <p key={idx} style={{ fontWeight: 700, fontSize: 16, color: "#1848a0", marginTop: 16, marginBottom: 2 }}>
-                {line.text}
-              </p>
-            );
+            // FIX: was hardcoded color "#1848a0"
+            return <p key={idx} className="font-bold text-[16px] text-[#1848a0] dark:text-blue-400 mt-4 mb-0.5">{line.text}</p>;
           case "subheading":
-            return (
-              <p key={idx} style={{ fontWeight: 600, fontSize: 14, color: "#374151", marginTop: 10, marginBottom: 2 }}>
-                {line.text}
-              </p>
-            );
+            // FIX: was hardcoded color "#374151"
+            return <p key={idx} className="font-semibold text-[14px] text-gray-700 dark:text-gray-300 mt-2.5 mb-0.5">{line.text}</p>;
           case "text":
-            return (
-              <p key={idx} style={{ color: "#555", margin: "2px 0", fontSize: 14 }}>
-                {line.text}
-              </p>
-            );
+            // FIX: was hardcoded color "#555"
+            return <p key={idx} className="text-gray-600 dark:text-gray-400 my-0.5 text-[14px]">{line.text}</p>;
           case "eq":
             return <KTX key={idx} tex={line.tex} />;
           case "result":
+            // FIX: was hardcoded bg "#f0f4ff" with blue left border
             return (
-              <div key={idx} style={{ background: "#f0f4ff", borderLeft: "3px solid #1848a0", borderRadius: 6, padding: "4px 12px", margin: "4px 0" }}>
+              <div key={idx} className="bg-blue-50 dark:bg-blue-900/30 border-l-[3px] border-[#1848a0] dark:border-blue-500 rounded-[6px] px-3 py-1 my-1">
                 <KTX tex={line.tex} />
               </div>
             );
           case "spacer":
-            return <div key={idx} style={{ height: 8 }} />;
+            return <div key={idx} className="h-2" />;
           default:
             return null;
         }
@@ -121,18 +109,12 @@ function MOIStepRenderer({ lines }: { lines: StepLine[] }) {
   );
 }
 
-/* ===================== PDF EXPORT ===================== */
-
-
-
-
 /* ===================== HELPERS ===================== */
 const fmtS = (n: number, _d = 4) => {
   const rounded = Math.round(n * 100) / 100;
   return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2);
 };
 
-/* ===================== ORDER NODES BY SIDES ===================== */
 function orderNodesBySides(nodes: XY[], sides: { a: number; b: number }[]): XY[] {
   if (sides.length === 0) return nodes;
   const adj: Map<number, number[]> = new Map();
@@ -162,14 +144,13 @@ function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", 
   const { totalArea, centroidX, centroidY } = computed.centroid;
   const { Ix: IxC, Iy: IyC } = computed.centroidMOI!;
 
-  const H = (text: string) => lines.push({ kind: "heading", text });
+  const H  = (text: string) => lines.push({ kind: "heading", text });
   const SH = (text: string) => lines.push({ kind: "subheading", text });
-  const T = (text: string) => lines.push({ kind: "text", text });
-  const E = (tex: string) => lines.push({ kind: "eq", tex });
-  const R = (tex: string) => lines.push({ kind: "result", tex });
-  const SP = () => lines.push({ kind: "spacer" });
+  const T  = (text: string) => lines.push({ kind: "text", text });
+  const E  = (tex: string)  => lines.push({ kind: "eq", tex });
+  const R  = (tex: string)  => lines.push({ kind: "result", tex });
+  const SP = ()             => lines.push({ kind: "spacer" });
 
-  /* ── Step 1 ── */
   H("Step 1: Individual Shape Properties");
   if (computed.step1?.length > 0) {
     computed.step1.forEach((shape: any, i: number) => {
@@ -185,14 +166,9 @@ function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", 
     T("No shape data available.");
   }
 
-  /* ══════════════════════════════════════════════════
-     CENTROIDAL PATH — Steps 2, 3, 4
-  ══════════════════════════════════════════════════ */
   if (axisType === "Centroidal") {
-
-    /* ── Step 2 ── */
     H("Step 2: Composite Centroid");
-    const aTerms = computed.step1?.map((sh: any) => sh.hollow === "Hollow" ? `(-${fmtS(Math.abs(sh.area), 3)})` : fmtS(sh.area, 3)).join(" + ") || "0";
+    const aTerms  = computed.step1?.map((sh: any) => sh.hollow === "Hollow" ? `(-${fmtS(Math.abs(sh.area), 3)})` : fmtS(sh.area, 3)).join(" + ") || "0";
     const axTerms = computed.step1?.map((sh: any) => sh.hollow === "Hollow" ? `(-${fmtS(Math.abs(sh.area), 3)})(${fmtS(sh.cx, 3)})` : `(${fmtS(sh.area, 3)})(${fmtS(sh.cx, 3)})`).join(" + ") || "0";
     const ayTerms = computed.step1?.map((sh: any) => sh.hollow === "Hollow" ? `(-${fmtS(Math.abs(sh.area), 3)})(${fmtS(sh.cy, 3)})` : `(${fmtS(sh.area, 3)})(${fmtS(sh.cy, 3)})`).join(" + ") || "0";
     E(`\\Sigma A = ${aTerms} = ${fmtS(totalArea, 4)} \\text{ units}^2`);
@@ -200,7 +176,6 @@ function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", 
     E(`\\bar{Y} = \\dfrac{\\Sigma A_i \\bar{y}_i}{\\Sigma A} = \\dfrac{${ayTerms}}{${fmtS(totalArea, 3)}} = ${fmtS(centroidY, 4)}`);
     SP();
 
-    /* ── Step 3 ── */
     H("Step 3: Parallel Axis Theorem");
     E(`I_{x} = \\Sigma\\left(I_{x,i} + A_i \\, d_{y,i}^2\\right), \\quad I_{y} = \\Sigma\\left(I_{y,i} + A_i \\, d_{x,i}^2\\right)`);
     SP();
@@ -222,7 +197,6 @@ function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", 
       });
     }
 
-    /* ── Step 4 ── */
     H("Step 4: Composite MOI About Centroidal Axis");
     const IxTerms = computed.step3.map((sh: any) => fmtS(sh.Ix_transferred ?? sh.Ix_own ?? 0, 4)).join(" + ");
     const IyTerms = computed.step3.map((sh: any) => fmtS(sh.Iy_transferred ?? sh.Iy_own ?? 0, 4)).join(" + ");
@@ -231,14 +205,10 @@ function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", 
     SP();
   }
 
-  /* ══════════════════════════════════════════════════
-     CUSTOM AXIS PATH — Step 2 only (direct transfer)
-  ══════════════════════════════════════════════════ */
   if (axisType === "Custom" && computed.customMOI) {
-    H(`Step 2: Parallel Axis Theorem `);
+    H(`Step 2: Parallel Axis Theorem`);
     E(`I_{x} = \\Sigma\\left(I_{x,i} + A_i \\, d_{y,i}^2\\right), \\quad I_{y} = \\Sigma\\left(I_{y,i} + A_i \\, d_{x,i}^2\\right)`);
     SP();
-
     computed.customMOI.shapes.forEach((sh: any, i: number) => {
       const s1 = computed.step1[i];
       SH(`Shape ${i + 1}`);
@@ -252,8 +222,6 @@ function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", 
       E(`I_{y,${i + 1}}' = ${dispIyOwn} + (${dispA})(${fmtS(sh.dx)})^2 = ${fmtS(sh.Iy)}`);
       SP();
     });
-
-    /* ── Step 3 (custom) — summation ── */
     H("Step 3: Composite MOI About Custom Axis");
     const IxTerms = computed.customMOI.shapes.map((sh: any) => fmtS(sh.Ix)).join(" + ");
     const IyTerms = computed.customMOI.shapes.map((sh: any) => fmtS(sh.Iy)).join(" + ");
@@ -262,7 +230,6 @@ function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", 
     SP();
   }
 
-  /* ── Final Result ── */
   H("Final Result");
   if (axisType === "Custom" && computed.customMOI) {
     R(`I_x = ${fmtS(computed.customMOI.Ix, 4)} \\text{ units}^4`);
@@ -281,23 +248,17 @@ export default function DistributedLoadPage() {
   const [axisType, setAxisType] = useState<"Centroidal" | "Custom">("Centroidal");
   const [axisX, setAxisX] = useState("");
   const [axisY, setAxisY] = useState("");
-
   const [shapes, setShapes] = useState<ShapeData[]>([{
     type: "Polygon", hollow: "Solid", isOpen: true,
     nodes: [{ x: "", y: "" }, { x: "", y: "" }],
     sides: [{ a: 0, b: 1 }],
     radius: "", x: "", y: "",
   }]);
-
   const [result, setResult] = useState<any>(null);
   const [stepLines, setStepLines] = useState<StepLine[]>([]);
-
-  const [status, setStatus] = useState<
-    "idle" | "generating" | "done" | "error"
-  >("idle");
+  const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
 
   const off = status === "generating";
-
   const labels: Record<typeof status, string> = {
     idle: "⬇ Download Solution as PDF",
     generating: "⏳ Opening print view…",
@@ -307,43 +268,24 @@ export default function DistributedLoadPage() {
 
   const formatNumber = (num: number) => Number(num.toFixed(3));
 
-  /* ── All solving delegated to engines ── */
   const calculateResultant = () => {
     const orderedShapes = shapes.map(shape => {
       if (shape.type !== "Polygon") return shape;
       return { ...shape, nodes: orderNodesBySides(shape.nodes, shape.sides) };
     });
-
-    // Step 1–4: centroidal MOI from MOIEngine
     const centroidal = computeMOI(orderedShapes) as MOIResult;
     centroidal.centroidMOI = { Ix: centroidal.final.Ix, Iy: centroidal.final.Iy };
-
-    // Step 5: custom axis from MOIcustom (only if needed)
     let customMOI: MOIResult["customMOI"] | undefined = undefined;
     if (axisType === "Custom") {
       const shapeMOIInputs = centroidal.step1.map((sh: any) => ({
-        Ix: sh.Ix_own,
-        Iy: sh.Iy_own,
-        area: sh.signedArea,  // ✅ was sh.area
-        centroidX: sh.cx,
-        centroidY: sh.cy,
+        Ix: sh.Ix_own, Iy: sh.Iy_own, area: sh.signedArea, centroidX: sh.cx, centroidY: sh.cy,
       }));
-
-      customMOI = computeCustomAxis(
-        shapeMOIInputs,
-        Number(axisX),
-        Number(axisY),
-      );
+      customMOI = computeCustomAxis(shapeMOIInputs, Number(axisX), Number(axisY));
     }
-
     const finalResult: MOIResult = {
-      ...centroidal,
-      customMOI,
-      final: axisType === "Custom" && customMOI
-        ? { Ix: customMOI.Ix, Iy: customMOI.Iy }
-        : centroidal.centroidMOI,
+      ...centroidal, customMOI,
+      final: axisType === "Custom" && customMOI ? { Ix: customMOI.Ix, Iy: customMOI.Iy } : centroidal.centroidMOI,
     };
-
     setResult(finalResult);
     setStepLines(buildStepLines(finalResult, axisType, axisX, axisY));
   };
@@ -373,7 +315,6 @@ export default function DistributedLoadPage() {
     return label;
   };
 
-  /* ── Result rows for PDF summary ── */
   const resultRows = result ? [
     { label: "Total Area", value: `${formatNumber(result.centroid.totalArea)} units²` },
     { label: "Centroid X̄", value: `${formatNumber(result.centroid.centroidX)}` },
@@ -386,54 +327,49 @@ export default function DistributedLoadPage() {
     ] : []),
   ] : [];
 
-  /* ===================== JSX ===================== */
+  // Shared classes
+  const cardCls   = "bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-100 dark:border-gray-700";
+  const inputCls  = "w-full rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-3 py-1 focus:outline-none text-gray-900 dark:text-white";
+  const selectCls = "w-full rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-3 py-2 focus:outline-none text-gray-900 dark:text-white";
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100 text-gray-900">
+    // FIX: added dark:bg-gray-900 dark:text-white
+    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
       <Header />
 
       <main className="flex-grow max-w-7xl mx-auto px-6 py-10">
-        <h1 className="text-3xl font-bold mb-8 text-center">
+        <h1 className="text-3xl font-bold mb-8 text-center text-gray-900 dark:text-white">
           Moment of Inertia for Composite Shapes Calculator
         </h1>
 
-        <ShapeCanvas
-          shapes={shapes}
-          axisType={axisType}
-          axisX={Number(axisX)}
-          axisY={Number(axisY)}
-        />
+        <ShapeCanvas shapes={shapes} axisType={axisType} axisX={Number(axisX)} axisY={Number(axisY)} />
 
-        <p className="text-sm text-gray-700 mb-4">
+        <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
           <span className="font-semibold">Note:</span> The most lower left point of the composite shape should be at (0,0).
         </p>
 
         <div className="flex items-start gap-6 flex-wrap">
-          {/* LEFT COLUMN */}
+
+          {/* ── LEFT COLUMN ── */}
           <div className="flex flex-col w-[300px] shrink-0">
 
             {/* Reference Axis */}
-            <div className="bg-white rounded-xl shadow p-4 relative z-10">
-              <h3 className="font-semibold mb-3">Reference Axis</h3>
-              <select
-                value={axisType}
-                onChange={e => setAxisType(e.target.value as "Centroidal" | "Custom")}
-                className="w-full rounded bg-white px-3 py-2 mb-4 focus:outline-none"
-              >
+            <div className={`${cardCls} p-4 relative z-10`}>
+              <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">Reference Axis</h3>
+              <select value={axisType} onChange={e => setAxisType(e.target.value as "Centroidal" | "Custom")} className={selectCls}>
                 <option value="Centroidal">Centroidal Axis</option>
                 <option value="Custom">Custom Axis</option>
               </select>
 
               {axisType === "Custom" && (
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3 mt-4">
                   <div className="flex items-center gap-2">
-                    <span className="w-20">x-Axis</span>
-                    <input value={axisX} onChange={e => setAxisX(e.target.value)} placeholder="x"
-                      className="w-full rounded bg-gray-100 px-3 py-1 focus:outline-none" />
+                    <span className="w-20 dark:text-gray-300">x-Axis</span>
+                    <input value={axisX} onChange={e => setAxisX(e.target.value)} placeholder="x" className={inputCls} />
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-20">y-Axis</span>
-                    <input value={axisY} onChange={e => setAxisY(e.target.value)} placeholder="y"
-                      className="w-full rounded bg-gray-100 px-3 py-1 focus:outline-none" />
+                    <span className="w-20 dark:text-gray-300">y-Axis</span>
+                    <input value={axisY} onChange={e => setAxisY(e.target.value)} placeholder="y" className={inputCls} />
                   </div>
                 </div>
               )}
@@ -449,36 +385,43 @@ export default function DistributedLoadPage() {
 
             {/* Quick Results Panel */}
             {result && (
-              <div className="mt-6 bg-white rounded-xl shadow p-4 relative z-10">
-                <h3 className="font-semibold mb-3 text-blue-900">Quick Results</h3>
-                <p className="text-sm mb-1"><span className="font-medium">Total Area:</span> {formatNumber(result.centroid.totalArea)}</p>
-                <p className="text-sm mb-1"><span className="font-medium">Centroid X̄:</span> {formatNumber(result.centroid.centroidX)}</p>
-                <p className="text-sm mb-1"><span className="font-medium">Centroid Ȳ:</span> {formatNumber(result.centroid.centroidY)}</p>
-                <hr className="my-3" />
-                <p className="text-sm mb-1"><span className="font-medium">Ix (centroid):</span> {formatNumber(result.centroidMOI.Ix)}</p>
-                <p className="text-sm mb-1"><span className="font-medium">Iy (centroid):</span> {formatNumber(result.centroidMOI.Iy)}</p>
+              <div className={`${cardCls} mt-6 p-4 relative z-10`}>
+                <h3 className="font-semibold mb-3 text-[#1848a0] dark:text-blue-400">Quick Results</h3>
+                {[
+                  ["Total Area", formatNumber(result.centroid.totalArea)],
+                  ["Centroid X̄", formatNumber(result.centroid.centroidX)],
+                  ["Centroid Ȳ", formatNumber(result.centroid.centroidY)],
+                ].map(([label, val]) => (
+                  <p key={label as string} className="text-sm mb-1">
+                    <span className="font-medium dark:text-gray-200">{label}:</span>
+                    <span className="dark:text-gray-300"> {val as string}</span>
+                  </p>
+                ))}
+                <hr className="my-3 border-gray-200 dark:border-gray-600" />
+                <p className="text-sm mb-1"><span className="font-medium dark:text-gray-200">Ix (centroid):</span> <span className="dark:text-gray-300">{formatNumber(result.centroidMOI.Ix)}</span></p>
+                <p className="text-sm mb-1"><span className="font-medium dark:text-gray-200">Iy (centroid):</span> <span className="dark:text-gray-300">{formatNumber(result.centroidMOI.Iy)}</span></p>
                 {axisType === "Custom" && result.customMOI && (
                   <>
-                    <hr className="my-3" />
-                    <p className="text-sm font-semibold text-gray-700 mb-1">About Custom Axis:</p>
-                    <p className="text-sm mb-1"><span className="font-medium">Ix:</span> {formatNumber(result.customMOI.Ix)}</p>
-                    <p className="text-sm mb-1"><span className="font-medium">Iy:</span> {formatNumber(result.customMOI.Iy)}</p>
+                    <hr className="my-3 border-gray-200 dark:border-gray-600" />
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">About Custom Axis:</p>
+                    <p className="text-sm mb-1"><span className="font-medium dark:text-gray-200">Ix:</span> <span className="dark:text-gray-300">{formatNumber(result.customMOI.Ix)}</span></p>
+                    <p className="text-sm mb-1"><span className="font-medium dark:text-gray-200">Iy:</span> <span className="dark:text-gray-300">{formatNumber(result.customMOI.Iy)}</span></p>
                   </>
                 )}
               </div>
             )}
           </div>
 
-          {/* Shape Cards */}
+          {/* ── Shape Cards ── */}
           <div className="flex flex-wrap gap-6 flex-1">
             {shapes.map((shape, index) => {
               const isCircular = shape.type !== "Polygon";
               return (
-                <div key={index} className="bg-white rounded-xl shadow px-6 py-4 w-[340px] relative z-10">
+                <div key={index} className={`${cardCls} px-6 py-4 w-[340px] relative z-10`}>
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold">Shape {index + 1}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">Shape {index + 1}</h3>
                     <button onClick={() => handleRemoveShape(index)}
-                      className="w-8 h-8 bg-red-500 text-white rounded-lg font-bold">–</button>
+                      className="w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold transition">–</button>
                   </div>
 
                   <button
@@ -498,7 +441,7 @@ export default function DistributedLoadPage() {
 
                       <select value={shape.hollow}
                         onChange={e => { const copy = [...shapes]; copy[index].hollow = e.target.value as "Hollow" | "Solid"; setShapes(copy); }}
-                        className="w-full rounded px-3 py-1">
+                        className={selectCls}>
                         <option>Hollow</option>
                         <option>Solid</option>
                       </select>
@@ -506,23 +449,23 @@ export default function DistributedLoadPage() {
                       {shape.type === "Polygon" && (
                         <div className="space-y-5">
                           <div>
-                            <h4 className="font-semibold mb-2">Vertices</h4>
+                            <h4 className="font-semibold mb-2 dark:text-white">Vertices</h4>
                             {shape.nodes.map((node, i) => (
                               <div key={i} className="flex items-center gap-2 mb-2">
-                                <span className="w-16">Vertex {getJointLabel(index, i)}</span>
+                                <span className="w-16 text-[14px] dark:text-gray-300">Vertex {getJointLabel(index, i)}</span>
                                 <input placeholder="x" value={node.x}
                                   onChange={e => { const copy = [...shapes]; copy[index].nodes[i].x = e.target.value; setShapes(copy); }}
-                                  className="w-20 rounded bg-gray-100 px-2 py-1 focus:outline-none" />
+                                  className={inputCls + " w-20"} />
                                 <input placeholder="y" value={node.y}
                                   onChange={e => { const copy = [...shapes]; copy[index].nodes[i].y = e.target.value; setShapes(copy); }}
-                                  className="w-20 rounded bg-gray-100 px-2 py-1 focus:outline-none" />
+                                  className={inputCls + " w-20"} />
                                 <button onClick={() => {
                                   if (shape.nodes.length <= 2) return;
                                   const copy = [...shapes];
                                   copy[index].nodes.splice(i, 1);
                                   copy[index].sides = copy[index].sides.filter(s => s.a !== i && s.b !== i);
                                   setShapes(copy);
-                                }} className="bg-red-500 text-white px-3 py-1 rounded">–</button>
+                                }} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition">–</button>
                               </div>
                             ))}
                             <button onClick={() => { const copy = [...shapes]; copy[index].nodes.push({ x: "", y: "" }); setShapes(copy); }}
@@ -530,22 +473,22 @@ export default function DistributedLoadPage() {
                           </div>
 
                           <div>
-                            <h4 className="font-semibold mb-2">Sides</h4>
+                            <h4 className="font-semibold mb-2 dark:text-white">Sides</h4>
                             {shape.sides.map((side, i) => (
                               <div key={i} className="flex items-center gap-2 mb-2">
-                                <span className="w-12">Side</span>
+                                <span className="w-12 text-[14px] dark:text-gray-300">Side</span>
                                 <select value={side.a}
                                   onChange={e => { const copy = [...shapes]; copy[index].sides[i].a = Number(e.target.value); setShapes(copy); }}
-                                  className="w-24 rounded bg-gray-100 px-2 py-1 focus:outline-none">
+                                  className={inputCls + " w-24"}>
                                   {shape.nodes.map((_, j) => <option key={j} value={j}>Vertex {getJointLabel(index, j)}</option>)}
                                 </select>
                                 <select value={side.b}
                                   onChange={e => { const copy = [...shapes]; copy[index].sides[i].b = Number(e.target.value); setShapes(copy); }}
-                                  className="w-24 rounded bg-gray-100 px-2 py-1 focus:outline-none">
+                                  className={inputCls + " w-24"}>
                                   {shape.nodes.map((_, j) => <option key={j} value={j}>Vertex {getJointLabel(index, j)}</option>)}
                                 </select>
                                 <button onClick={() => { const copy = [...shapes]; copy[index].sides.splice(i, 1); setShapes(copy); }}
-                                  className="bg-red-500 text-white px-3 py-1 rounded">–</button>
+                                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition">–</button>
                               </div>
                             ))}
                             <button onClick={() => {
@@ -577,11 +520,12 @@ export default function DistributedLoadPage() {
           </div>
         </div>
 
-        {/* ══════════════ SOLUTION DISPLAY ══════════════ */}
+        {/* ══ SOLUTION DISPLAY ══ */}
         {result && stepLines.length > 0 && (
-          <div className="mt-10 bg-white rounded-xl shadow-sm border border-gray-100 relative z-10">
-            <div className="px-5 py-3 border-b border-gray-100">
-              <h3 className="text-[15px] font-semibold text-gray-800 tracking-wide">Step-by-Step Solution</h3>
+          // FIX: replaced hardcoded bg-white with dark-aware classes
+          <div className={`${cardCls} mt-10 relative z-10`}>
+            <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-700">
+              <h3 className="text-[15px] font-semibold text-gray-800 dark:text-white tracking-wide">Step-by-Step Solution</h3>
             </div>
             <div className="px-6 py-5">
               <button
@@ -594,8 +538,7 @@ export default function DistributedLoadPage() {
                   setTimeout(() => setStatus("idle"), 2500);
                 }}
                 disabled={off}
-                className={`w-full mb-4 py-3 rounded-xl font-semibold text-white transition ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
-                  }`}
+                className={`w-full mb-4 py-3 rounded-xl font-semibold text-white transition ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"}`}
               >
                 {labels[status]}
               </button>

@@ -107,23 +107,23 @@ export default function ShapeSelectDropdown({
             <button
                 type="button"
                 onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center gap-2 rounded px-3 py-1 bg-white border border-gray-200 hover:border-gray-400 transition text-left"
+                className="w-full flex items-center gap-2 rounded px-3 py-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-400 transition text-left"
             >
-                <span className="text-gray-700">{SHAPE_ICONS[value]}</span>
-                <span className="flex-1 text-sm">{SHAPE_LABELS[value]}</span>
+                <span className="text-gray-700 dark:text-gray-300">{SHAPE_ICONS[value]}</span>
+                <span className="flex-1 text-sm text-gray-900 dark:text-white">{SHAPE_LABELS[value]}</span>
                 <span className={`transition-transform text-xs text-gray-400 ${open ? "rotate-180" : ""}`}>▼</span>
             </button>
 
             {/* Dropdown list */}
             {open && (
-                <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
                     {ALL_SHAPES.map(shape => (
                         <button
                             key={shape}
                             type="button"
                             onClick={() => { onChange(shape); setOpen(false); }}
-                            className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-blue-50 transition text-left
-                ${value === shape ? "bg-blue-100 text-blue-800 font-semibold" : "text-gray-700"}`}
+                            className={`w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/40 transition text-left
+  ${value === shape ? "bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 font-semibold" : "text-gray-700 dark:text-gray-300"}`}
                         >
                             <span>{SHAPE_ICONS[shape]}</span>
                             <span>{SHAPE_LABELS[shape]}</span>
