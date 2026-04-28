@@ -2,7 +2,23 @@
 
 import { useRef, useEffect, useState } from "react";
 import * as THREE from "three";
-import { StepByStepPDFExport } from "../ToPDF/Page";
+
+/* ================================================================
+   DARK MODE HOOK — reactive to toggle
+================================================================ */
+function useDarkMode() {
+  const [dark, setDark] = useState(
+    typeof window !== "undefined" && document.documentElement.classList.contains("dark")
+  );
+  useEffect(() => {
+    const obs = new MutationObserver(() =>
+      setDark(document.documentElement.classList.contains("dark"))
+    );
+    obs.observe(document.documentElement, { attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+  return dark;
+}
 
 /* ================================================================
    FORCE SYSTEM LOGIC
@@ -29,9 +45,9 @@ class ForceSystem3D {
       steps.push(`\\text{Force ${i + 1}: }|F|=${v.magnitude}\\,\\text{kN},\\;\\phi=${v.azimuthDeg}^\\circ,\\;\\alpha=${v.elevationDeg}^\\circ`);
       steps.push(
         `\\begin{align*}` +
-        `F_{x${i + 1}}&=${v.magnitude}\\cos(${v.elevationDeg}^\\circ)\\cos(${v.azimuthDeg}^\\circ)=${v.fx.toFixed(3)}\\,\\text{kN}\\\\` +
-        `F_{y${i + 1}}&=${v.magnitude}\\cos(${v.elevationDeg}^\\circ)\\sin(${v.azimuthDeg}^\\circ)=${v.fy.toFixed(3)}\\,\\text{kN}\\\\` +
-        `F_{z${i + 1}}&=${v.magnitude}\\sin(${v.elevationDeg}^\\circ)=${v.fz.toFixed(3)}\\,\\text{kN}` +
+        `F_{x${i+1}}&=${v.magnitude}\\cos(${v.elevationDeg}^\\circ)\\cos(${v.azimuthDeg}^\\circ)=${v.fx.toFixed(3)}\\,\\text{kN}\\\\` +
+        `F_{y${i+1}}&=${v.magnitude}\\cos(${v.elevationDeg}^\\circ)\\sin(${v.azimuthDeg}^\\circ)=${v.fy.toFixed(3)}\\,\\text{kN}\\\\` +
+        `F_{z${i+1}}&=${v.magnitude}\\sin(${v.elevationDeg}^\\circ)=${v.fz.toFixed(3)}\\,\\text{kN}` +
         `\\end{align*}`
       );
       sumFx += v.fx; sumFy += v.fy; sumFz += v.fz;
@@ -45,7 +61,7 @@ class ForceSystem3D {
       `\\end{align*}`
     );
     const R = Math.sqrt(sumFx ** 2 + sumFy ** 2 + sumFz ** 2);
-    const azimuth = (Math.atan2(sumFy, sumFx) * 180) / Math.PI;
+    const azimuth   = (Math.atan2(sumFy, sumFx) * 180) / Math.PI;
     const elevation = (Math.asin(sumFz / (R || 1)) * 180) / Math.PI;
     steps.push("Step 3: Resultant force:");
     steps.push(
@@ -57,24 +73,14 @@ class ForceSystem3D {
     );
     if (R > 0.0001) {
       const alpha = (Math.acos(sumFx / R) * 180) / Math.PI;
-      const beta = (Math.acos(sumFy / R) * 180) / Math.PI;
+      const beta  = (Math.acos(sumFy / R) * 180) / Math.PI;
       const gamma = (Math.acos(sumFz / R) * 180) / Math.PI;
-
       steps.push("Step 4: Direction angles (α, β, γ):");
-      steps.push(
-        `\\alpha = \\cos^{-1}\\!\\left(\\dfrac{\\Sigma F_x}{R}\\right) = \\cos^{-1}\\!\\left(\\dfrac{${sumFx.toFixed(3)}}{${R.toFixed(3)}}\\right) = ${alpha.toFixed(2)}^\\circ`
-      );
-      steps.push(
-        `\\beta = \\cos^{-1}\\!\\left(\\dfrac{\\Sigma F_y}{R}\\right) = \\cos^{-1}\\!\\left(\\dfrac{${sumFy.toFixed(3)}}{${R.toFixed(3)}}\\right) = ${beta.toFixed(2)}^\\circ`
-      );
-      steps.push(
-        `\\gamma = \\cos^{-1}\\!\\left(\\dfrac{\\Sigma F_z}{R}\\right) = \\cos^{-1}\\!\\left(\\dfrac{${sumFz.toFixed(3)}}{${R.toFixed(3)}}\\right) = ${gamma.toFixed(2)}^\\circ`
-      );
-      steps.push(
-        `\\cos^2\\alpha + \\cos^2\\beta + \\cos^2\\gamma = ${((sumFx / R) ** 2 + (sumFy / R) ** 2 + (sumFz / R) ** 2).toFixed(3)} \\approx 1 \\checkmark`
-      );
+      steps.push(`\\alpha=\\cos^{-1}\\!\\left(\\dfrac{${sumFx.toFixed(3)}}{${R.toFixed(3)}}\\right)=${alpha.toFixed(2)}^\\circ`);
+      steps.push(`\\beta=\\cos^{-1}\\!\\left(\\dfrac{${sumFy.toFixed(3)}}{${R.toFixed(3)}}\\right)=${beta.toFixed(2)}^\\circ`);
+      steps.push(`\\gamma=\\cos^{-1}\\!\\left(\\dfrac{${sumFz.toFixed(3)}}{${R.toFixed(3)}}\\right)=${gamma.toFixed(2)}^\\circ`);
+      steps.push(`\\cos^2\\alpha+\\cos^2\\beta+\\cos^2\\gamma=${((sumFx/R)**2+(sumFy/R)**2+(sumFz/R)**2).toFixed(3)}\\approx 1\\checkmark`);
     }
-
     return { steps, sumFx, sumFy, sumFz, R, azimuth, elevation };
   }
 }
@@ -84,25 +90,31 @@ class ForceSystem3D {
 ================================================================ */
 const FORCE_COLORS = [0x1848a0, 0xd63031, 0xe17055, 0x6c5ce7, 0x00b894, 0xfdcb6e];
 
-function buildBaseScene() {
+function buildBaseScene(dark: boolean) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xffffff);
-  scene.add(new THREE.GridHelper(6, 12, 0xdddddd, 0xeeeeee));
+  scene.background = new THREE.Color(dark ? 0x1f2937 : 0xffffff);
+  scene.add(new THREE.GridHelper(6, 12, dark ? 0x4b5563 : 0xdddddd, dark ? 0x374151 : 0xeeeeee));
   const axLen = 3;
   const mkAxis = (a: THREE.Vector3, b: THREE.Vector3, c: number) =>
-    new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.5 }));
-  scene.add(mkAxis(new THREE.Vector3(-axLen, 0, 0), new THREE.Vector3(axLen, 0, 0), 0xff4444));  // THREE X → statics X (red)
-  scene.add(mkAxis(new THREE.Vector3(0, -axLen, 0), new THREE.Vector3(0, axLen, 0), 0x2266ff));  // THREE Y (up) → statics Z (blue)
-  scene.add(mkAxis(new THREE.Vector3(0, 0, -axLen), new THREE.Vector3(0, 0, axLen), 0x22bb44));  // THREE Z (forward) → statics Y (green)
-  scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 16), new THREE.MeshBasicMaterial({ color: 0x333333 })));
+    new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([a, b]),
+      new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.6 })
+    );
+  scene.add(mkAxis(new THREE.Vector3(-axLen,0,0), new THREE.Vector3(axLen,0,0), 0xff4444));
+  scene.add(mkAxis(new THREE.Vector3(0,-axLen,0), new THREE.Vector3(0,axLen,0), 0x2266ff));
+  scene.add(mkAxis(new THREE.Vector3(0,0,-axLen), new THREE.Vector3(0,0,axLen), 0x22bb44));
+  scene.add(new THREE.Mesh(
+    new THREE.SphereGeometry(0.07, 16, 16),
+    new THREE.MeshBasicMaterial({ color: dark ? 0xffffff : 0x333333 })
+  ));
   scene.add(new THREE.AmbientLight(0xffffff, 1));
   return scene;
 }
 
 function attachOrbit(canvas: HTMLElement, state: any) {
-  const onDown = (e: MouseEvent) => { state.isDragging = true; state.prevMouse = { x: e.clientX, y: e.clientY }; };
-  const onUp = () => { state.isDragging = false; };
-  const onMove = (e: MouseEvent) => {
+  const onDown  = (e: MouseEvent) => { state.isDragging = true; state.prevMouse = { x: e.clientX, y: e.clientY }; };
+  const onUp    = () => { state.isDragging = false; };
+  const onMove  = (e: MouseEvent) => {
     if (!state.isDragging) return;
     state.theta -= (e.clientX - state.prevMouse.x) * 0.012;
     state.phi = Math.max(0.15, Math.min(Math.PI - 0.15, state.phi + (e.clientY - state.prevMouse.y) * 0.012));
@@ -122,36 +134,67 @@ function attachOrbit(canvas: HTMLElement, state: any) {
 }
 
 /* ================================================================
-   LIVE FBD CANVAS
+   FBD3D — live canvas with reactive dark mode
 ================================================================ */
 function FBD3D({ forces }: { forces: any[] }) {
-  const mountRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
+  const mountRef  = useRef<HTMLDivElement>(null);
+  const sceneRef  = useRef<THREE.Scene | null>(null);
+  const rendRef   = useRef<THREE.WebGLRenderer | null>(null);
   const arrowsRef = useRef<THREE.ArrowHelper[]>([]);
-  const orbitRef = useRef({ theta: -0.6, phi: 0.85, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } });
+  const orbitRef  = useRef({ theta: -0.6, phi: 0.85, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } });
+  const darkMode  = useDarkMode();
 
+  // Mount once
   useEffect(() => {
     const el = mountRef.current!;
     const W = el.clientWidth, H = el.clientHeight;
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(W, H); renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(W, H);
+    renderer.setPixelRatio(window.devicePixelRatio);
     el.appendChild(renderer.domElement);
-    const scene = buildBaseScene(); sceneRef.current = scene;
+    rendRef.current = renderer;
+
+    const scene = buildBaseScene(darkMode);
+    sceneRef.current = scene;
+
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
-    const orbit = orbitRef.current;
+    const orbit  = orbitRef.current;
     let raf: number;
     const animate = () => {
       raf = requestAnimationFrame(animate);
-      camera.position.set(orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta), orbit.radius * Math.cos(orbit.phi), orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta));
-      camera.lookAt(0, 0, 0); renderer.render(scene, camera);
+      camera.position.set(
+        orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta),
+        orbit.radius * Math.cos(orbit.phi),
+        orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta)
+      );
+      camera.lookAt(0, 0, 0);
+      renderer.render(scene, camera);
     };
     animate();
     const cleanup = attachOrbit(renderer.domElement, orbit);
     return () => { cancelAnimationFrame(raf); cleanup(); renderer.dispose(); if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement); };
   }, []);
 
+  // React to dark mode toggle
   useEffect(() => {
-    const scene = sceneRef.current; if (!scene) return;
+    const scene = sceneRef.current;
+    if (!scene) return;
+    (scene.background as THREE.Color).set(darkMode ? 0x1f2937 : 0xffffff);
+    scene.children.forEach(child => {
+      if (child instanceof THREE.GridHelper) {
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach((m: any) => m.color?.set(darkMode ? 0x4b5563 : 0xdddddd));
+      }
+      if (child instanceof THREE.Mesh && child.geometry instanceof THREE.SphereGeometry) {
+        (child.material as THREE.MeshBasicMaterial).color.set(darkMode ? 0xffffff : 0x333333);
+      }
+    });
+  }, [darkMode]);
+
+  // Update arrows when forces change
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
     arrowsRef.current.forEach(a => scene.remove(a));
     arrowsRef.current = [];
     const maxMag = Math.max(1, ...forces.map(f => parseFloat(f.magnitude) || 0));
@@ -160,71 +203,103 @@ function FBD3D({ forces }: { forces: any[] }) {
       const m = parseFloat(f.magnitude), az = parseFloat(f.azimuth), el = parseFloat(f.elevation);
       if (isNaN(m) || isNaN(az) || isNaN(el) || m === 0) return;
       const azR = az * Math.PI / 180, elR = el * Math.PI / 180;
-      // ✅ Fix
-      const vec = new THREE.Vector3(
-        m * Math.cos(elR) * Math.cos(azR), // statics X → THREE X
-        m * Math.sin(elR),                  // statics Z → THREE Y (up)
-        m * Math.cos(elR) * Math.sin(azR)  // statics Y → THREE Z
-      );
-      const arr = new THREE.ArrowHelper(vec.clone().normalize(), new THREE.Vector3(0, 0, 0), m * scale, FORCE_COLORS[i % FORCE_COLORS.length], m * scale * 0.2, m * scale * 0.12);
-      scene.add(arr); arrowsRef.current.push(arr);
+      const vec = new THREE.Vector3(m * Math.cos(elR) * Math.cos(azR), m * Math.sin(elR), m * Math.cos(elR) * Math.sin(azR));
+      const arr = new THREE.ArrowHelper(vec.clone().normalize(), new THREE.Vector3(0,0,0), m * scale, FORCE_COLORS[i % FORCE_COLORS.length], m * scale * 0.2, m * scale * 0.12);
+      scene.add(arr);
+      arrowsRef.current.push(arr);
     });
   }, [forces]);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: 300, background: "white", borderRadius: 8, border: "1px solid #dee2e6", overflow: "hidden", marginTop: 8 }}>      <div ref={mountRef} style={{ width: "100%", height: "100%", cursor: "grab" }} />
-      <div style={{ position: "absolute", top: 8, left: 10, fontSize: 11, color: "#666", pointerEvents: "none", fontFamily: "monospace" }}>
-        <span style={{ color: "#ff4444" }}>■</span> X &nbsp;<span style={{ color: "#22bb44" }}>■</span> Y &nbsp;<span style={{ color: "#2266ff" }}>■</span> Z
+    <div className="relative w-full h-[260px] sm:h-[300px] rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden mt-2">
+      <div ref={mountRef} className="w-full h-full cursor-grab" />
+      <div className="absolute top-2 left-2.5 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 pointer-events-none font-mono">
+        <span className="text-[#ff4444]">■</span> X &nbsp;
+        <span className="text-[#22bb44]">■</span> Y &nbsp;
+        <span className="text-[#2266ff]">■</span> Z
       </div>
-      <div style={{ position: "absolute", bottom: 8, right: 10, fontSize: 10, color: "#aaa", pointerEvents: "none" }}>Drag to rotate · Scroll to zoom</div>
+      <div className="absolute bottom-2 right-2.5 text-[10px] text-gray-400 pointer-events-none hidden sm:block">
+        Drag to rotate · Scroll to zoom
+      </div>
     </div>
   );
 }
 
 /* ================================================================
-   RESULTANT FBD (shown after calculation)
+   RESULTANT FBD3D — with reactive dark mode
 ================================================================ */
 function ResultantFBD3D({ forces, result }: { forces: any[]; result: any }) {
   const mountRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const darkMode = useDarkMode();
+
   useEffect(() => {
-    const el = mountRef.current; if (!el) return;
+    const el = mountRef.current;
+    if (!el) return;
     const W = el.clientWidth, H = el.clientHeight;
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(W, H); renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(W, H);
+    renderer.setPixelRatio(window.devicePixelRatio);
     el.appendChild(renderer.domElement);
-    const scene = buildBaseScene();
+
+    const scene = buildBaseScene(darkMode);
+    sceneRef.current = scene;
+
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
     const maxMag = Math.max(1, ...forces.map(f => parseFloat(f.magnitude) || 0), result.R);
     const scale = 2.5 / maxMag;
+
     forces.forEach((f, i) => {
       const m = parseFloat(f.magnitude), az = parseFloat(f.azimuth), el = parseFloat(f.elevation);
       if (isNaN(m) || isNaN(az) || isNaN(el) || m === 0) return;
       const azR = az * Math.PI / 180, elR = el * Math.PI / 180;
       const vec = new THREE.Vector3(m * Math.cos(elR) * Math.cos(azR), m * Math.sin(elR), m * Math.cos(elR) * Math.sin(azR));
-      scene.add(new THREE.ArrowHelper(vec.clone().normalize(), new THREE.Vector3(0, 0, 0), m * scale, FORCE_COLORS[i % FORCE_COLORS.length], m * scale * 0.2, m * scale * 0.12));
+      scene.add(new THREE.ArrowHelper(vec.clone().normalize(), new THREE.Vector3(0,0,0), m * scale, FORCE_COLORS[i % FORCE_COLORS.length], m * scale * 0.2, m * scale * 0.12));
     });
     if (result.R > 0.001) {
-      // ✅ Fix
       const rv = new THREE.Vector3(result.sumFx, result.sumFz, result.sumFy);
-      scene.add(new THREE.ArrowHelper(rv.clone().normalize(), new THREE.Vector3(0, 0, 0), result.R * scale, 0x009900, result.R * scale * 0.2, result.R * scale * 0.12));
+      scene.add(new THREE.ArrowHelper(rv.clone().normalize(), new THREE.Vector3(0,0,0), result.R * scale, 0x009900, result.R * scale * 0.2, result.R * scale * 0.12));
     }
+
     const orbit = { theta: -0.6, phi: 0.85, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } };
     let raf: number;
     const animate = () => {
       raf = requestAnimationFrame(animate);
-      camera.position.set(orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta), orbit.radius * Math.cos(orbit.phi), orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta));
-      camera.lookAt(0, 0, 0); renderer.render(scene, camera);
+      camera.position.set(
+        orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta),
+        orbit.radius * Math.cos(orbit.phi),
+        orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta)
+      );
+      camera.lookAt(0, 0, 0);
+      renderer.render(scene, camera);
     };
     animate();
     const cleanup = attachOrbit(renderer.domElement, orbit);
     return () => { cancelAnimationFrame(raf); cleanup(); renderer.dispose(); if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement); };
   }, [forces, result]);
 
+  // React to dark mode toggle
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    (scene.background as THREE.Color).set(darkMode ? 0x1f2937 : 0xffffff);
+    scene.children.forEach(child => {
+      if (child instanceof THREE.GridHelper) {
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach((m: any) => m.color?.set(darkMode ? 0x4b5563 : 0xdddddd));
+      }
+    });
+  }, [darkMode]);
+
   return (
-    <div style={{ position: "relative", width: "100%", height: 300, background: "#f8f9fa", borderRadius: 8, border: "1px solid #dee2e6", overflow: "hidden", marginTop: 8 }}>
-      <div ref={mountRef} style={{ width: "100%", height: "100%", cursor: "grab" }} />
-      <div style={{ position: "absolute", top: 8, left: 10, fontSize: 11, color: "#009900", fontWeight: "bold", pointerEvents: "none" }}>— Resultant (R)</div>
-      <div style={{ position: "absolute", bottom: 8, right: 10, fontSize: 10, color: "#aaa", pointerEvents: "none" }}>Drag to rotate · Scroll to zoom</div>
+    <div className="relative w-full h-[260px] sm:h-[300px] rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden mt-2">
+      <div ref={mountRef} className="w-full h-full cursor-grab" />
+      <div className="absolute top-2 left-2.5 text-[11px] font-bold text-[#009900] pointer-events-none">
+        — Resultant (R)
+      </div>
+      <div className="absolute bottom-2 right-2.5 text-[10px] text-gray-400 pointer-events-none hidden sm:block">
+        Drag to rotate · Scroll to zoom
+      </div>
     </div>
   );
 }
@@ -252,63 +327,48 @@ function MathBlock({ tex }: { tex: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!ref.current || !(window as any).katex) return;
-    try { (window as any).katex.render(tex.trim(), ref.current, { displayMode: true, throwOnError: false }); } catch (_) { }
+    try { (window as any).katex.render(tex.trim(), ref.current, { displayMode: true, throwOnError: false }); } catch (_) {}
   }, [tex]);
-  return <div ref={ref} style={{ overflowX: "auto", margin: "4px 0" }} />;
+  return <div ref={ref} className="overflow-x-auto my-1" />;
 }
 
 /* ================================================================
    MAIN EXPORT
 ================================================================ */
 export default function AnglesTab() {
-  const [forces, setForces] = useState([{ magnitude: "", azimuth: "", elevation: "" }]);
-  const [result, setResult] = useState<any>(null);
-  const [status, setStatus] = useState<
-    "idle" | "generating" | "done" | "error"
-  >("idle");
+  const [forces, setForces]   = useState([{ magnitude: "", azimuth: "", elevation: "" }]);
+  const [result, setResult]   = useState<any>(null);
+  const [status, setStatus]   = useState<"idle"|"generating"|"done"|"error">("idle");
+  const katexOk = useMathJax();
 
   const off = status === "generating";
-
-const labels: Record<typeof status, string> = {
-  idle: "⬇ Download Solution as PDF",
-  generating: "⏳ Opening print view…",
-  done: "✅ Done!",
-  error: "❌ Export failed — try again",
-};
-const handleExportPDF = () => {
-  if (!result) return;
-  setStatus("generating");
-  const payload = {
-    steps: result.steps,
-    resultRows,
-    forces,
-    result: {
-      sumFx: result.sumFx,
-      sumFy: result.sumFy,
-      sumFz: result.sumFz,
-      R: result.R,
-      azimuth: result.azimuth,
-      elevation: result.elevation,
-    },
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Opening print view…",
+    done: "✅ Done!",
+    error: "❌ Export failed — try again",
   };
-  const encoded = encodeURIComponent(JSON.stringify(payload));
-  window.open(`/print/resultant-3dAzimuth?data=${encoded}`, "_blank");
-  setStatus("done");
-  setTimeout(() => setStatus("idle"), 2500);
-};
-  const katexOk = useMathJax();
 
   const resultRows = result ? [
     { label: "X component (Fx)", value: `${result.sumFx.toFixed(3)} kN` },
     { label: "Y component (Fy)", value: `${result.sumFy.toFixed(3)} kN` },
     { label: "Z component (Fz)", value: `${result.sumFz.toFixed(3)} kN` },
-    { label: "Magnitude (R)", value: `${result.R.toFixed(3)} kN` },
-    { label: "Azimuth (φ)", value: `${result.azimuth.toFixed(2)}°` },
-    { label: "Elevation (α)", value: `${result.elevation.toFixed(2)}°` },
+    { label: "Magnitude (R)",    value: `${result.R.toFixed(3)} kN` },
+    { label: "Azimuth (φ)",      value: `${result.azimuth.toFixed(2)}°` },
+    { label: "Elevation (α)",    value: `${result.elevation.toFixed(2)}°` },
     { label: "α (angle with X)", value: `${(Math.acos(result.sumFx / result.R) * 180 / Math.PI).toFixed(2)}°` },
     { label: "β (angle with Y)", value: `${(Math.acos(result.sumFy / result.R) * 180 / Math.PI).toFixed(2)}°` },
     { label: "γ (angle with Z)", value: `${(Math.acos(result.sumFz / result.R) * 180 / Math.PI).toFixed(2)}°` },
   ] : [];
+
+  const handleExportPDF = () => {
+    if (!result) return;
+    setStatus("generating");
+    const payload = { steps: result.steps, resultRows, forces, result: { sumFx: result.sumFx, sumFy: result.sumFy, sumFz: result.sumFz, R: result.R, azimuth: result.azimuth, elevation: result.elevation } };
+    window.open(`/print/resultant-3dAzimuth?data=${encodeURIComponent(JSON.stringify(payload))}`, "_blank");
+    setStatus("done");
+    setTimeout(() => setStatus("idle"), 2500);
+  };
 
   const update = (i: number, field: string, value: string) =>
     setForces(f => f.map((v, j) => j === i ? { ...v, [field]: value } : v));
@@ -322,111 +382,133 @@ const handleExportPDF = () => {
     setResult(sys.solve());
   };
 
-  const inp: React.CSSProperties = { width: "100%", marginTop: 4, borderRadius: 8, border: "1px solid #d1d5db", fontSize: 16, padding: "8px 10px", outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
-  const lbl: React.CSSProperties = { display: "block", fontWeight: 500, fontSize: 16 };
-  const card: React.CSSProperties = { width: "100%", background: "#fff", borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.08)", padding: 24, marginTop: 20 };
+  const inputCls = "w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 text-[15px] p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none";
+  const labelCls = "block font-medium text-[14px] sm:text-[15px] text-gray-800 dark:text-gray-200";
+  const cardCls  = "w-full bg-white dark:bg-gray-800 rounded-2xl shadow p-4 sm:p-6 mt-4";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+    <div className="flex flex-col items-center w-full">
 
       {/* Canvas */}
-      <div style={{ width: "100%", maxWidth: 580 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, textAlign: "center", marginBottom: 8 }}>Azimuth-Elevation Method</h2>
-        <p style={{ color: "#888", fontSize: 13, textAlign: "center", marginTop: 0, marginBottom: 12 }}>Real-Time Free Body Diagram</p>
+      <div className="w-full max-w-xl">
+        <h2 className="text-[17px] sm:text-[18px] font-semibold text-center mb-2 text-gray-900 dark:text-white">
+          Azimuth-Elevation Method
+        </h2>
+        <p className="text-[12px] sm:text-[13px] text-gray-500 dark:text-gray-400 text-center mb-3">
+          Real-Time Free Body Diagram
+        </p>
         <FBD3D forces={forces} />
       </div>
 
       {/* Inputs */}
-      <div style={{ ...card, maxWidth: 580 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 12, marginTop: 0 }}>Force Setup</h2>
-        <p style={{ fontSize: 13, color: "#666", marginBottom: 16, marginTop: 0 }}>
-          Enter each force with its <strong>azimuth</strong> (horizontal angle from +X, 0–360°) and <strong>elevation</strong> (vertical tilt, −90° to 90°).
+      <div className={`${cardCls} max-w-xl`}>
+        <h2 className="text-[17px] sm:text-[18px] font-semibold mb-3 mt-0 text-gray-900 dark:text-white">
+          Force Setup
+        </h2>
+        <p className="text-[12px] sm:text-[13px] text-gray-500 dark:text-gray-400 mb-4 mt-0">
+          Enter each force with its <strong>azimuth</strong> (0–360°) and <strong>elevation</strong> (−90° to 90°).
         </p>
+
         {forces.map((f, i) => (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 10, alignItems: "end", marginBottom: 14 }}>
-            <div>
-              <label style={lbl}>Force {i + 1} (kN)</label>
-              <input type="number" placeholder="Magnitude" value={f.magnitude} onChange={e => update(i, "magnitude", e.target.value)} style={inp} />
-            </div>
-            <div>
-              <label style={lbl}>Azimuth (°)</label>
-              <input type="number" placeholder="0–360°" value={f.azimuth} onChange={e => update(i, "azimuth", e.target.value)} style={inp} />
-            </div>
-            <div>
-              <label style={lbl}>Elevation (°)</label>
-              <input type="number" placeholder="−90–90°" value={f.elevation} onChange={e => update(i, "elevation", e.target.value)} style={inp} />
+          <div key={i} className="mb-4 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
+            {/* On small screens: stack vertically. On sm+: 3-column grid */}
+            <div className="flex flex-col sm:grid sm:grid-cols-3 gap-2 mb-2">
+              <div>
+                <label className={labelCls}>Force {i+1} (kN)</label>
+                <input type="number" placeholder="Magnitude" value={f.magnitude}
+                  onChange={e => update(i, "magnitude", e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Azimuth (°)</label>
+                <input type="number" placeholder="0–360°" value={f.azimuth}
+                  onChange={e => update(i, "azimuth", e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Elevation (°)</label>
+                <input type="number" placeholder="−90–90°" value={f.elevation}
+                  onChange={e => update(i, "elevation", e.target.value)} className={inputCls} />
+              </div>
             </div>
             {forces.length > 1 && (
-              <button onClick={() => setForces(f => f.filter((_, j) => j !== i))}
-                style={{ background: "#ef4444", color: "#fff", border: "none", borderRadius: 8, padding: "8px 12px", cursor: "pointer", fontSize: 18 }}>–</button>
+              <div className="flex justify-end">
+                <button onClick={() => setForces(f => f.filter((_, j) => j !== i))}
+                  className="bg-red-500 hover:bg-red-600 text-white rounded-lg px-3 py-1.5 text-[13px] transition">
+                  – Remove
+                </button>
+              </div>
             )}
           </div>
         ))}
+
         <button onClick={() => setForces(f => [...f, { magnitude: "", azimuth: "", elevation: "" }])}
-          style={{ width: "100%", background: "#008409", color: "#fff", border: "none", borderRadius: 8, padding: "12px 0", fontSize: 16, cursor: "pointer", marginBottom: 10, fontFamily: "inherit" }}>
+          className="w-full bg-[#008409] hover:bg-[#15711b] text-white rounded-lg py-2.5 text-[15px] cursor-pointer mb-2.5 transition">
           + Add Force
         </button>
         <button onClick={calculate}
-          style={{ width: "100%", background: "#1848a0", color: "#fff", border: "none", borderRadius: 8, padding: "12px 0", fontSize: 16, cursor: "pointer", fontFamily: "inherit" }}>
+          className="w-full bg-[#1848a0] hover:bg-[#163d8a] text-white rounded-lg py-2.5 text-[15px] cursor-pointer transition">
           Calculate
         </button>
       </div>
 
       {/* Results */}
       {result && (
-
-
-        <div style={{ ...card, maxWidth: 580 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 600, marginTop: 0, marginBottom: 14 }}>Resultant Force</h2>
-          {[
-            ["X component (Fx)", `${result.sumFx.toFixed(3)} kN`],
-            ["Y component (Fy)", `${result.sumFy.toFixed(3)} kN`],
-            ["Z component (Fz)", `${result.sumFz.toFixed(3)} kN`],
-            ["Magnitude (R)", `${result.R.toFixed(3)} kN`],
-            ["Azimuth (φ)", `${result.azimuth.toFixed(2)}°`],
-            ["Elevation (α)", `${result.elevation.toFixed(2)}°`],
-          ].map(([label, val]) => (
-            <div key={label} style={{ marginBottom: 10 }}>
-              <label style={lbl}>{label}</label>
-              <input readOnly value={val} style={{ ...inp, background: "#f9fafb", color: "#374151" }} />
-            </div>
-          ))}
+        <div className={`${cardCls} max-w-xl`}>
+          <h2 className="text-[17px] sm:text-[18px] font-semibold mt-0 mb-3 text-gray-900 dark:text-white">
+            Resultant Force
+          </h2>
+          {/* 2-column grid on small, stays 2-col everywhere since labels are short */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {[
+              ["X component (Fx)", `${result.sumFx.toFixed(3)} kN`],
+              ["Y component (Fy)", `${result.sumFy.toFixed(3)} kN`],
+              ["Z component (Fz)", `${result.sumFz.toFixed(3)} kN`],
+              ["Magnitude (R)",    `${result.R.toFixed(3)} kN`],
+              ["Azimuth (φ)",      `${result.azimuth.toFixed(2)}°`],
+              ["Elevation (α)",    `${result.elevation.toFixed(2)}°`],
+            ].map(([label, val]) => (
+              <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-xl border border-blue-100 dark:border-gray-600 px-3 py-2">
+                <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">{label}</div>
+                <div className="text-[15px] font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Step-by-step */}
       {result && (
-        <div style={{ ...card, maxWidth: 580 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 600, marginTop: 0, marginBottom: 12 }}>Step-by-Step Solution</h2>
+        <div className={`${cardCls} max-w-xl`}>
+          <h2 className="text-[17px] sm:text-[18px] font-semibold mt-0 mb-3 text-gray-900 dark:text-white">
+            Step-by-Step Solution
+          </h2>
 
-<button
-  onClick={handleExportPDF}
-  disabled={off}
-  className={`w-full mt-4 rounded-xl px-4 py-3 font-semibold text-white transition ${
-    off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
-  }`}
-  style={{ marginBottom: 16 }}
->
-  {labels[status]}
-</button>
+          <button onClick={handleExportPDF} disabled={off}
+            className={`w-full mb-4 rounded-xl px-4 py-3 font-semibold text-white transition text-[14px] sm:text-[15px] ${
+              off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+            }`}>
+            {labels[status]}
+          </button>
 
-          <div style={{ lineHeight: 1.8 }}>
+          <div className="leading-relaxed overflow-x-auto">
             {result.steps.map((line: string, i: number) =>
               line.startsWith("Step") ? (
-                <p key={i} style={{ fontWeight: 600, fontSize: 16, marginTop: 14, marginBottom: 4 }}>{line}</p>
+                <p key={i} className="font-semibold text-[15px] mt-3.5 mb-1 text-gray-900 dark:text-white">{line}</p>
               ) : katexOk ? (
                 <MathBlock key={i} tex={line} />
               ) : (
-                <pre key={i} style={{ fontSize: 13, color: "#555" }}>{line}</pre>
+                <pre key={i} className="text-[12px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap">{line}</pre>
               )
             )}
           </div>
-          <div style={{ marginTop: 24 }}>
-            <p style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Step 4: Final Free Body Diagram (All Forces + Resultant)</p>
+
+          <div className="mt-6">
+            <p className="font-semibold text-[15px] mb-2 text-gray-900 dark:text-white">
+              Final Free Body Diagram (All Forces + Resultant)
+            </p>
             <ResultantFBD3D forces={forces} result={result} />
-            <div style={{ marginTop: 8, fontSize: 13, color: "#666", textAlign: "center" }}>
-              <span style={{ color: "#1848a0", fontWeight: 600 }}>■</span> Input Forces &nbsp;&nbsp;
-              <span style={{ color: "#009900", fontWeight: 600 }}>■</span> Resultant R
+            <div className="mt-2 text-[12px] text-gray-500 dark:text-gray-400 text-center">
+              <span className="text-[#1848a0] font-semibold">■</span> Input Forces &nbsp;&nbsp;
+              <span className="text-[#009900] font-semibold">■</span> Resultant R
             </div>
           </div>
         </div>

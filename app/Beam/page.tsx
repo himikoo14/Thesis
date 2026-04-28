@@ -58,7 +58,6 @@ function KTX({ tex }: { tex: string }) {
     try { katex.render(tex, el.current, { displayMode: true, throwOnError: false }); }
     catch (_) { if (el.current) el.current.innerText = tex; }
   }, [tex, katexReady]);
-  // FIX: dark mode KaTeX
   return <div ref={el} className="my-0.5 overflow-x-auto dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white" />;
 }
 
@@ -71,20 +70,20 @@ function StepByStepSolution({ steps, title = "Step-by-Step Solution" }: {
 }) {
   return (
     <div>
-      {title && <h2 className="text-[18px] font-semibold mt-0 mb-3 text-gray-900 dark:text-white">{title}</h2>}
+      {title && <h2 className="text-[16px] sm:text-[18px] font-semibold mt-0 mb-3 text-gray-900 dark:text-white">{title}</h2>}
       <div className="flex flex-col gap-1.5 leading-relaxed">
         {steps.map((line, i) => {
           switch (line.type) {
             case "heading":
-              return <p key={i} className="font-semibold text-[16px] mt-3.5 mb-0.5 text-[#1848a0] dark:text-blue-400">{line.text}</p>;
+              return <p key={i} className="font-semibold text-[14px] sm:text-[16px] mt-3.5 mb-0.5 text-[#1848a0] dark:text-blue-400">{line.text}</p>;
             case "math":
               return <KTX key={i} tex={line.tex} />;
             case "text":
-              return <p key={i} className="text-[15px] text-gray-700 dark:text-gray-300 my-0.5">{line.text}</p>;
+              return <p key={i} className="text-[13px] sm:text-[15px] text-gray-700 dark:text-gray-300 my-0.5">{line.text}</p>;
             case "diagram":
               return (
                 <div key={i} className="mt-3">
-                  {line.label && <p className="font-semibold text-[15px] mb-2 dark:text-white">{line.label}</p>}
+                  {line.label && <p className="font-semibold text-[14px] sm:text-[15px] mb-2 dark:text-white">{line.label}</p>}
                   <div className="flex justify-center">{line.node}</div>
                 </div>
               );
@@ -108,7 +107,7 @@ function BeamFBD({ beamLength, supports, pointLoads, distributedLoads, result }:
   const L = parseFloat(beamLength);
   if (!L || L <= 0) {
     return (
-      <div className="flex items-center justify-center h-[200px] w-full text-center text-gray-400 dark:text-gray-500 text-[14px] bg-white dark:bg-gray-800 rounded-xl">
+      <div className="flex items-center justify-center h-[160px] sm:h-[200px] w-full text-center text-gray-400 dark:text-gray-500 text-[13px] sm:text-[14px] bg-white dark:bg-gray-800 rounded-xl">
         Enter a beam length to see the diagram
       </div>
     );
@@ -208,7 +207,6 @@ function BeamFBD({ beamLength, supports, pointLoads, distributedLoads, result }:
         );
       })}
 
-      {/* Beam body — uses a neutral gray that works in both modes */}
       <rect x={padL} y={beamY} width={drawW} height={beamH} fill="#d1d5db" stroke="#374151" strokeWidth="2" rx="2" />
       <line x1={padL} y1={beamY + beamH + 22} x2={padL + drawW} y2={beamY + beamH + 22} stroke="#9ca3af" strokeWidth="1" />
       <line x1={padL} y1={beamY + beamH + 16} x2={padL} y2={beamY + beamH + 28} stroke="#9ca3af" strokeWidth="1.5" />
@@ -264,12 +262,13 @@ export default function BeamSolverUI() {
     error: "❌ Export failed — try again",
   };
 
-  // Shared Tailwind class strings
-  const inputCls = "w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 text-[16px] px-2.5 py-2 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-[inherit] box-border";
-  const labelCls = "block font-medium text-[16px] text-gray-800 dark:text-gray-200";
-  const cardCls  = "bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6";
-  const h3Cls    = "text-[18px] font-semibold mt-0 mb-4 text-gray-900 dark:text-white";
-  const subHCls  = "text-[15px] font-semibold mt-5 mb-2 text-gray-700 dark:text-gray-300";
+  // ── Shared class strings ──
+  // Mobile-first: smaller text/padding on xs, normal on sm+
+  const inputCls = "w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 text-[14px] sm:text-[16px] px-2 sm:px-2.5 py-1.5 sm:py-2 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-[inherit] box-border";
+  const labelCls = "block font-medium text-[13px] sm:text-[16px] text-gray-800 dark:text-gray-200";
+  const cardCls  = "bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-3 sm:p-6";
+  const h3Cls    = "text-[15px] sm:text-[18px] font-semibold mt-0 mb-3 sm:mb-4 text-gray-900 dark:text-white";
+  const subHCls  = "text-[13px] sm:text-[15px] font-semibold mt-4 sm:mt-5 mb-1.5 sm:mb-2 text-gray-700 dark:text-gray-300";
 
   /* ---------- GENERIC HANDLERS ---------- */
   const handleChange = <T extends GenericObject>(arr: T[], setArr: React.Dispatch<React.SetStateAction<T[]>>, index: number, field: keyof T, value: T[keyof T]) => {
@@ -297,54 +296,86 @@ export default function BeamSolverUI() {
   const resultRows = result ? result.reactions.map(r => ({ label: `${r.type} at x = ${fmt(r.location)} m`, value: `${fmt(r.vertical)} kN` })) : [];
 
   return (
-    // FIX: removed hardcoded inline styles, replaced with Tailwind dark-aware classes
     <div className="flex flex-col min-h-screen bg-transparent text-gray-900 dark:text-white items-center font-serif">
-      <div className="w-full max-w-[760px] px-4 pb-10">
+      <div className="w-full max-w-[760px] px-3 sm:px-4 pb-10">
 
-        <h1 className="text-[28px] font-bold text-center mt-7 mb-1 text-gray-900 dark:text-white">Non-Concurrent Parallel Force System</h1>
-        <h2 className="text-[18px] font-semibold text-center mb-2 text-gray-900 dark:text-white">Beam Analysis Calculator</h2>
-        <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Real-Time Free Body Diagram</p>
+        <h1 className="text-[20px] sm:text-[28px] font-bold text-center mt-5 sm:mt-7 mb-1 text-gray-900 dark:text-white">
+          Non-Concurrent Parallel Force System
+        </h1>
+        <h2 className="text-[15px] sm:text-[18px] font-semibold text-center mb-2 text-gray-900 dark:text-white">
+          Beam Analysis Calculator
+        </h2>
+        <p className="text-[12px] sm:text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">
+          Real-Time Free Body Diagram
+        </p>
 
         {/* ── FBD ── */}
-        <div className={`${cardCls} mb-6 p-4 min-h-[200px] relative z-[1]`}>
-          <BeamFBD beamLength={beamLength} supports={supports} pointLoads={pointLoads} distributedLoads={distributedLoads} result={result} />
+        <div className={`${cardCls} mb-4 sm:mb-6 min-h-[160px] sm:min-h-[200px] relative z-[1]`}>
+          <BeamFBD
+            beamLength={beamLength}
+            supports={supports}
+            pointLoads={pointLoads}
+            distributedLoads={distributedLoads}
+            result={result}
+          />
         </div>
 
-        {/* ── Input panels ── */}
-        <div className="grid grid-cols-2 gap-5 mb-5 relative z-[1]">
+        {/* ── Input panels ──
+            MOBILE: single column stack
+            SM+:    two-column side by side (unchanged) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5 mb-4 sm:mb-5 relative z-[1]">
 
           {/* BEAM PROPERTIES */}
           <div className={cardCls}>
             <h3 className={h3Cls}>Beam Properties</h3>
             <label className={labelCls}>Beam Length</label>
-            <input type="number" placeholder="m" value={beamLength}
+            <input
+              type="number"
+              placeholder="m"
+              value={beamLength}
               onChange={(e) => { setBeamLength(e.target.value); setResult(null); }}
-              className={inputCls} />
+              className={inputCls}
+            />
 
             <p className={subHCls}>Supports</p>
             {supports.map((s, i) => (
-              <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end mb-2.5">
-                <div>
-                  <label className={labelCls}>Type</label>
-                  <select value={s.type} onChange={(e) => handleChange(supports, setSupports, i, "type", e.target.value as Support["type"])} className={inputCls}>
-                    <option>Pinned</option>
-                    <option>Roller</option>
-                  </select>
+              <div key={i} className="space-y-2 mb-3">
+                {/* MOBILE: stack type + location vertically with remove inline */}
+                <div className="flex gap-2">
+                  <div className="flex-1 min-w-0">
+                    <label className={labelCls}>Type</label>
+                    <select
+                      value={s.type}
+                      onChange={(e) => handleChange(supports, setSupports, i, "type", e.target.value as Support["type"])}
+                      className={inputCls}
+                    >
+                      <option>Pinned</option>
+                      <option>Roller</option>
+                    </select>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <label className={labelCls}>Location (m)</label>
+                    <input
+                      type="number"
+                      placeholder="m"
+                      value={s.location}
+                      onChange={(e) => handleChange(supports, setSupports, i, "location", e.target.value)}
+                      className={inputCls}
+                    />
+                  </div>
+                  {supports.length > 1 && (
+                    <button
+                      onClick={() => removeItem(supports, setSupports, i)}
+                      className="self-end mb-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-lg px-2.5 sm:px-3 py-1 cursor-pointer text-[15px] sm:text-[18px] transition"
+                    >–</button>
+                  )}
                 </div>
-                <div>
-                  <label className={labelCls}>Location (m)</label>
-                  <input type="number" placeholder="m" value={s.location}
-                    onChange={(e) => handleChange(supports, setSupports, i, "location", e.target.value)}
-                    className={inputCls} />
-                </div>
-                {supports.length > 1 && (
-                  <button onClick={() => removeItem(supports, setSupports, i)}
-                    className="self-end mb-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-lg px-3 py-1 cursor-pointer text-[18px] transition">–</button>
-                )}
               </div>
             ))}
-            <button onClick={() => addItem(supports, setSupports, { type: "Pinned", location: "" })}
-              className="bg-[#008409] hover:bg-[#15711b] text-white border-none rounded-lg px-4 py-2 text-[15px] cursor-pointer mt-2 transition">
+            <button
+              onClick={() => addItem(supports, setSupports, { type: "Pinned", location: "" })}
+              className="bg-[#008409] hover:bg-[#15711b] text-white border-none rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-[13px] sm:text-[15px] cursor-pointer mt-1 sm:mt-2 transition"
+            >
               + Add Support
             </button>
           </div>
@@ -355,69 +386,103 @@ export default function BeamSolverUI() {
 
             <p className={`${subHCls} mt-0`}>Point Loads</p>
             {pointLoads.map((p, i) => (
-              <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end mb-2.5">
-                <div>
+              <div key={i} className="flex gap-2 items-end mb-2.5">
+                <div className="flex-1 min-w-0">
                   <label className={labelCls}>Magnitude (kN)</label>
-                  <input type="number" placeholder="kN" value={p.magnitude}
+                  <input
+                    type="number"
+                    placeholder="kN"
+                    value={p.magnitude}
                     onChange={(e) => handleChange(pointLoads, setPointLoads, i, "magnitude", e.target.value)}
-                    className={inputCls} />
+                    className={inputCls}
+                  />
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <label className={labelCls}>Location (m)</label>
-                  <input type="number" placeholder="m" value={p.location}
+                  <input
+                    type="number"
+                    placeholder="m"
+                    value={p.location}
                     onChange={(e) => handleChange(pointLoads, setPointLoads, i, "location", e.target.value)}
-                    className={inputCls} />
+                    className={inputCls}
+                  />
                 </div>
                 {pointLoads.length > 1 && (
-                  <button onClick={() => removeItem(pointLoads, setPointLoads, i)}
-                    className="self-end mb-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-lg px-3 py-1 cursor-pointer text-[18px] transition">–</button>
+                  <button
+                    onClick={() => removeItem(pointLoads, setPointLoads, i)}
+                    className="self-end mb-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-lg px-2.5 sm:px-3 py-1 cursor-pointer text-[15px] sm:text-[18px] transition"
+                  >–</button>
                 )}
               </div>
             ))}
-            <button onClick={() => addItem(pointLoads, setPointLoads, { magnitude: "", location: "" })}
-              className="bg-[#008409] hover:bg-[#15711b] text-white border-none rounded-lg px-4 py-2 text-[15px] cursor-pointer mt-2 transition">
+            <button
+              onClick={() => addItem(pointLoads, setPointLoads, { magnitude: "", location: "" })}
+              className="bg-[#008409] hover:bg-[#15711b] text-white border-none rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-[13px] sm:text-[15px] cursor-pointer mt-1 sm:mt-2 transition"
+            >
               + Add Point Load
             </button>
 
             <p className={subHCls}>Distributed Loads</p>
             {distributedLoads.map((d, i) => (
               <div key={i} className="mb-3.5">
-                <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end mb-1.5">
-                  <div>
-                    <label className={labelCls}>Start Position (m)</label>
-                    <input type="number" placeholder="m" value={d.start}
+                {/* Start / End positions */}
+                <div className="flex gap-2 items-end mb-1.5">
+                  <div className="flex-1 min-w-0">
+                    <label className={labelCls}>Start (m)</label>
+                    <input
+                      type="number"
+                      placeholder="m"
+                      value={d.start}
                       onChange={(e) => handleChange(distributedLoads, setDistributedLoads, i, "start", e.target.value)}
-                      className={inputCls} />
+                      className={inputCls}
+                    />
                   </div>
-                  <div>
-                    <label className={labelCls}>End Position (m)</label>
-                    <input type="number" placeholder="m" value={d.end}
+                  <div className="flex-1 min-w-0">
+                    <label className={labelCls}>End (m)</label>
+                    <input
+                      type="number"
+                      placeholder="m"
+                      value={d.end}
                       onChange={(e) => handleChange(distributedLoads, setDistributedLoads, i, "end", e.target.value)}
-                      className={inputCls} />
+                      className={inputCls}
+                    />
                   </div>
                   {distributedLoads.length > 1 ? (
-                    <button onClick={() => removeItem(distributedLoads, setDistributedLoads, i)}
-                      className="self-end mb-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-lg px-3 py-1 cursor-pointer text-[18px] transition">–</button>
+                    <button
+                      onClick={() => removeItem(distributedLoads, setDistributedLoads, i)}
+                      className="self-end mb-1 bg-red-500 hover:bg-red-600 text-white border-none rounded-lg px-2.5 sm:px-3 py-1 cursor-pointer text-[15px] sm:text-[18px] transition"
+                    >–</button>
                   ) : <div />}
                 </div>
+                {/* Start / End magnitudes */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className={labelCls}>Start Mag. (kN/m)</label>
-                    <input type="number" placeholder="kN/m" value={d.startMag}
+                    <input
+                      type="number"
+                      placeholder="kN/m"
+                      value={d.startMag}
                       onChange={(e) => handleChange(distributedLoads, setDistributedLoads, i, "startMag", e.target.value)}
-                      className={inputCls} />
+                      className={inputCls}
+                    />
                   </div>
                   <div>
                     <label className={labelCls}>End Mag. (kN/m)</label>
-                    <input type="number" placeholder="kN/m" value={d.endMag}
+                    <input
+                      type="number"
+                      placeholder="kN/m"
+                      value={d.endMag}
                       onChange={(e) => handleChange(distributedLoads, setDistributedLoads, i, "endMag", e.target.value)}
-                      className={inputCls} />
+                      className={inputCls}
+                    />
                   </div>
                 </div>
               </div>
             ))}
-            <button onClick={() => addItem(distributedLoads, setDistributedLoads, { start: "", end: "", startMag: "", endMag: "" })}
-              className="bg-[#008409] hover:bg-[#15711b] text-white border-none rounded-lg px-4 py-2 text-[15px] cursor-pointer mt-2 transition">
+            <button
+              onClick={() => addItem(distributedLoads, setDistributedLoads, { start: "", end: "", startMag: "", endMag: "" })}
+              className="bg-[#008409] hover:bg-[#15711b] text-white border-none rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-[13px] sm:text-[15px] cursor-pointer mt-1 sm:mt-2 transition"
+            >
               + Add Distributed Load
             </button>
           </div>
@@ -425,35 +490,41 @@ export default function BeamSolverUI() {
 
         {/* ── Error ── */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg px-4 py-3 mb-4 text-red-800 dark:text-red-300 text-[15px]">
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 mb-4 text-red-800 dark:text-red-300 text-[13px] sm:text-[15px]">
             ⚠ {error}
           </div>
         )}
 
         {/* ── Calculate ── */}
-        <button onClick={calculate}
-          className="w-full bg-[#1848a0] hover:bg-[#163d8a] text-white border-none rounded-lg py-3.5 text-[16px] font-semibold cursor-pointer mb-5 transition font-[inherit]">
+        <button
+          onClick={calculate}
+          className="w-full bg-[#1848a0] hover:bg-[#163d8a] text-white border-none rounded-lg py-2.5 sm:py-3.5 text-[14px] sm:text-[16px] font-semibold cursor-pointer mb-4 sm:mb-5 transition font-[inherit]"
+        >
           Calculate
         </button>
 
         {/* ── Results ── */}
         {result && (
-          <div className={`${cardCls} mb-5`}>
-            <h2 className="text-[18px] font-semibold mt-0 mb-3.5 text-gray-900 dark:text-white">Reactions</h2>
+          <div className={`${cardCls} mb-4 sm:mb-5`}>
+            <h2 className="text-[15px] sm:text-[18px] font-semibold mt-0 mb-3 sm:mb-3.5 text-gray-900 dark:text-white">Reactions</h2>
             {result.reactions.map((r, i) => (
-              <div key={i} className="mb-2.5">
+              <div key={i} className="mb-2 sm:mb-2.5">
                 <label className={labelCls}>{r.type} at x = {r.location} m</label>
-                <input type="text" readOnly value={`R = ${fmt(r.vertical)} kN`}
-                  className="w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 text-[16px] px-2.5 py-2 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 outline-none" />
+                <input
+                  type="text"
+                  readOnly
+                  value={`R = ${fmt(r.vertical)} kN`}
+                  className="w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 text-[13px] sm:text-[16px] px-2 sm:px-2.5 py-1.5 sm:py-2 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 outline-none"
+                />
               </div>
             ))}
 
-            {/* Result tiles */}
-            <div className="grid grid-cols-2 gap-2 mt-4">
+            {/* Result tiles — 1 col on mobile, 2 col on sm+ */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 sm:mt-4">
               {resultRows.map((row, i) => (
-                <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[10px] border border-blue-100 dark:border-gray-600 px-3.5 py-2.5">
+                <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[10px] border border-blue-100 dark:border-gray-600 px-3 sm:px-3.5 py-2 sm:py-2.5">
                   <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">{row.label}</div>
-                  <div className="text-[15px] font-bold text-[#1848a0] dark:text-blue-400">{row.value}</div>
+                  <div className="text-[13px] sm:text-[15px] font-bold text-[#1848a0] dark:text-blue-400">{row.value}</div>
                 </div>
               ))}
             </div>
@@ -462,7 +533,7 @@ export default function BeamSolverUI() {
 
         {/* ── Step by Step ── */}
         {result && (
-          <div className={`${cardCls} mb-5`}>
+          <div className={`${cardCls} mb-4 sm:mb-5`}>
             <button
               onClick={() => {
                 setStatus("generating");
@@ -473,7 +544,7 @@ export default function BeamSolverUI() {
                 setTimeout(() => setStatus("idle"), 2500);
               }}
               disabled={off}
-              className={`w-full py-3 border-none rounded-[10px] text-[14px] font-semibold text-white mb-3.5 transition font-[inherit] ${
+              className={`w-full py-2.5 sm:py-3 border-none rounded-[10px] text-[13px] sm:text-[14px] font-semibold text-white mb-3 sm:mb-3.5 transition font-[inherit] ${
                 off ? "opacity-60 cursor-not-allowed bg-[#1848a0]" : "cursor-pointer bg-[#1848a0] hover:bg-[#163d8a]"
               }`}
             >

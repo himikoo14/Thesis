@@ -7,67 +7,86 @@ export default function HomePage() {
     <main className="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col">
       <Header />
 
-      {/* Landing Page*/}
-      <section className="flex flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
-        <h1 className="text-[20px] md:text-[80px] font-bold mb-2 text-black dark:text-white">
-          Stati
-          <span className="text-[#008409] dark:text-green-400">
-            Calcs
-          </span>
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300 mb-12 text-[18px]">
-          Modules for learning and solving Statics of Rigid Bodies.
-        </p>
+      {/* Landing Page */}
+      <section className="flex flex-col items-center justify-evenly text-center bg-gray-50 dark:bg-gray-900 flex-grow px-4">
+
+        <div>
+          <h1 className="text-[36px] sm:text-[56px] md:text-[80px] font-bold mb-1 text-black dark:text-white leading-none">
+            Stati
+            <span className="text-[#008409] dark:text-green-400">
+              Calcs
+            </span>
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 text-[12px] sm:text-[15px] md:text-[18px] px-2 max-w-sm mx-auto">
+            Modules for learning and solving Statics of Rigid Bodies.
+          </p>
+        </div>
 
         {/* Module List */}
         <div className="w-full max-w-2xl">
-          <div className="grid grid-cols-2 gap-4 items-center">
+          <div className="grid grid-cols-2 gap-x-2 gap-y-2 items-center">
 
             {/* Module 1 */}
-            <p className="text-left text-black dark:text-white text-[18px] font-bold">Module 1: Free Body Diagram</p>
-            <Link href="/modules/FBD" className="bg-[#008409] dark:bg-green-700 text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[18px]">
+            <p className="text-left text-black dark:text-white text-[11px] sm:text-[14px] md:text-[18px] font-bold leading-tight pr-1">
+              Module 1: Free Body Diagram
+            </p>
+            <Link href="/modules/FBD" className="bg-[#008409] dark:bg-green-700 text-white px-2 py-1.5 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[10px] sm:text-[13px] md:text-[18px] text-center leading-tight">
               Module 1
             </Link>
 
             {/* Module 2 */}
-            <p className="text-left text-black dark:text-white text-[18px] font-bold">Module 2: 2D Resultant</p>
-            <Link href="/modules/2D-Resultant" className="bg-[#008409] dark:bg-green-700 text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[18px]">
+            <p className="text-left text-black dark:text-white text-[11px] sm:text-[14px] md:text-[18px] font-bold leading-tight pr-1">
+              Module 2: 2D Resultant
+            </p>
+            <Link href="/modules/2D-Resultant" className="bg-[#008409] dark:bg-green-700 text-white px-2 py-1.5 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[10px] sm:text-[13px] md:text-[18px] text-center leading-tight">
               Module 2
             </Link>
 
             {/* Module 3 */}
-            <p className="text-left text-black dark:text-white text-[18px] font-bold">Module 3: 3D Resultant</p>
-            <Link href="/modules/3D-Resultant" className="bg-[#008409] dark:bg-green-700 text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[18px]">
+            <p className="text-left text-black dark:text-white text-[11px] sm:text-[14px] md:text-[18px] font-bold leading-tight pr-1">
+              Module 3: 3D Resultant
+            </p>
+            <Link href="/modules/3D-Resultant" className="bg-[#008409] dark:bg-green-700 text-white px-2 py-1.5 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[10px] sm:text-[13px] md:text-[18px] text-center leading-tight">
               Module 3
             </Link>
 
             {/* Module 4 */}
-            <p className="text-left text-black dark:text-white text-[18px] font-bold">Module 4: 2D Equilibrium</p>
-            <Link href="/modules/2D-Equilibrium" className="bg-[#008409] dark:bg-green-700 text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[18px]">
+            <p className="text-left text-black dark:text-white text-[11px] sm:text-[14px] md:text-[18px] font-bold leading-tight pr-1">
+              Module 4: 2D Equilibrium
+            </p>
+            <Link href="/modules/2D-Equilibrium" className="bg-[#008409] dark:bg-green-700 text-white px-2 py-1.5 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[10px] sm:text-[13px] md:text-[18px] text-center leading-tight">
               Module 4
             </Link>
 
             {/* Module 5 */}
-            <p className="text-left text-black dark:text-white text-[18px] font-bold">Module 5: 3D Equilibrium</p>
-            <Link href="/modules/3D-Equilibrium" className="bg-[#008409] dark:bg-green-700 text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[18px]">
+            <p className="text-left text-black dark:text-white text-[11px] sm:text-[14px] md:text-[18px] font-bold leading-tight pr-1">
+              Module 5: 3D Equilibrium
+            </p>
+            <Link href="/modules/3D-Equilibrium" className="bg-[#008409] dark:bg-green-700 text-white px-2 py-1.5 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[10px] sm:text-[13px] md:text-[18px] text-center leading-tight">
               Module 5
             </Link>
 
             {/* Module 6 */}
-            <p className="text-left text-black dark:text-white text-[18px] font-bold">Module 6: Truss Joint Method</p>
-            <Link href="/modules/Truss" className="bg-[#008409] dark:bg-green-700 text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[18px]">
+            <p className="text-left text-black dark:text-white text-[11px] sm:text-[14px] md:text-[18px] font-bold leading-tight pr-1">
+              Module 6: Truss Joint Method
+            </p>
+            <Link href="/modules/Truss" className="bg-[#008409] dark:bg-green-700 text-white px-2 py-1.5 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[10px] sm:text-[13px] md:text-[18px] text-center leading-tight">
               Module 6
             </Link>
 
             {/* Module 7 */}
-            <p className="text-left text-black dark:text-white text-[18px] font-bold">Module 7: Moment of Inertia about Centroidal Axes</p>
-            <Link href="/modules/MOIcentroidal" className="bg-[#008409] dark:bg-green-700 text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[18px]">
+            <p className="text-left text-black dark:text-white text-[11px] sm:text-[14px] md:text-[18px] font-bold leading-tight pr-1">
+              Module 7: Moment of Inertia about Centroidal Axes
+            </p>
+            <Link href="/modules/MOIcentroidal" className="bg-[#008409] dark:bg-green-700 text-white px-2 py-1.5 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[10px] sm:text-[13px] md:text-[18px] text-center leading-tight">
               Module 7
             </Link>
 
             {/* Module 8 */}
-            <p className="text-left text-black dark:text-white text-[18px] font-bold">Module 8: Moment of Inertia about Custom Axes</p>
-            <Link href="/modules/MOIcustom" className="bg-[#008409] dark:bg-green-700 text-white px-6 py-3 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[18px]">
+            <p className="text-left text-black dark:text-white text-[11px] sm:text-[14px] md:text-[18px] font-bold leading-tight pr-1">
+              Module 8: Moment of Inertia about Custom Axes
+            </p>
+            <Link href="/modules/MOIcustom" className="bg-[#008409] dark:bg-green-700 text-white px-2 py-1.5 rounded-md shadow hover:bg-[#15711b] dark:hover:bg-green-800 transition text-[10px] sm:text-[13px] md:text-[18px] text-center leading-tight">
               Module 8
             </Link>
 
