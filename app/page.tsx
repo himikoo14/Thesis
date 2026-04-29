@@ -9,7 +9,7 @@ export default function HomePage() {
       <Header />
 
       {/* Landing Page */}
-<section className="hidden min-[400px]:flex flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
+<section className="hidden sm:flex flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
         <h1 className="text-[20px] md:text-[80px] font-bold mb-2 text-black dark:text-white">
           Stati
           <span className="text-[#1848a0] dark:text-blue-400">
@@ -70,7 +70,7 @@ export default function HomePage() {
       </section>
 
 {/* Landing Page for small screens - below 400px only */}
-<section className="flex min-[400px]:hidden flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
+<section className="flex sm:hidden flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
   <h1 className="text-[50px] font-bold mb-2 text-black dark:text-white">
     Stati
     <span className="text-[#1848a0] dark:text-blue-400">
