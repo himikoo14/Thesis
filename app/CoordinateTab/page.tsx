@@ -21,6 +21,7 @@ function useDarkMode() {
 }
 
 function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) {
+
   const mountRef = useRef<HTMLDivElement>(null);
   const dynamicGroupRef = useRef<THREE.Group | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -337,43 +338,42 @@ export default function CoordinateTab() {
   };
 
 
-const handleExportPDF = async () => {
-  if (!result) return;
-  setStatus("generating");
-  try {
-    const payload = {
-      steps: result.steps,
-      resultRows: result.resultRows,
-      points,
-      forces,
-      result: { Rx: result.Rx, Ry: result.Ry, Rz: result.Rz, R: result.R, details: result.details },
-    };
-    const res = await fetch("/api/export-pdf-3dcoordinates", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "coordinate-solution.pdf";
-    a.click();
-    URL.revokeObjectURL(url);
-    setStatus("done");
-  } catch {
-    setStatus("error");
-  }
-  setTimeout(() => setStatus("idle"), 2500);
-};
+  const handleExportPDF = async () => {
+    if (!result) return;
+    setStatus("generating");
+    try {
+      const payload = {
+        steps: result.steps,
+        resultRows: result.resultRows,
+        points,
+        forces,
+        result: { Rx: result.Rx, Ry: result.Ry, Rz: result.Rz, R: result.R, details: result.details },
+      };
+      const res = await fetch("/api/export-pdf-3dcoordinates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "coordinate-solution.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+      setStatus("done");
+    } catch {
+      setStatus("error");
+    }
+    setTimeout(() => setStatus("idle"), 2500);
+  };
   const inputCls = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-[13px] w-full outline-none text-gray-900 dark:text-white";
   const selectCls = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-[13px] outline-none text-gray-900 dark:text-white w-full";
   const cardCls = "bg-white dark:bg-gray-800 rounded-[14px] border border-gray-200 dark:border-gray-600 p-4 sm:p-5 shadow-sm";
   const h3Cls = "text-[14px] sm:text-[15px] font-semibold mt-0 mb-3 text-gray-900 dark:text-white";
 
   return (
-    <div className="w-full max-w-[580px] mx-auto bg-transparent">
-
+    <div className=" w-full max-w-[580px] mx-auto bg-transparent">
       {/* 3D Canvas */}
       <div className="w-full max-w-[580px] mx-auto mb-4">
         <h2 className="text-[17px] sm:text-[18px] font-semibold text-center mb-2 text-gray-900 dark:text-white">
@@ -464,31 +464,36 @@ const handleExportPDF = async () => {
       {result && (
         <>
           {/* ── WIDE SCREEN (sm+): side-by-side layout ── */}
-          <div className="hidden sm:flex gap-4 mt-4 items-start">
-            {/* Left: result grid */}
-            <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
-              <h3 className="text-[13px] font-semibold mb-3 text-gray-900 dark:text-white">Results</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {result.resultRows.map((row: { label: string; value: string }, i: number) => (
-                  <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[8px] border border-blue-100 dark:border-gray-600 px-2 py-2">
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">{row.label}</div>
-                    <div className="text-[13px] font-bold text-[#1848a0] dark:text-blue-400">{row.value}</div>
-                  </div>
-                ))}
-              </div>
-              <button
-onClick={handleExportPDF}
+          <div className="hidden sm:block flex-col gap-3 mt-4">
+            <h3 className="text-[15px] sm:text-[16px] font-semibold text-gray-900 dark:text-white mb-4">
+              Step-by-Step Solution
+            </h3>
 
+            <div className="mt-4">
+              <button
+                onClick={() => {
+                  setStatus("generating");
+                  const payload = { steps: result.steps, resultRows: result.resultRows, points, forces, result: { Rx: result.Rx, Ry: result.Ry, Rz: result.Rz, R: result.R, details: result.details } };
+                  window.open(`/print/coordinate?data=${encodeURIComponent(JSON.stringify(payload))}`, "_blank");
+                  setStatus("done");
+                  setTimeout(() => setStatus("idle"), 2500);
+                }}
                 disabled={off}
-                className={`w-full mt-3 rounded-lg px-3 py-2 font-semibold text-white transition text-[13px] ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+                className={`w-full py-3 rounded-[10px] text-[14px] sm:text-[15px] font-semibold text-white mb-3 transition ${off ? "opacity-60 cursor-not-allowed bg-[#1848a0]" : "cursor-pointer bg-[#1848a0] hover:bg-[#163d8a]"
                   }`}>
                 {labels[status]}
               </button>
-            </div>
 
-            {/* Right: step-by-step */}
-            <div className="flex-1 overflow-x-auto">
-              <StepByStepSolution steps={result.stepLines} title="Step-by-Step Solution" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                {result.resultRows.map((row: { label: string; value: string }, i: number) => (
+                  <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[10px] border border-blue-100 dark:border-gray-600 px-3 py-2.5">
+                    <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">{row.label}</div>
+                    <div className="text-[15px] font-bold text-[#1848a0] dark:text-blue-400">{row.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <StepByStepSolution steps={result.stepLines} title="" />
             </div>
           </div>
 
@@ -509,7 +514,7 @@ onClick={handleExportPDF}
 
             {/* PDF button */}
             <button
-onClick={handleExportPDF}
+              onClick={handleExportPDF}
               disabled={off}
               className={`w-full rounded-lg px-3 py-2 font-semibold text-white transition text-[12px] ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
                 }`}>
@@ -524,6 +529,8 @@ onClick={handleExportPDF}
         </>
       )}
     </div>
+
+
 
   );
 }

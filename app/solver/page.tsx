@@ -13,35 +13,34 @@ export default function Solver3D() {
 
 {/* Title */}
         <div className="text-center mb-6">
-          <h1 className="text-[20px] sm:text-[26px] font-bold text-gray-900 dark:text-white m-0">
+          <h1 className="text-[18px] sm:text-[26px] font-bold text-gray-900 dark:text-white m-0">
             3D Resultant Force Calculator
           </h1>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-3 mb-6">
-          <button
-            onClick={() => setActiveTab("coordinate")}
-            className={`flex-1 py-3 rounded-xl text-[15px] font-semibold transition-all duration-200 shadow-sm
-              ${activeTab === "coordinate"
-                ? "bg-[#1848a0] text-white shadow-md"
-                : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-              }`}
-          >
-            Cartesian Vector
-          </button>
-          <button
-            onClick={() => setActiveTab("angles")}
-            className={`flex-1 py-3 rounded-xl text-[15px] font-semibold transition-all duration-200 shadow-sm
-              ${activeTab === "angles"
-                ? "bg-[#008409] text-white shadow-md"
-                : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-              }`}
-          >
-            Azimuth-Elevation
-          </button>
-        </div>
-
+{/* Tabs */}
+<div className="flex gap-3 mb-6">
+  <button
+    onClick={() => setActiveTab("coordinate")}
+    className={`flex-1 py-3 rounded-xl text-[12px] sm:text-[15px] font-semibold transition-all duration-200 shadow-sm
+      ${activeTab === "coordinate"
+        ? "bg-[#1848a0] text-white shadow-md"
+        : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+      }`}
+  >
+    Cartesian Vector
+  </button>
+  <button
+    onClick={() => setActiveTab("angles")}
+    className={`flex-1 py-3 rounded-xl text-[12px] sm:text-[15px] font-semibold transition-all duration-200 shadow-sm
+      ${activeTab === "angles"
+        ? "bg-[#008409] text-white shadow-md"
+        : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+      }`}
+  >
+    Azimuth-Elevation
+  </button>
+</div>
         {/* Tab Content */}
         {activeTab === "coordinate" && <CoordinateTab />}
         {activeTab === "angles" && <AnglesTab />}

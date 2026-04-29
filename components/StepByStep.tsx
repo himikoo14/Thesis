@@ -3,6 +3,7 @@
 /**
  * ============================================================
  *  StepByStep.tsx
+
  */
 
 import React, { useRef, ReactNode } from "react";
@@ -40,12 +41,29 @@ export function fromLegacySteps(steps: string[]): StepLine[] {
 }
 
 interface StepByStepSolutionProps {
+  /** Array of StepLine items produced by your solver */
   steps: StepLine[];
+
+  /** Section title shown at the top of the card. Default: "Step-by-Step Solution" */
   title?: string;
+
+  /**
+   * Optional extra content appended after the steps
+   * (e.g. the ResultantFBD "Step 4" block you already have).
+   */
   footer?: ReactNode;
+
+  /** Optional ref forwarded to the outer div (for PDF capture, etc.) */
   containerRef?: React.RefObject<HTMLDivElement>;
 }
 
+/**
+ * StepByStepSolution
+ *
+ * Renders a white `rounded-2xl shadow` card — identical to every other
+ * card in your calculators — with numbered steps, LaTeX math, plain
+ * text, and diagram slots.
+ */
 export function StepByStepSolution({
   steps,
   title = "Step-by-Step Solution",
@@ -55,47 +73,45 @@ export function StepByStepSolution({
   return (
     <div
       ref={containerRef}
-      // FIX: added dark:bg-gray-800 dark:text-white
-      className="w-full max-w-xl mt-6 bg-white dark:bg-gray-800 rounded-2xl shadow p-6"
+      className="w-full max-w-xl mt-6 bg-white rounded-2xl shadow p-6"
     >
       {/* ── Card header ── */}
-      {/* FIX: added dark:text-white */}
-      <h2 className="text-[20px] font-semibold mb-4 text-gray-900 dark:text-white">{title}</h2>
+      <h2 className="text-[20px] font-semibold mb-4">{title}</h2>
 
       {/* ── Steps ── */}
       <div className="space-y-4">
         {steps.map((line, i) => {
           switch (line.type) {
+            /* Bold step heading — "Step 1: …" */
             case "heading":
               return (
-                // FIX: added dark:text-white
-                <p key={`${line.type}-${i}`} className="font-medium text-[18px] text-gray-900 dark:text-white">
+                <p key={`${line.type}-${i}`} className="font-medium text-[18px] text-gray-900">
                   {line.text}
                 </p>
               );
 
+            /* LaTeX math block */
             case "math":
               return (
-                // FIX: added dark:text-white and dark invert filter for KaTeX SVGs
-                <div key={`${line.type}-${i}`} className="text-[18px] overflow-x-auto py-1 text-gray-900 dark:text-white dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white">
+                <div key={`${line.type}-${i}`} className="text-[18px] overflow-x-auto py-1">
                   <BlockMath>{line.tex}</BlockMath>
                 </div>
               );
 
+            /* Plain descriptive text */
             case "text":
               return (
-                // FIX: added dark:text-gray-300
-                <p key={`${line.type}-${i}`} className="text-[18px] text-gray-700 dark:text-gray-300">
+                <p key={`${line.type}-${i}`} className="text-[18px] text-gray-700">
                   {line.text}
                 </p>
               );
 
+            /* Diagram / FBD / SVG slot */
             case "diagram":
               return (
                 <div key={`${line.type}-${i}`} className="mt-6">
                   {line.label && (
-                    // FIX: added dark:text-white
-                    <p className="font-medium text-[18px] mb-2 dark:text-white">{line.label}</p>
+                    <p className="font-medium text-[18px] mb-2">{line.label}</p>
                   )}
                   <div className="flex justify-center">{line.node}</div>
                 </div>
@@ -107,6 +123,7 @@ export function StepByStepSolution({
         })}
       </div>
 
+      {/* ── Optional footer (e.g. "Step 4: Final FBD") ── */}
       {footer && <div className="mt-8">{footer}</div>}
     </div>
   );
@@ -114,16 +131,28 @@ export function StepByStepSolution({
 
 /* ------------------------------------------------------------------ */
 /*  useStepByStep hook                                                  */
+/*  Mirrors the API of your existing useStepByStepPDF hook             */
 /* ------------------------------------------------------------------ */
 
 interface UseStepByStepOptions {
+  /** Displayed in the exported PDF header */
   title?: string;
+  /** PDF file name */
   filename?: string;
 }
 
 interface UseStepByStepReturn {
+  /** Attach to the div you want captured in the PDF */
   ref: React.RefObject<HTMLDivElement>;
+  /**
+   * A ready-to-render PDF export button.
+   * Place it inside the solution area, same as your existing PDFButton.
+   */
   PDFButton: () => JSX.Element;
+  /**
+   * Pre-bound StepByStepSolution — just pass `steps` and optionally
+   * `footer`. The ref and title are already wired in.
+   */
   StepByStepSolutionBound: (
     props: Omit<StepByStepSolutionProps, "containerRef" | "title"> & {
       title?: string;
@@ -131,15 +160,35 @@ interface UseStepByStepReturn {
   ) => JSX.Element;
 }
 
+/**
+ * useStepByStep
+ *
+ * Convenience hook that wires together:
+ *  - a ref for PDF capture
+ *  - a PDF export button (delegates to your existing useStepByStepPDF if available,
+ *    otherwise falls back to a window.print() stub)
+ *  - a pre-bound StepByStepSolution component
+ *
+ * Drop-in replacement for:
+ *   const [solutionRef, PDFButton] = useStepByStepPDF({ title, filename });
+ *
+ * Become:
+ *   const { ref, PDFButton, StepByStepSolutionBound } = useStepByStep({ title, filename });
+ */
 export function useStepByStep({
   title = "Step-by-Step Solution",
   filename = "solution.pdf",
 }: UseStepByStepOptions = {}): UseStepByStepReturn {
   const ref = useRef<HTMLDivElement>(null);
 
+  /* PDF button — delegates to your useStepByStepPDF hook when available.
+     The stub below is a safe fallback (window.print) so this file compiles
+     standalone without the PDF hook as a hard dependency.             */
   const PDFButton = () => (
     <button
       onClick={() => {
+        /* Replace this body with your actual PDF logic if needed,
+           or simply keep using useStepByStepPDF alongside this component. */
         if (typeof window !== "undefined") window.print();
       }}
       className="mb-4 px-4 py-2 bg-[#1848a0] text-white rounded-lg hover:bg-[#163d8a] transition text-[18px] font-medium"
@@ -148,6 +197,7 @@ export function useStepByStep({
     </button>
   );
 
+  /* Pre-bound component — title + ref already set */
   const StepByStepSolutionBound = ({
     steps,
     footer,
@@ -165,3 +215,82 @@ export function useStepByStep({
 
   return { ref, PDFButton, StepByStepSolutionBound };
 }
+
+/* ------------------------------------------------------------------ */
+/*  INTEGRATION EXAMPLES (reference — not rendered)                    */
+/* ------------------------------------------------------------------ */
+
+/*
+  ── EXAMPLE A: With your existing string[] steps (zero changes to solver) ──
+
+  import { fromLegacySteps, useStepByStep } from "@/components/StepByStep";
+
+  const { ref, PDFButton, StepByStepSolutionBound } = useStepByStep({
+    title: "2D Resultant Force — Step-by-Step Solution",
+    filename: "resultant-2d-solution.pdf",
+  });
+
+  // Inside your JSX, replace the existing step-by-step block:
+  {result && (
+    <div ref={ref}>
+      <PDFButton />
+      <StepByStepSolutionBound
+        steps={fromLegacySteps(result.steps)}
+        footer={
+          <div>
+            <p className="font-medium text-[18px] mb-2">
+              Step 4: Final Free Body Diagram (All Forces + Resultant)
+            </p>
+            <ResultantFBD forces={forces} result={result} />
+          </div>
+        }
+      />
+    </div>
+  )}
+
+
+  ── EXAMPLE B: With StepLine[] built directly in the solver ──
+
+  stepByStepSolution(): { steps: StepLine[]; ... } {
+    const steps: StepLine[] = [];
+
+    steps.push({ type: "heading", text: "Step 1: Resolve each force into components:" });
+
+    this.vectors.forEach((v, i) => {
+      steps.push({ type: "math", tex: `|F|=${v.magnitude}\\,\\text{kN},\\; \\theta=${v.angleDeg}^\\circ` });
+      steps.push({
+        type: "math",
+        tex: `\\begin{align*}
+          F_{x${i+1}} &= ${v.magnitude}\\cos(${v.angleDeg}^\\circ) = ${v.fx.toFixed(3)}\\,\\text{kN} \\\\
+          F_{y${i+1}} &= ${v.magnitude}\\sin(${v.angleDeg}^\\circ) = ${v.fy.toFixed(3)}\\,\\text{kN}
+        \\end{align*}`,
+      });
+    });
+
+    steps.push({ type: "heading", text: "Step 2: Sum of components:" });
+    // ... etc.
+
+    steps.push({
+      type: "diagram",
+      label: "Step 4: Final Free Body Diagram (All Forces + Resultant)",
+      node: <ResultantFBD forces={...} result={...} />,
+    });
+
+    return { steps, sumFx, sumFy, R, theta };
+  }
+
+
+  ── EXAMPLE C: 3D solver (same pattern) ──
+
+  const { ref, PDFButton, StepByStepSolutionBound } = useStepByStep({
+    title: "3D Resultant Force — Step-by-Step Solution",
+    filename: "resultant-3d-solution.pdf",
+  });
+
+  {result && (
+    <div ref={ref}>
+      <PDFButton />
+      <StepByStepSolutionBound steps={fromLegacySteps(result.steps)} />
+    </div>
+  )}
+*/

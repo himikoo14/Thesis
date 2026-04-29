@@ -27,7 +27,7 @@ function FormulaBlock({ label, formula }: FormulaBlockProps) {
       <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-400 mb-2">
         {label}
       </p>
-      <div className="text-[18px] dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white">
+      <div className="text-[13px] sm:text-[18px] overflow-x-auto dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white">
         <BlockMath>{formula}</BlockMath>
       </div>
     </div>
@@ -191,7 +191,7 @@ export default function ConcurrentForces3D() {
               Compute the angles between the resultant vector and the coordinate
               axes:
             </p>
-            <div className="grid grid-cols-3 gap-3 mt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-1">
               <FormulaBlock label="α (alpha)" formula="\cos\alpha = \frac{R_x}{R}" />
               <FormulaBlock label="β (beta)"  formula="\cos\beta = \frac{R_y}{R}" />
               <FormulaBlock label="γ (gamma)" formula="\cos\gamma = \frac{R_z}{R}" />
@@ -213,8 +213,7 @@ export default function ConcurrentForces3D() {
               <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
                 Example
               </p>
-              <div className="space-y-1 text-[16px] dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white">
-                <BlockMath>
+              <div className="space-y-1 text-[13px] sm:text-[16px] overflow-x-auto dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white">                <BlockMath>
                   {"\\vec{R} = 460\\,\\hat{i} - 40\\,\\hat{j} - 1080\\,\\hat{k} \\text{ N}"}
                 </BlockMath>
                 <BlockMath>

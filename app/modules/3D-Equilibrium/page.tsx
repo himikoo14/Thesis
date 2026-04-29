@@ -23,8 +23,7 @@ function FormulaBlock({ label, formula }: FormulaBlockProps) {
             <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">
                 {label}
             </p>
-            <div className="text-[18px] dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white">
-                <BlockMath>{formula}</BlockMath>
+            <div className="text-[13px] sm:text-[18px] dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white">                <BlockMath>{formula}</BlockMath>
             </div>
         </div>
     );
