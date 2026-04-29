@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: "class", // ✅ FIXED HERE
+  darkMode: "class",
   content: [
     "./app/**/*.{js,ts,jsx,tsx}",
     "./components/**/*.{js,ts,jsx,tsx}",
@@ -10,6 +10,9 @@ export default {
     extend: {
       fontFamily: {
         georgia: ["Georgia", "serif"],
+      },
+      screens: {
+        'xs': '400px', // ✅ custom breakpoint added
       },
     },
   },
