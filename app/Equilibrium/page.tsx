@@ -441,7 +441,7 @@ export default function Equilibrium() {
       <main className="flex-grow flex flex-col items-center px-4 pt-8 pb-10">
 
         {/* ── Tabs ── */}
-        <div className="flex justify-center mb-6 gap-4">
+        <div className="hidden sm:flex justify-center mb-6 gap-4">
           <button onClick={() => setActiveTab("concurrent")}
             className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "concurrent" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
             Concurrent Force System
@@ -452,13 +452,36 @@ export default function Equilibrium() {
           </button>
         </div>
 
+        {/* ── Tabs-sm ── */}
+        <div className="flex sm:hidden justify-center mb-6 gap-4">
+          <button onClick={() => setActiveTab("concurrent")}
+            className={`px-3 py-3 text-[12px] rounded-lg font-semibold ${activeTab === "concurrent" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
+            Concurrent Forces System
+          </button>
+          <button onClick={() => setActiveTab("nonconcurrent")}
+            className={`px-3 py-3 text-[12px] rounded-lg font-semibold ${activeTab === "nonconcurrent" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
+            Non-Concurrent Force System
+          </button>
+        </div>
+
         {activeTab === "concurrent" && (
           <>
-            <h1 className="text-3xl font-bold text-center mb-2">Concurrent Force System</h1>
 
             {/* ── Live FBD ── */}
-            <div className="mb-8 relative z-10">
+            <div className="hidden sm:flex flex-col mb-8 relative z-10">
+               <h1 className="text-3xl font-bold text-center mb-2">Concurrent Force System</h1>
+
               <h2 className="text-[18px] font-semibold text-center mb-2">Unknown Forces and Angles Calculator</h2>
+              <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Real-Time Free Body Diagram</p>
+              <FBD forces={forces} setForces={setForces} />
+              <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Drag arrows to change angles</p>
+            </div>
+
+            {/* ── Live FBD sm ── */}
+           <h1 className="text-[25px] font-bold text-center mb-2">Concurrent Force System</h1>
+
+            <div className="flex flex-col sm:hidden mb-8 relative z-10">
+              <h2 className="text-[13px] font-semibold text-center mb-2">Unknown Forces and Angles Calculator</h2>
               <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Real-Time Free Body Diagram</p>
               <FBD forces={forces} setForces={setForces} />
               <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Drag arrows to change angles</p>
@@ -488,18 +511,16 @@ export default function Equilibrium() {
                         onChange={(e) => handleInputChange(i, "magnitude", e.target.value)}
                         disabled={f.magnitudeUnknown}
                         placeholder={f.magnitudeUnknown ? "Unknown" : ""}
-                        className={`w-full rounded-xl border p-3 pr-14 ${
-                          f.magnitudeUnknown
-                            ? "bg-blue-50 dark:bg-blue-900/30 border-[#1848a0] text-[#1848a0] dark:text-blue-300 font-semibold placeholder-[#1848a0] cursor-not-allowed"
-                            : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white"
-                        }`}
+                        className={`w-full rounded-xl border p-3 pr-14 ${f.magnitudeUnknown
+                          ? "bg-blue-50 dark:bg-blue-900/30 border-[#1848a0] text-[#1848a0] dark:text-blue-300 font-semibold placeholder-[#1848a0] cursor-not-allowed"
+                          : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white"
+                          }`}
                       />
                       <button type="button" onClick={() => toggleUnknown(i, "magnitude")}
-                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl border text-lg font-semibold transition duration-200 ${
-                          f.magnitudeUnknown
-                            ? "bg-[#1848a0] text-white border-[#1848a0]"
-                            : "bg-white dark:bg-gray-700 text-[#1848a0] border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                        }`}>?</button>
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl border text-lg font-semibold transition duration-200 ${f.magnitudeUnknown
+                          ? "bg-[#1848a0] text-white border-[#1848a0]"
+                          : "bg-white dark:bg-gray-700 text-[#1848a0] border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                          }`}>?</button>
                     </div>
                   </div>
 
@@ -513,18 +534,16 @@ export default function Equilibrium() {
                         onChange={(e) => handleInputChange(i, "angle", e.target.value)}
                         disabled={f.angleUnknown}
                         placeholder={f.angleUnknown ? "Unknown" : ""}
-                        className={`w-full rounded-xl border p-3 pr-12 ${
-                          f.angleUnknown
-                            ? "bg-blue-50 dark:bg-blue-900/30 border-[#1848a0] text-[#1848a0] dark:text-blue-300 font-semibold placeholder-[#1848a0] cursor-not-allowed"
-                            : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white"
-                        }`}
+                        className={`w-full rounded-xl border p-3 pr-12 ${f.angleUnknown
+                          ? "bg-blue-50 dark:bg-blue-900/30 border-[#1848a0] text-[#1848a0] dark:text-blue-300 font-semibold placeholder-[#1848a0] cursor-not-allowed"
+                          : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white"
+                          }`}
                       />
                       <button type="button" onClick={() => toggleUnknown(i, "angle")}
-                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl border text-lg font-semibold transition duration-200 ${
-                          f.angleUnknown
-                            ? "bg-[#1848a0] text-white border-[#1848a0]"
-                            : "bg-white dark:bg-gray-700 text-[#1848a0] border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                        }`}>?</button>
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl border text-lg font-semibold transition duration-200 ${f.angleUnknown
+                          ? "bg-[#1848a0] text-white border-[#1848a0]"
+                          : "bg-white dark:bg-gray-700 text-[#1848a0] border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                          }`}>?</button>
                     </div>
                   </div>
 

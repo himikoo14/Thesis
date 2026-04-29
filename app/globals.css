@@ -33,6 +33,10 @@ body {
   font-family: "Georgia Pro", serif;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 @media print {
   .page-break-inside-avoid {
     break-inside: avoid;

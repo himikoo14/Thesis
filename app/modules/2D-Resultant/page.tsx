@@ -3,8 +3,6 @@
 import Header from "<Ian>/components/Header";
 import Footer from "<Ian>/components/Footer";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 interface StepProps {
     number: number;
     title: string;
@@ -14,8 +12,6 @@ interface StepProps {
 interface ArrowItemProps {
     label: string;
 }
-
-// ─── Sub-components ──────────────────────────────────────────────────────────
 
 function ArrowItem({ label }: ArrowItemProps) {
     return (
@@ -33,25 +29,22 @@ function Step({ number, title, children }: StepProps) {
                 <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#1848a0] text-white flex items-center justify-center font-bold text-[16px]">
                     {number}
                 </div>
-                <h2 className="text-[20px] font-semibold">{title}</h2>
+                <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">{title}</h2>
             </div>
-            <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10">
+            <div className="ml-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10 text-gray-900 dark:text-gray-200">
                 {children}
             </div>
         </div>
     );
 }
 
-// ─── Main Component ──────────────────────────────────────────────────────────
-
 export default function Resultant2D() {
     return (
-        <div className="relative flex flex-col min-h-screen bg-gray-50 text-gray-900 text-[18px]">
-            {/* Background grid */}
+        <div className="relative flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-[18px]">
             <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
-backgroundImage: `
+                    backgroundImage: `
     linear-gradient(rgba(24,72,160,0.07) 2px, transparent 2px),
     linear-gradient(90deg, rgba(24,72,160,0.07) 2px, transparent 2px)
 `,
@@ -61,15 +54,15 @@ backgroundImage: `
             <Header />
 
             <main className="flex-grow flex flex-col items-center px-4 py-10">
-                <h1 className="text-[32px] font-bold mb-2 text-center">
+                <h1 className="text-[32px] font-bold mb-2 text-center text-gray-900 dark:text-white">
                     Resultant of Coplanar Forces
                 </h1>
-                <p className="text-gray-500 mb-8 text-center">
+                <p className="text-gray-500 dark:text-gray-400 mb-8 text-center">
                     Procedure for Solving the Resultant of a Two-Dimensional Force System
                 </p>
 
                 {/* Intro Card */}
-                <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10">
+                <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10 text-gray-900 dark:text-gray-200">
                     <p className="mb-3">
                         A{" "}
                         <span className="font-semibold text-[#1848a0]">
@@ -94,7 +87,6 @@ backgroundImage: `
                 {/* Steps */}
                 <div className="w-full max-w-xl">
 
-                    {/* Step 1 */}
                     <Step number={1} title="Draw the Free Body Diagram (FBD)">
                         <p>
                             Represent the body and show all{" "}
@@ -112,7 +104,6 @@ backgroundImage: `
                         </ul>
                     </Step>
 
-                    {/* Step 2 */}
                     <Step number={2} title="Resolve Each Force into Components">
                         <p>
                             Break every force into{" "}
@@ -121,7 +112,7 @@ backgroundImage: `
                             </span>
                             . For a force F at angle θ:
                         </p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic space-y-1">
+                        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic space-y-1">
                             <p>Fx = F cos θ</p>
                             <p>Fy = F sin θ</p>
                         </div>
@@ -131,7 +122,6 @@ backgroundImage: `
                         </p>
                     </Step>
 
-                    {/* Step 3 */}
                     <Step number={3} title="Sum the Force Components">
                         <p>
                             Add all{" "}
@@ -140,13 +130,12 @@ backgroundImage: `
                             </span>{" "}
                             separately:
                         </p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic space-y-1">
+                        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic space-y-1">
                             <p>ΣFx = sum of all x-components</p>
                             <p>ΣFy = sum of all y-components</p>
                         </div>
                     </Step>
 
-                    {/* Step 4 */}
                     <Step number={4} title="Compute the Magnitude of the Resultant">
                         <p>
                             Use the{" "}
@@ -155,12 +144,11 @@ backgroundImage: `
                             </span>{" "}
                             to find the magnitude:
                         </p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic">
+                        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic">
                             R = √[ (ΣFx)² + (ΣFy)² ]
                         </div>
                     </Step>
 
-                    {/* Step 5 */}
                     <Step number={5} title="Determine the Direction of the Resultant">
                         <p>
                             Find the{" "}
@@ -169,13 +157,12 @@ backgroundImage: `
                             </span>{" "}
                             measured from the positive x-axis:
                         </p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic">
+                        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic">
                             θR = tan⁻¹ (ΣFy / ΣFx)
                         </div>
-                        {/* Warning note */}
-                        <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-xl p-4 mt-2">
+                        <div className="flex items-start gap-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4 mt-2">
                             <span className="text-xl">⚠️</span>
-                            <p>
+                            <p className="text-gray-800 dark:text-gray-200">
                                 Always adjust the angle depending on the{" "}
                                 <strong>quadrant</strong> of the resultant vector. Use the
                                 signs of ΣFx and ΣFy to determine the correct quadrant.
@@ -183,7 +170,6 @@ backgroundImage: `
                         </div>
                     </Step>
 
-                    {/* Step 6 */}
                     <Step number={6} title="Express the Resultant Force">
                         <p>
                             Write the final answer including the{" "}
@@ -202,8 +188,8 @@ backgroundImage: `
                                 <ArrowItem key={item} label={item} />
                             ))}
                         </ul>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic space-y-1">
-                            <p className="font-semibold not-italic text-gray-700">Example format:</p>
+                        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic space-y-1">
+                            <p className="font-semibold not-italic text-gray-700 dark:text-gray-200">Example format:</p>
                             <p>R = 500 N at 35°</p>
                         </div>
                     </Step>

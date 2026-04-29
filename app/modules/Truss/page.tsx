@@ -33,9 +33,9 @@ function Step({ number, title, children }: StepProps) {
                 <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#1848a0] text-white flex items-center justify-center font-bold text-[16px]">
                     {number}
                 </div>
-                <h2 className="text-[20px] font-semibold">{title}</h2>
+                <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">{title}</h2>
             </div>
-            <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10">
+            <div className="ml-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10 text-gray-900 dark:text-gray-200">
                 {children}
             </div>
         </div>
@@ -46,12 +46,12 @@ function Step({ number, title, children }: StepProps) {
 
 export default function MethodOfJoints() {
     return (
-        <div className="relative flex flex-col min-h-screen bg-gray-50 text-gray-900 text-[18px]">
+        <div className="relative flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-[18px]">
             {/* Background grid */}
             <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
-backgroundImage: `
+                    backgroundImage: `
     linear-gradient(rgba(24,72,160,0.07) 2px, transparent 2px),
     linear-gradient(90deg, rgba(24,72,160,0.07) 2px, transparent 2px)
 `,
@@ -61,15 +61,15 @@ backgroundImage: `
             <Header />
 
             <main className="flex-grow flex flex-col items-center px-4 py-10">
-                <h1 className="text-[32px] font-bold mb-2 text-center">
+                <h1 className="text-[32px] font-bold mb-2 text-center text-gray-900 dark:text-white">
                     Truss: Method of Joints
                 </h1>
-                <p className="text-gray-500 mb-8 text-center">
+                <p className="text-gray-500 dark:text-gray-400 mb-8 text-center">
                     Truss Analysis using the Method of Joints
                 </p>
 
                 {/* Intro Card */}
-                <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10">
+                <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10 text-gray-900 dark:text-gray-200">
                     <p className="mb-3">
                         The{" "}
                         <span className="font-semibold text-[#1848a0]">
@@ -85,7 +85,7 @@ backgroundImage: `
                         </span>
                         , where only two equilibrium equations apply:
                     </p>
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic">
+                    <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic">
                         ΣFx = 0 &nbsp;&nbsp; ΣFy = 0
                     </div>
                 </div>
@@ -103,13 +103,12 @@ backgroundImage: `
                             and determine all support reactions using the equilibrium
                             equations:
                         </p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic">
+                        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic">
                             ΣFx = 0 &nbsp;&nbsp; ΣFy = 0 &nbsp;&nbsp; ΣM = 0
                         </div>
-                        {/* Warning note */}
-                        <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-xl p-4 mt-2">
+                        <div className="flex items-start gap-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4 mt-2">
                             <span className="text-xl">⚠️</span>
-                            <p>
+                            <p className="text-gray-800 dark:text-gray-200">
                                 Always compute support reactions <strong>first</strong> before
                                 analyzing individual joints.
                             </p>
@@ -153,10 +152,9 @@ backgroundImage: `
                             Include all member forces connected to the joint and any external
                             loads or support reactions acting on it.
                         </p>
-                        {/* Warning note */}
-                        <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-xl p-4 mt-2">
+                        <div className="flex items-start gap-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4 mt-2">
                             <span className="text-xl">⚠️</span>
-                            <p>
+                            <p className="text-gray-800 dark:text-gray-200">
                                 Assume all member forces are in{" "}
                                 <strong>tension</strong> — drawn pulling away from the joint.
                                 A negative result later indicates compression.
@@ -173,7 +171,7 @@ backgroundImage: `
                             </span>
                             :
                         </p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic">
+                        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic">
                             Fx = F cos θ &nbsp;&nbsp;&nbsp; Fy = F sin θ
                         </div>
                         <p>
@@ -191,7 +189,7 @@ backgroundImage: `
                             </span>
                             :
                         </p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic">
+                        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic">
                             ΣFx = 0 &nbsp;&nbsp; ΣFy = 0
                         </div>
                     </Step>
@@ -240,9 +238,9 @@ backgroundImage: `
                             <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#1848a0] text-white flex items-center justify-center font-bold text-[16px]">
                                 📝
                             </div>
-                            <h2 className="text-[20px] font-semibold">Key Notes (Important for Exams)</h2>
+                            <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">Key Notes (Important for Exams)</h2>
                         </div>
-                        <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10">
+                        <div className="ml-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10 text-gray-900 dark:text-gray-200">
                             <ul className="list-none space-y-2">
                                 {[
                                     "Assume all member forces are in tension (pulling away from the joint)",
@@ -262,9 +260,9 @@ backgroundImage: `
                             <div className="flex-shrink-0 w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-[16px]">
                                 ✕
                             </div>
-                            <h2 className="text-[20px] font-semibold">Common Mistakes</h2>
+                            <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">Common Mistakes</h2>
                         </div>
-                        <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10">
+                        <div className="ml-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10 text-gray-900 dark:text-gray-200">
                             <ul className="list-none space-y-2">
                                 {[
                                     "Starting at a joint with more than two unknowns",

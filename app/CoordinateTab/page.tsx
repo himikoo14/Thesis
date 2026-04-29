@@ -3,12 +3,9 @@
 import { useRef, useEffect, useState, ReactNode } from "react";
 import * as THREE from "three";
 
-const DARK_BG  = 0x1f2937;
+const DARK_BG = 0x1f2937;
 const LIGHT_BG = 0xffffff;
 
-/* ================================================================
-   DARK MODE HOOK — reactive to toggle
-================================================================ */
 function useDarkMode() {
   const [dark, setDark] = useState(
     typeof window !== "undefined" && document.documentElement.classList.contains("dark")
@@ -23,18 +20,14 @@ function useDarkMode() {
   return dark;
 }
 
-/* ================================================================
-   THREE.JS CANVAS
-================================================================ */
 function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) {
-  const mountRef        = useRef<HTMLDivElement>(null);
+  const mountRef = useRef<HTMLDivElement>(null);
   const dynamicGroupRef = useRef<THREE.Group | null>(null);
-  const sceneRef        = useRef<THREE.Scene | null>(null);
-  const orbitRef        = useRef({ theta: Math.PI * 1.25, phi: 0.65, r: 6, isDragging: false, prev: { x: 0, y: 0 } });
-  const rafRef          = useRef(0);
-  const darkMode        = useDarkMode();
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const orbitRef = useRef({ theta: Math.PI * 1.25, phi: 0.65, r: 6, isDragging: false, prev: { x: 0, y: 0 } });
+  const rafRef = useRef(0);
+  const darkMode = useDarkMode();
 
-  // Mount once
   useEffect(() => {
     const el = mountRef.current;
     if (!el) return;
@@ -59,16 +52,16 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
     ));
 
     const axes: [number[], number][] = [
-      [[1,0,0], 0x2a9d8f],
-      [[0,1,0], 0x4361ee],
-      [[0,0,1], 0xe63946],
+      [[1, 0, 0], 0x2a9d8f],
+      [[0, 1, 0], 0x4361ee],
+      [[0, 0, 1], 0xe63946],
     ];
     axes.forEach(([dir, color]) => {
       const [dx, dy, dz] = dir;
       scene.add(new THREE.Line(
         new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(-dx*2, -dy*2, -dz*2),
-          new THREE.Vector3(dx*2,  dy*2,  dz*2),
+          new THREE.Vector3(-dx * 2, -dy * 2, -dz * 2),
+          new THREE.Vector3(dx * 2, dy * 2, dz * 2),
         ]),
         new THREE.LineBasicMaterial({ color })
       ));
@@ -79,11 +72,11 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
     dynamicGroupRef.current = dynGroup;
 
     const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
-    const orbit  = orbitRef.current;
+    const orbit = orbitRef.current;
 
-    const onDown  = (e: MouseEvent) => { orbit.isDragging = true; orbit.prev = { x: e.clientX, y: e.clientY }; };
-    const onUp    = () => { orbit.isDragging = false; };
-    const onMove  = (e: MouseEvent) => {
+    const onDown = (e: MouseEvent) => { orbit.isDragging = true; orbit.prev = { x: e.clientX, y: e.clientY }; };
+    const onUp = () => { orbit.isDragging = false; };
+    const onMove = (e: MouseEvent) => {
       if (!orbit.isDragging) return;
       orbit.theta -= (e.clientX - orbit.prev.x) * 0.014;
       orbit.phi = Math.max(0.12, Math.min(Math.PI - 0.12, orbit.phi + (e.clientY - orbit.prev.y) * 0.014));
@@ -119,7 +112,6 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
     };
   }, []);
 
-  // React to dark mode toggle
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene) return;
@@ -135,7 +127,6 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
     });
   }, [darkMode]);
 
-  // Update dynamic objects
   useEffect(() => {
     const group = dynamicGroupRef.current;
     if (!group) return;
@@ -146,7 +137,7 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
         new THREE.SphereGeometry(0.1, 16, 16),
         new THREE.MeshStandardMaterial({ color: COLORS[i % COLORS.length] })
       );
-      mesh.position.set(parseFloat(p.y)||0, parseFloat(p.z)||0, parseFloat(p.x)||0);
+      mesh.position.set(parseFloat(p.y) || 0, parseFloat(p.z) || 0, parseFloat(p.x) || 0);
       group.add(mesh);
     });
     forces.forEach(f => {
@@ -154,9 +145,9 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
       if (!mag) return;
       const a = points[f.from], b = points[f.to];
       if (!a || !b) return;
-      const from = new THREE.Vector3(parseFloat(a.y)||0, parseFloat(a.z)||0, parseFloat(a.x)||0);
-      const to   = new THREE.Vector3(parseFloat(b.y)||0, parseFloat(b.z)||0, parseFloat(b.x)||0);
-      const len  = from.distanceTo(to);
+      const from = new THREE.Vector3(parseFloat(a.y) || 0, parseFloat(a.z) || 0, parseFloat(a.x) || 0);
+      const to = new THREE.Vector3(parseFloat(b.y) || 0, parseFloat(b.z) || 0, parseFloat(b.x) || 0);
+      const len = from.distanceTo(to);
       if (len < 0.001) return;
       group.add(new THREE.ArrowHelper(
         new THREE.Vector3().subVectors(to, from).normalize(), from, len, 0xf4a261, 0.25, 0.14
@@ -168,7 +159,7 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
     <div className="relative rounded-[14px] overflow-hidden border border-gray-200 dark:border-gray-600">
       <div ref={mountRef} className="w-full h-[240px] sm:h-[320px] cursor-grab" />
       <div className="absolute top-2.5 left-3 flex gap-1.5 pointer-events-none">
-        {([["X","#e63946","#fff0f1","#fecdd3"],["Y","#2a9d8f","#f0faf9","#99f6e4"],["Z","#4361ee","#f0f2ff","#c7d2fe"]] as [string,string,string,string][]).map(([l,c,bg,border]) => (
+        {([["X", "#e63946", "#fff0f1", "#fecdd3"], ["Y", "#2a9d8f", "#f0faf9", "#99f6e4"], ["Z", "#4361ee", "#f0f2ff", "#c7d2fe"]] as [string, string, string, string][]).map(([l, c, bg, border]) => (
           <span key={l} className="rounded-md px-1.5 py-0.5 text-[11px] sm:text-[13px] font-bold"
             style={{ background: bg, color: c, border: `1.5px solid ${border}` }}>
             {l}
@@ -182,9 +173,6 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
   );
 }
 
-/* ================================================================
-   KATEX
-================================================================ */
 function useKatex() {
   const [ok, setOk] = useState(false);
   useEffect(() => {
@@ -214,13 +202,10 @@ function KTX({ tex }: { tex: string }) {
   return <div ref={el} className="my-0.5 overflow-x-auto dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white" />;
 }
 
-/* ================================================================
-   STEP LINE TYPES
-================================================================ */
 type StepLine =
   | { type: "heading"; text: string }
-  | { type: "math";    tex: string }
-  | { type: "text";    text: string }
+  | { type: "math"; tex: string }
+  | { type: "text"; text: string }
   | { type: "diagram"; label?: string; node: ReactNode };
 
 function fromLegacySteps(steps: string[]): StepLine[] {
@@ -231,9 +216,6 @@ function fromLegacySteps(steps: string[]): StepLine[] {
   });
 }
 
-/* ================================================================
-   STEP-BY-STEP RENDERER
-================================================================ */
 function StepByStepSolution({ steps, title = "Step-by-Step Solution", containerRef }: {
   steps: StepLine[];
   title?: string;
@@ -266,9 +248,6 @@ function StepByStepSolution({ steps, title = "Step-by-Step Solution", containerR
   );
 }
 
-/* ================================================================
-   SOLUTION BUILDER
-================================================================ */
 function buildSolution(details: any[], Rx: number, Ry: number, Rz: number, R: number): string[] {
   const steps: string[] = [];
   steps.push("Step 1: Determine position vectors");
@@ -284,27 +263,23 @@ function buildSolution(details: any[], Rx: number, Ry: number, Rz: number, R: nu
   steps.push(`R = \\sqrt{(${Rx.toFixed(2)})^2+(${Ry.toFixed(2)})^2+(${Rz.toFixed(2)})^2} = ${R.toFixed(2)}`);
   if (R > 0.0001) {
     const alpha = (Math.acos(Rx / R) * 180) / Math.PI;
-    const beta  = (Math.acos(Ry / R) * 180) / Math.PI;
+    const beta = (Math.acos(Ry / R) * 180) / Math.PI;
     const gamma = (Math.acos(Rz / R) * 180) / Math.PI;
     steps.push("Step 6: Direction angles (α, β, γ)");
     steps.push(`\\alpha=\\cos^{-1}\\!\\left(\\frac{${Rx.toFixed(2)}}{${R.toFixed(2)}}\\right)=${alpha.toFixed(2)}^\\circ`);
     steps.push(`\\beta=\\cos^{-1}\\!\\left(\\frac{${Ry.toFixed(2)}}{${R.toFixed(2)}}\\right)=${beta.toFixed(2)}^\\circ`);
     steps.push(`\\gamma=\\cos^{-1}\\!\\left(\\frac{${Rz.toFixed(2)}}{${R.toFixed(2)}}\\right)=${gamma.toFixed(2)}^\\circ`);
-    steps.push(`\\cos^2\\alpha+\\cos^2\\beta+\\cos^2\\gamma=${((Rx/R)**2+(Ry/R)**2+(Rz/R)**2).toFixed(3)}\\approx 1\\checkmark`);
+    steps.push(`\\cos^2\\alpha+\\cos^2\\beta+\\cos^2\\gamma=${((Rx / R) ** 2 + (Ry / R) ** 2 + (Rz / R) ** 2).toFixed(3)}\\approx 1\\checkmark`);
   }
   return steps;
 }
 
-/* ================================================================
-   MAIN EXPORT
-================================================================ */
 export default function CoordinateTab() {
   const ptLabel = (i: number) => String.fromCharCode(65 + i);
-  const [points, setPoints]           = useState([{ label:"A",x:"",y:"",z:"" },{ label:"B",x:"",y:"",z:"" }]);
-  const [forces, setForces]           = useState([{ mag:"", from:0, to:1 }]);
-  const [result, setResult]           = useState<any>(null);
-  const [showSolution, setShowSolution] = useState(false);
-  const [status, setStatus]           = useState<"idle"|"generating"|"done"|"error">("idle");
+  const [points, setPoints] = useState([{ label: "A", x: "", y: "", z: "" }, { label: "B", x: "", y: "", z: "" }]);
+  const [forces, setForces] = useState([{ mag: "", from: 0, to: 1 }]);
+  const [result, setResult] = useState<any>(null);
+  const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
 
   const off = status === "generating";
   const labels: Record<typeof status, string> = {
@@ -314,17 +289,17 @@ export default function CoordinateTab() {
     error: "❌ Export failed — try again",
   };
 
-  const addPoint    = () => setPoints(p => [...p, { label: ptLabel(p.length), x:"", y:"", z:"" }]);
+  const addPoint = () => setPoints(p => [...p, { label: ptLabel(p.length), x: "", y: "", z: "" }]);
   const removePoint = (i: number) => {
     if (points.length <= 2) return;
-    setPoints(p => p.filter((_,j) => j !== i).map((v,j) => ({ ...v, label: ptLabel(j) })));
+    setPoints(p => p.filter((_, j) => j !== i).map((v, j) => ({ ...v, label: ptLabel(j) })));
   };
   const updatePoint = (i: number, field: string, val: string) =>
-    setPoints(p => p.map((v,j) => j === i ? { ...v, [field]: val } : v));
-  const addForce    = () => setForces(f => [...f, { mag:"", from:0, to: Math.min(1, points.length-1) }]);
-  const removeForce = (i: number) => { if (forces.length <= 1) return; setForces(f => f.filter((_,j) => j !== i)); };
+    setPoints(p => p.map((v, j) => j === i ? { ...v, [field]: val } : v));
+  const addForce = () => setForces(f => [...f, { mag: "", from: 0, to: Math.min(1, points.length - 1) }]);
+  const removeForce = (i: number) => { if (forces.length <= 1) return; setForces(f => f.filter((_, j) => j !== i)); };
   const updateForce = (i: number, field: string, val: any) =>
-    setForces(f => f.map((v,j) => j === i ? { ...v, [field]: val } : v));
+    setForces(f => f.map((v, j) => j === i ? { ...v, [field]: val } : v));
 
   const calculate = () => {
     let Rx = 0, Ry = 0, Rz = 0;
@@ -334,41 +309,70 @@ export default function CoordinateTab() {
       if (!mag) return;
       const a = points[f.from], b = points[f.to];
       if (!a || !b) return;
-      const ax=parseFloat(a.x)||0, ay=parseFloat(a.y)||0, az=parseFloat(a.z)||0;
-      const bx=parseFloat(b.x)||0, by=parseFloat(b.y)||0, bz=parseFloat(b.z)||0;
-      const dx=bx-ax, dy=by-ay, dz=bz-az;
-      const len = Math.sqrt(dx*dx + dy*dy + dz*dz);
+      const ax = parseFloat(a.x) || 0, ay = parseFloat(a.y) || 0, az = parseFloat(a.z) || 0;
+      const bx = parseFloat(b.x) || 0, by = parseFloat(b.y) || 0, bz = parseFloat(b.z) || 0;
+      const dx = bx - ax, dy = by - ay, dz = bz - az;
+      const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
       if (!len) return;
-      const Fx=mag*dx/len, Fy=mag*dy/len, Fz=mag*dz/len;
-      Rx+=Fx; Ry+=Fy; Rz+=Fz;
-      details.push({ mag, from:points[f.from].label, to:points[f.to].label, ax,ay,az,bx,by,bz,dx,dy,dz,Fx,Fy,Fz,len });
+      const Fx = mag * dx / len, Fy = mag * dy / len, Fz = mag * dz / len;
+      Rx += Fx; Ry += Fy; Rz += Fz;
+      details.push({ mag, from: points[f.from].label, to: points[f.to].label, ax, ay, az, bx, by, bz, dx, dy, dz, Fx, Fy, Fz, len });
     });
-    const R = Math.sqrt(Rx*Rx + Ry*Ry + Rz*Rz);
+    const R = Math.sqrt(Rx * Rx + Ry * Ry + Rz * Rz);
     const rawSteps = buildSolution(details, Rx, Ry, Rz, R);
-    const alpha=(Math.acos(Rx/R)*180)/Math.PI, beta=(Math.acos(Ry/R)*180)/Math.PI, gamma=(Math.acos(Rz/R)*180)/Math.PI;
+    const alpha = (Math.acos(Rx / R) * 180) / Math.PI, beta = (Math.acos(Ry / R) * 180) / Math.PI, gamma = (Math.acos(Rz / R) * 180) / Math.PI;
     setResult({
       details, Rx, Ry, Rz, R, steps: rawSteps,
       stepLines: fromLegacySteps(rawSteps),
       resultRows: [
-        { label:"Resultant Rx",    value:`${Rx.toFixed(3)} N` },
-        { label:"Resultant Ry",    value:`${Ry.toFixed(3)} N` },
-        { label:"Resultant Rz",    value:`${Rz.toFixed(3)} N` },
-        { label:"Magnitude |R|",   value:`${R.toFixed(3)} N` },
-        { label:"α (angle with X)",value:`${alpha.toFixed(2)}°` },
-        { label:"β (angle with Y)",value:`${beta.toFixed(2)}°` },
-        { label:"γ (angle with Z)",value:`${gamma.toFixed(2)}°` },
+        { label: "Resultant Rx", value: `${Rx.toFixed(3)} N` },
+        { label: "Resultant Ry", value: `${Ry.toFixed(3)} N` },
+        { label: "Resultant Rz", value: `${Rz.toFixed(3)} N` },
+        { label: "Magnitude |R|", value: `${R.toFixed(3)} N` },
+        { label: "α (angle with X)", value: `${alpha.toFixed(2)}°` },
+        { label: "β (angle with Y)", value: `${beta.toFixed(2)}°` },
+        { label: "γ (angle with Z)", value: `${gamma.toFixed(2)}°` },
       ],
     });
-    setShowSolution(true);
   };
 
-  const inputCls  = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-[13px] w-full outline-none text-gray-900 dark:text-white";
+
+const handleExportPDF = async () => {
+  if (!result) return;
+  setStatus("generating");
+  try {
+    const payload = {
+      steps: result.steps,
+      resultRows: result.resultRows,
+      points,
+      forces,
+      result: { Rx: result.Rx, Ry: result.Ry, Rz: result.Rz, R: result.R, details: result.details },
+    };
+    const res = await fetch("/api/export-pdf-3dcoordinates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "coordinate-solution.pdf";
+    a.click();
+    URL.revokeObjectURL(url);
+    setStatus("done");
+  } catch {
+    setStatus("error");
+  }
+  setTimeout(() => setStatus("idle"), 2500);
+};
+  const inputCls = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-[13px] w-full outline-none text-gray-900 dark:text-white";
   const selectCls = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-[13px] outline-none text-gray-900 dark:text-white w-full";
-  const cardCls   = "bg-white dark:bg-gray-800 rounded-[14px] border border-gray-200 dark:border-gray-600 p-4 sm:p-5 shadow-sm";
-  const h3Cls     = "text-[14px] sm:text-[15px] font-semibold mt-0 mb-3 text-gray-900 dark:text-white";
+  const cardCls = "bg-white dark:bg-gray-800 rounded-[14px] border border-gray-200 dark:border-gray-600 p-4 sm:p-5 shadow-sm";
+  const h3Cls = "text-[14px] sm:text-[15px] font-semibold mt-0 mb-3 text-gray-900 dark:text-white";
 
   return (
-    <div className="w-full bg-transparent">
+    <div className="w-full max-w-[580px] mx-auto bg-transparent">
 
       {/* 3D Canvas */}
       <div className="w-full max-w-[580px] mx-auto mb-4">
@@ -381,22 +385,21 @@ export default function CoordinateTab() {
         <CoordThreeCanvas points={points} forces={forces} />
       </div>
 
-      {/* Inputs — single column on mobile, 2-col on sm+ */}
-      <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4 mb-4">
+      {/* Inputs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
 
         {/* Points card */}
         <div className={cardCls}>
           <h3 className={h3Cls}>Coordinates of Points</h3>
-          {/* Header row */}
           <div className="grid grid-cols-[40px_1fr_1fr_1fr_30px] gap-1 mb-1">
             <span />
-            {["x","y","z"].map(l => <span key={l} className="text-[11px] text-gray-400 text-center">{l}</span>)}
+            {["x", "y", "z"].map(l => <span key={l} className="text-[11px] text-gray-400 text-center">{l}</span>)}
             <span />
           </div>
           {points.map((p, i) => (
             <div key={i} className="grid grid-cols-[40px_1fr_1fr_1fr_30px] gap-1 items-center mb-1.5">
               <span className="text-[12px] text-gray-500 dark:text-gray-400 truncate">Pt {p.label}</span>
-              {["x","y","z"].map(field => (
+              {["x", "y", "z"].map(field => (
                 <input key={field} className={inputCls} placeholder={field}
                   value={(p as any)[field]} onChange={e => updatePoint(i, field, e.target.value)} />
               ))}
@@ -425,13 +428,13 @@ export default function CoordinateTab() {
               <div className="flex items-center gap-2 mb-1.5">
                 <span className="text-[12px] text-gray-500 dark:text-gray-400 w-24 shrink-0">From:</span>
                 <select className={selectCls} value={f.from} onChange={e => updateForce(i, "from", +e.target.value)}>
-                  {points.map((p,j) => <option key={j} value={j}>Point {p.label}</option>)}
+                  {points.map((p, j) => <option key={j} value={j}>Point {p.label}</option>)}
                 </select>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[12px] text-gray-500 dark:text-gray-400 w-24 shrink-0">To:</span>
                 <select className={selectCls} value={f.to} onChange={e => updateForce(i, "to", +e.target.value)}>
-                  {points.map((p,j) => <option key={j} value={j}>Point {p.label}</option>)}
+                  {points.map((p, j) => <option key={j} value={j}>Point {p.label}</option>)}
                 </select>
               </div>
               {forces.length > 1 && (
@@ -459,47 +462,68 @@ export default function CoordinateTab() {
 
       {/* Solution */}
       {result && (
-        <div className={cardCls}>
-          <button onClick={() => setShowSolution(s => !s)}
-            className="bg-transparent border-none cursor-pointer flex items-center gap-2 text-[15px] sm:text-[16px] font-semibold text-gray-900 dark:text-white p-0 w-full">
-            <span className="bg-[#1848a0] text-white rounded-lg px-2.5 py-0.5 text-[11px] sm:text-[12px] font-bold">
-              {showSolution ? "▲ Hide" : "▼ Show"}
-            </span>
-            <span>Step-by-Step Solution</span>
-          </button>
-
-          {showSolution && (
-            <div className="mt-4">
-              <button
-                onClick={() => {
-                  setStatus("generating");
-                  const payload = { steps: result.steps, resultRows: result.resultRows, points, forces, result: { Rx: result.Rx, Ry: result.Ry, Rz: result.Rz, R: result.R, details: result.details } };
-                  window.open(`/print/coordinate?data=${encodeURIComponent(JSON.stringify(payload))}`, "_blank");
-                  setStatus("done");
-                  setTimeout(() => setStatus("idle"), 2500);
-                }}
-                disabled={off}
-                className={`w-full py-3 rounded-[10px] text-[14px] sm:text-[15px] font-semibold text-white mb-3 transition ${
-                  off ? "opacity-60 cursor-not-allowed bg-[#1848a0]" : "cursor-pointer bg-[#1848a0] hover:bg-[#163d8a]"
-                }`}>
-                {labels[status]}
-              </button>
-
-              {/* Result grid — 1 col on mobile, 2 col on sm+ */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+        <>
+          {/* ── WIDE SCREEN (sm+): side-by-side layout ── */}
+          <div className="hidden sm:flex gap-4 mt-4 items-start">
+            {/* Left: result grid */}
+            <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
+              <h3 className="text-[13px] font-semibold mb-3 text-gray-900 dark:text-white">Results</h3>
+              <div className="grid grid-cols-2 gap-2">
                 {result.resultRows.map((row: { label: string; value: string }, i: number) => (
-                  <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[10px] border border-blue-100 dark:border-gray-600 px-3 py-2.5">
-                    <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">{row.label}</div>
-                    <div className="text-[15px] font-bold text-[#1848a0] dark:text-blue-400">{row.value}</div>
+                  <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[8px] border border-blue-100 dark:border-gray-600 px-2 py-2">
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">{row.label}</div>
+                    <div className="text-[13px] font-bold text-[#1848a0] dark:text-blue-400">{row.value}</div>
                   </div>
                 ))}
               </div>
+              <button
+onClick={handleExportPDF}
 
-              <StepByStepSolution steps={result.stepLines} title="" />
+                disabled={off}
+                className={`w-full mt-3 rounded-lg px-3 py-2 font-semibold text-white transition text-[13px] ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+                  }`}>
+                {labels[status]}
+              </button>
             </div>
-          )}
-        </div>
+
+            {/* Right: step-by-step */}
+            <div className="flex-1 overflow-x-auto">
+              <StepByStepSolution steps={result.stepLines} title="Step-by-Step Solution" />
+            </div>
+          </div>
+
+          {/* ── MOBILE (below sm): compact stacked layout ── */}
+          <div className="flex sm:hidden flex-col gap-3 mt-4">
+            {/* Result grid — smaller text */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-3">
+              <h3 className="text-[11px] font-semibold mb-2 text-gray-900 dark:text-white">Results</h3>
+              <div className="grid grid-cols-2 gap-1.5">
+                {result.resultRows.map((row: { label: string; value: string }, i: number) => (
+                  <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[6px] border border-blue-100 dark:border-gray-600 px-2 py-1.5">
+                    <div className="text-[9px] text-gray-500 dark:text-gray-400 mb-0.5 leading-tight">{row.label}</div>
+                    <div className="text-[12px] font-bold text-[#1848a0] dark:text-blue-400">{row.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* PDF button */}
+            <button
+onClick={handleExportPDF}
+              disabled={off}
+              className={`w-full rounded-lg px-3 py-2 font-semibold text-white transition text-[12px] ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+                }`}>
+              {labels[status]}
+            </button>
+
+            {/* Step-by-step — smaller fonts via wrapper */}
+            <div className="overflow-x-auto text-[11px]">
+              <StepByStepSolution steps={result.stepLines} title="Step-by-Step Solution" />
+            </div>
+          </div>
+        </>
       )}
     </div>
+
   );
 }

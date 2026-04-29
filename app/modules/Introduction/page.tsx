@@ -72,7 +72,7 @@ backgroundImage: `
       />
       <Header />
 
-      <main className="flex-grow flex flex-col items-center px-4 py-10">
+      <section className="flex-grow flex flex-col items-center px-4 py-10">
         <h1 className="text-[32px] font-bold mb-2 text-center">
           Moment of Inertia of Composite Areas
         </h1>
@@ -185,7 +185,7 @@ backgroundImage: `
           </Step>
 
         </div>
-      </main>
+      </section>
 
       <Footer />
     </div>

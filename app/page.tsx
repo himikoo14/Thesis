@@ -69,7 +69,7 @@ export default function HomePage() {
         </div>
       </section>
 
-{/* Landing Page for small screens - below 400px only */}
+{/* Landing Page for small screens - below 640px only */}
 <section className="flex sm:hidden flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
   <h1 className="text-[50px] font-bold mb-2 text-black dark:text-white">
     Stati

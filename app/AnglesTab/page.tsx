@@ -387,7 +387,8 @@ export default function AnglesTab() {
   const cardCls  = "w-full bg-white dark:bg-gray-800 rounded-2xl shadow p-4 sm:p-6 mt-4";
 
   return (
-    <div className="flex flex-col items-center w-full">
+<div className="flex flex-col items-center w-full" style={{ scrollbarGutter: "stable" }}>
+
 
       {/* Canvas */}
       <div className="w-full max-w-xl">
@@ -449,70 +450,110 @@ export default function AnglesTab() {
           Calculate
         </button>
       </div>
-
-      {/* Results */}
+<div>
+{/* Results + Step-by-step */}
       {result && (
-        <div className={`${cardCls} max-w-xl`}>
-          <h2 className="text-[17px] sm:text-[18px] font-semibold mt-0 mb-3 text-gray-900 dark:text-white">
-            Resultant Force
-          </h2>
-          {/* 2-column grid on small, stays 2-col everywhere since labels are short */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {[
-              ["X component (Fx)", `${result.sumFx.toFixed(3)} kN`],
-              ["Y component (Fy)", `${result.sumFy.toFixed(3)} kN`],
-              ["Z component (Fz)", `${result.sumFz.toFixed(3)} kN`],
-              ["Magnitude (R)",    `${result.R.toFixed(3)} kN`],
-              ["Azimuth (φ)",      `${result.azimuth.toFixed(2)}°`],
-              ["Elevation (α)",    `${result.elevation.toFixed(2)}°`],
-            ].map(([label, val]) => (
-              <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-xl border border-blue-100 dark:border-gray-600 px-3 py-2">
-                <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">{label}</div>
-                <div className="text-[15px] font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
+        <>
+          {/* ── WIDE SCREEN (sm+): side-by-side ── */}
+          <div className="hidden sm:flex gap-4 mt-4 w-full max-w-xl items-start">
+            {/* Left: result grid */}
+            <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow p-4">
+              <h3 className="text-[13px] font-semibold mb-3 text-gray-900 dark:text-white">Resultant Force</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ["X component (Fx)", `${result.sumFx.toFixed(3)} kN`],
+                  ["Y component (Fy)", `${result.sumFy.toFixed(3)} kN`],
+                  ["Z component (Fz)", `${result.sumFz.toFixed(3)} kN`],
+                  ["Magnitude (R)",    `${result.R.toFixed(3)} kN`],
+                  ["Azimuth (φ)",      `${result.azimuth.toFixed(2)}°`],
+                  ["Elevation (α)",    `${result.elevation.toFixed(2)}°`],
+                ].map(([label, val]) => (
+                  <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-[8px] border border-blue-100 dark:border-gray-600 px-2 py-2">
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">{label}</div>
+                    <div className="text-[13px] font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+              <button onClick={handleExportPDF} disabled={off}
+                className={`w-full mt-3 rounded-lg px-3 py-2 font-semibold text-white transition text-[13px] ${
+                  off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+                }`}>
+                {labels[status]}
+              </button>
+            </div>
 
-      {/* Step-by-step */}
-      {result && (
-        <div className={`${cardCls} max-w-xl`}>
-          <h2 className="text-[17px] sm:text-[18px] font-semibold mt-0 mb-3 text-gray-900 dark:text-white">
-            Step-by-Step Solution
-          </h2>
-
-          <button onClick={handleExportPDF} disabled={off}
-            className={`w-full mb-4 rounded-xl px-4 py-3 font-semibold text-white transition text-[14px] sm:text-[15px] ${
-              off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
-            }`}>
-            {labels[status]}
-          </button>
-
-          <div className="leading-relaxed overflow-x-auto">
-            {result.steps.map((line: string, i: number) =>
-              line.startsWith("Step") ? (
-                <p key={i} className="font-semibold text-[15px] mt-3.5 mb-1 text-gray-900 dark:text-white">{line}</p>
-              ) : katexOk ? (
-                <MathBlock key={i} tex={line} />
-              ) : (
-                <pre key={i} className="text-[12px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap">{line}</pre>
-              )
-            )}
-          </div>
-
-          <div className="mt-6">
-            <p className="font-semibold text-[15px] mb-2 text-gray-900 dark:text-white">
-              Final Free Body Diagram (All Forces + Resultant)
-            </p>
-            <ResultantFBD3D forces={forces} result={result} />
-            <div className="mt-2 text-[12px] text-gray-500 dark:text-gray-400 text-center">
-              <span className="text-[#1848a0] font-semibold">■</span> Input Forces &nbsp;&nbsp;
-              <span className="text-[#009900] font-semibold">■</span> Resultant R
+            {/* Right: step-by-step */}
+            <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow p-4 overflow-x-auto">
+              <h3 className="text-[13px] font-semibold mb-3 text-gray-900 dark:text-white">Step-by-Step Solution</h3>
+              <div className="leading-relaxed">
+                {result.steps.map((line: string, i: number) =>
+                  line.startsWith("Step") ? (
+                    <p key={i} className="font-semibold text-[12px] mt-3 mb-1 text-gray-900 dark:text-white">{line}</p>
+                  ) : katexOk ? (
+                    <MathBlock key={i} tex={line} />
+                  ) : (
+                    <pre key={i} className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap">{line}</pre>
+                  )
+                )}
+              </div>
+              <div className="mt-4">
+                <p className="font-semibold text-[12px] mb-2 text-gray-900 dark:text-white">Final FBD</p>
+                <ResultantFBD3D forces={forces} result={result} />
+              </div>
             </div>
           </div>
-        </div>
+
+          {/* ── MOBILE (below sm): compact stacked ── */}
+          <div className="flex sm:hidden flex-col gap-3 mt-4 w-full max-w-xl">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-3">
+              <h3 className="text-[11px] font-semibold mb-2 text-gray-900 dark:text-white">Resultant Force</h3>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  ["X component (Fx)", `${result.sumFx.toFixed(3)} kN`],
+                  ["Y component (Fy)", `${result.sumFy.toFixed(3)} kN`],
+                  ["Z component (Fz)", `${result.sumFz.toFixed(3)} kN`],
+                  ["Magnitude (R)",    `${result.R.toFixed(3)} kN`],
+                  ["Azimuth (φ)",      `${result.azimuth.toFixed(2)}°`],
+                  ["Elevation (α)",    `${result.elevation.toFixed(2)}°`],
+                ].map(([label, val]) => (
+                  <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-[6px] border border-blue-100 dark:border-gray-600 px-2 py-1.5">
+                    <div className="text-[9px] text-gray-500 dark:text-gray-400 mb-0.5 leading-tight">{label}</div>
+                    <div className="text-[12px] font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button onClick={handleExportPDF} disabled={off}
+              className={`w-full rounded-lg px-3 py-2 font-semibold text-white transition text-[12px] ${
+                off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+              }`}>
+              {labels[status]}
+            </button>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-3 overflow-x-auto text-[11px]">
+              <h3 className="text-[11px] font-semibold mb-2 text-gray-900 dark:text-white">Step-by-Step Solution</h3>
+              <div className="leading-relaxed">
+                {result.steps.map((line: string, i: number) =>
+                  line.startsWith("Step") ? (
+                    <p key={i} className="font-semibold text-[11px] mt-2.5 mb-0.5 text-gray-900 dark:text-white">{line}</p>
+                  ) : katexOk ? (
+                    <MathBlock key={i} tex={line} />
+                  ) : (
+                    <pre key={i} className="text-[10px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap">{line}</pre>
+                  )
+                )}
+              </div>
+              <div className="mt-3">
+                <p className="font-semibold text-[11px] mb-1.5 text-gray-900 dark:text-white">Final FBD</p>
+                <ResultantFBD3D forces={forces} result={result} />
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
+    </div>
+
   );
 }

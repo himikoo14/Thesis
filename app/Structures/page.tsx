@@ -427,8 +427,8 @@ export default function TrussSolverUI() {
   const allNodes: Joint[] = [...supports.map(s => ({ x: s.x, y: s.y })), ...nodes];
   const numericNodes = allNodes.map(n => ({ x: parseFloat(n.x || "0"), y: parseFloat(n.y || "0") }));
 
-  const inputClass  = "w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-[18px] p-2 outline-none focus:ring-0";
-  const redButtonClass  = "w-10 px-2 py-0.5 bg-red-500 text-white rounded-md hover:bg-red-600 text-[20px]";
+  const inputClass = "w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-[18px] p-2 outline-none focus:ring-0";
+  const redButtonClass = "w-10 px-2 py-0.5 bg-red-500 text-white rounded-md hover:bg-red-600 text-[20px]";
   const greenButtonClass = "px-3 py-1 bg-[#008409] text-white rounded-lg hover:bg-[#15711b] transition text-[18px]";
   const cardCls = "bg-white dark:bg-gray-800 rounded-xl shadow p-4 relative z-10 border border-transparent dark:border-gray-700";
 
@@ -460,9 +460,10 @@ export default function TrussSolverUI() {
   ] : [];
 
   return (
-    <div className="relative flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
+    <section className="relative flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
       <Header />
-      <main className="flex-grow px-6 py-10 max-w-6xl mx-auto w-full relative">
+
+      <main className="hidden sm:block flex-grow px-6 py-10 max-w-6xl mx-auto w-full relative">
         <h1 className="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-white">Truss Calculator</h1>
         <h2 className="text-xl font-semibold text-center mb-6 text-gray-700 dark:text-gray-300">Real-Time Free Body Diagram</h2>
 
@@ -647,7 +648,196 @@ export default function TrussSolverUI() {
           </>
         )}
       </main>
+
+      <main className="block sm:hidden flex-grow px-4 py-6 w-full">
+        <h1 className="text-2xl font-bold text-center mb-1 text-gray-900 dark:text-white">Truss Calculator</h1>
+        <h2 className="text-base font-semibold text-center mb-4 text-gray-700 dark:text-gray-300">Real-Time Free Body Diagram</h2>
+
+        {/* FBD canvas */}
+        <div className="relative rounded-xl shadow h-[250px] mb-6 overflow-hidden bg-gray-800 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+          <MainFBD numericNodes={numericNodes} members={members} supports={supports} forces={forces} solution={solution} allNodes={allNodes} />
+        </div>
+
+        <div className="flex flex-col gap-4 mb-6">
+
+          {/* Supports */}
+          <div className={cardCls}>
+            <h3 className="text-base font-semibold mb-2 text-gray-900 dark:text-white">Supports</h3>
+            {supports.map((s, i) => (
+              <div key={i} className="flex flex-col gap-1 mb-3">
+                <span className="font-medium text-sm text-gray-700 dark:text-gray-300">Joint {nodeLabel(i)}</span>
+                <div className="grid grid-cols-3 gap-2">
+                  <input type="number" placeholder="x" value={s.x} onChange={e => handleChange(supports, setSupports, i, "x", e.target.value)} className={`${inputClass} min-w-0`} />
+                  <input type="number" placeholder="y" value={s.y} onChange={e => handleChange(supports, setSupports, i, "y", e.target.value)} className={`${inputClass} min-w-0`} />
+                  <select value={s.type} onChange={e => handleChange(supports, setSupports, i, "type", e.target.value)} className={`${inputClass} min-w-0 text-sm`}>
+                    <option>Pinned</option><option>Roller</option>
+                  </select>
+                </div>
+                {supports.length > 1 && <button onClick={() => removeItem(supports, setSupports, i)} className={`${redButtonClass} w-full mt-1`}>– Remove</button>}
+              </div>
+            ))}
+            <button onClick={() => addItem(supports, setSupports, { x: "", y: "", type: "Pinned" })} className={greenButtonClass}>+ Add Support</button>
+          </div>
+
+          {/* Nodes */}
+          <div className={cardCls}>
+            <h3 className="text-base font-semibold mb-2 text-gray-900 dark:text-white">Nodes</h3>
+            {nodes.map((n, i) => (
+              <div key={i} className="flex flex-col gap-1 mb-3">
+                <span className="font-medium text-sm text-gray-700 dark:text-gray-300">Joint {nodeLabel(supports.length + i)}</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="number" placeholder="x" value={n.x} onChange={e => handleChange(nodes, setNodes, i, "x", e.target.value)} className={`${inputClass} min-w-0`} />
+                  <input type="number" placeholder="y" value={n.y} onChange={e => handleChange(nodes, setNodes, i, "y", e.target.value)} className={`${inputClass} min-w-0`} />
+                </div>
+                {nodes.length > 1 && <button onClick={() => removeItem(nodes, setNodes, i)} className={`${redButtonClass} w-full mt-1`}>– Remove</button>}
+              </div>
+            ))}
+            <button onClick={() => addItem(nodes, setNodes, { x: "", y: "" })} className={greenButtonClass}>+ Add Joint</button>
+          </div>
+
+          {/* Members */}
+          <div className={cardCls}>
+            <h3 className="text-base font-semibold mb-2 text-gray-900 dark:text-white">Members</h3>
+            {members.map((m, i) => (
+              <div key={i} className="flex flex-col gap-1 mb-3">
+                <span className="font-medium text-sm text-gray-700 dark:text-gray-300">Member {nodeLabel(m.start)}{nodeLabel(m.end)}</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <select value={m.start} onChange={e => handleChange(members, setMembers, i, "start", Number(e.target.value))} className={`${inputClass} min-w-0 text-sm`}>
+                    {allNodes.map((_, idx) => <option key={idx} value={idx}>Joint {nodeLabel(idx)}</option>)}
+                  </select>
+                  <select value={m.end} onChange={e => handleChange(members, setMembers, i, "end", Number(e.target.value))} className={`${inputClass} min-w-0 text-sm`}>
+                    {allNodes.map((_, idx) => <option key={idx} value={idx}>Joint {nodeLabel(idx)}</option>)}
+                  </select>
+                </div>
+                {members.length > 1 && <button onClick={() => removeItem(members, setMembers, i)} className={`${redButtonClass} w-full mt-1`}>– Remove</button>}
+              </div>
+            ))}
+            <button onClick={() => addItem(members, setMembers, { start: 0, end: 0 })} className={greenButtonClass}>+ Add Member</button>
+          </div>
+
+          {/* Forces */}
+          <div className={cardCls}>
+            <h3 className="text-base font-semibold mb-2 text-gray-900 dark:text-white">Forces</h3>
+            {forces.map((f, i) => (
+              <div key={i} className="flex flex-col gap-1 mb-3">
+                <select value={f.Joint} onChange={e => handleChange(forces, setForces, i, "Joint", Number(e.target.value))} className={`${inputClass} min-w-0 text-sm w-full`}>
+                  {allNodes.map((_, idx) => <option key={idx} value={idx}>Joint {nodeLabel(idx)}</option>)}
+                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="number" placeholder="kN" value={f.magnitude} onChange={e => handleChange(forces, setForces, i, "magnitude", e.target.value)} className={`${inputClass} min-w-0`} />
+                  <input type="number" placeholder="deg" value={f.angle} onChange={e => handleChange(forces, setForces, i, "angle", e.target.value)} className={`${inputClass} min-w-0`} />
+                </div>
+                {forces.length > 1 && <button onClick={() => removeItem(forces, setForces, i)} className={`${redButtonClass} w-full mt-1`}>– Remove</button>}
+              </div>
+            ))}
+            <button onClick={() => addItem(forces, setForces, { Joint: 0, magnitude: "", angle: "" })} className={greenButtonClass}>+ Add Force</button>
+          </div>
+        </div>
+
+        <button className="w-full bg-[#1848a0] hover:bg-[#163d8a] text-white py-3 rounded-lg font-semibold mb-6 transition" onClick={handleSolve}>
+          Calculate
+        </button>
+
+        {solution && (
+          <>
+            {/* Member Forces */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-4">
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-white tracking-wide">Member Forces</h3>
+              </div>
+              <div className="divide-y divide-gray-50 dark:divide-gray-700">
+                {solution.memberForces.map((f, i) => {
+                  const tol = 1e-6;
+                  const type = Math.abs(f) < tol ? "Zero-force" : f > 0 ? "Tension" : "Compression";
+                  const lS = nodeLabel(members[i].start), lE = nodeLabel(members[i].end);
+                  const color = Math.abs(f) < tol ? "text-gray-400" : f > 0 ? "text-blue-500 dark:text-blue-400" : "text-red-500 dark:text-red-400";
+                  const badge = Math.abs(f) < tol
+                    ? "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                    : f > 0
+                      ? "bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300"
+                      : "bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-300";
+                  return (
+                    <div key={i} className="flex items-center justify-between px-4 py-3">
+                      <div>
+                        <span className="text-[11px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">Member </span>
+                        <span className="text-sm font-semibold text-gray-800 dark:text-white">{lS}{lE}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-mono font-semibold ${color}`}>{f > 0 ? "+" : ""}{fmt(f)} kN</span>
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${badge}`}>{type}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Support Reactions */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-4">
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-white tracking-wide">Support Reactions</h3>
+              </div>
+              <div className="divide-y divide-gray-50 dark:divide-gray-700">
+                {solution.reactions.map((r, i) => {
+                  if (Math.abs(r.x) < 1e-6 && Math.abs(r.y) < 1e-6) return null;
+                  const hasRx = Math.abs(r.x) > 1e-6;
+                  const hasRy = Math.abs(r.y) > 1e-6;
+                  const label = nodeLabel(i);
+                  const sType = i < supports.length ? supports[i].type : "";
+                  return (
+                    <div key={i} className="px-4 py-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-semibold text-gray-800 dark:text-white">Joint {label}</span>
+                        <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full">{sType}</span>
+                      </div>
+                      <div className="flex gap-6">
+                        {hasRx && (
+                          <div>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Horizontal (R<sub>{label}</sub><sub>x</sub>)</p>
+                            <KaTeXInline tex={`${fmt(r.x)}\\ \\text{kN}`} />
+                          </div>
+                        )}
+                        {hasRy && (
+                          <div>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Vertical (R<sub>{label}</sub><sub>y</sub>)</p>
+                            <KaTeXInline tex={`${fmt(r.y)}\\ \\text{kN}`} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Step-by-Step */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-white tracking-wide">Step-by-Step Solution</h3>
+              </div>
+              <div className="px-4 py-4">
+                <button
+                  onClick={() => {
+                    setStatus("generating");
+                    const payload = { supports, nodes, members, forces, resultRows, solution };
+                    const encoded = encodeURIComponent(JSON.stringify(payload));
+                    window.open(`/print/truss?data=${encoded}`, "_blank");
+                    setStatus("done");
+                    setTimeout(() => setStatus("idle"), 2500);
+                  }}
+                  disabled={off}
+                  className={`w-full mb-4 py-3 rounded-xl font-semibold text-white transition ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"}`}
+                >
+                  {labels[status]}
+                </button>
+                <TrussStepRenderer lines={solution.lines} solution={solution} members={members} allNodes={allNodes} supports={supports} forces={forces} />
+              </div>
+            </div>
+          </>
+        )}
+      </main>
+
       <Footer />
-    </div>
+    </section>
   );
 }

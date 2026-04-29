@@ -8,12 +8,12 @@ export default function Solver3D() {
   const [activeTab, setActiveTab] = useState("coordinate");
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-serif px-4 py-10 pb-12">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-serif px-4 py-4 pb-12">
       <div className="max-w-3xl mx-auto">
 
-        {/* Title */}
+{/* Title */}
         <div className="text-center mb-6">
-          <h1 className="text-[26px] font-bold text-gray-900 dark:text-white m-0">
+          <h1 className="text-[20px] sm:text-[26px] font-bold text-gray-900 dark:text-white m-0">
             3D Resultant Force Calculator
           </h1>
         </div>

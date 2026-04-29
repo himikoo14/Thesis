@@ -117,7 +117,6 @@ function CoordinateFBD({
 
 function PrintCoordinateContent() {
   const searchParams = useSearchParams();
-
   const raw =
     searchParams.get("data") ||
     (typeof window !== "undefined" ? localStorage.getItem("coordinatePdfData") : null);

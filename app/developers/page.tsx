@@ -9,12 +9,11 @@ export default function DevelopersSection() {
     <>
       <Header />
 
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center py-10 text-center space-y-14">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center py-10 text-center space-y-14">
         <h1 className="text-4xl font-serif font-bold text-[#1848a0]">
           Developers
         </h1>
 
-        {/* Developer 1 */}
         <DeveloperCard
           image="/ian.png"
           name="Ian Carl P. Coña"
@@ -23,7 +22,6 @@ export default function DevelopersSection() {
           roles={["Programmer", "Website Developer"]}
         />
 
-        {/* Developer 2 */}
         <DeveloperCard
           image="/sophia.jpg"
           name="Sophia Daphne C. Faelnar"
@@ -49,7 +47,6 @@ type Props = {
 function DeveloperCard({ image, name, email, facebook, roles }: Props) {
   return (
     <div className="flex flex-col items-center">
-      {/* Profile Image */}
       <div className="w-44 h-44 relative mb-4">
         <Image
           src={image}
@@ -59,27 +56,23 @@ function DeveloperCard({ image, name, email, facebook, roles }: Props) {
         />
       </div>
 
-      {/* Name */}
       <h2 className="text-2xl font-serif font-bold text-[#1848a0]">
         {name}
       </h2>
 
-      {/* Subtitle */}
-      <p className="italic text-gray-600 mt-1">
+      <p className="italic text-gray-600 dark:text-gray-400 mt-1">
         4th Year Civil Engineering Student, MSU-Gensan
       </p>
 
-      {/* Roles */}
       <div className="mt-1 leading-tight">
         {roles.map((role, index) => (
-          <p key={index} className="text-gray-700 text-sm">
+          <p key={index} className="text-gray-700 dark:text-gray-300 text-sm">
             {role}
           </p>
         ))}
       </div>
 
-      {/* Contact */}
-      <div className="mt-3 space-y-1 text-gray-800">
+      <div className="mt-3 space-y-1 text-gray-800 dark:text-gray-300">
         <div className="flex items-center justify-center gap-2">
           <span>✉</span>
           <span className="text-sm">{email}</span>

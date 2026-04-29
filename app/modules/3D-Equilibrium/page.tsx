@@ -6,8 +6,6 @@ import Footer from "<Ian>/components/Footer";
 import { BlockMath, InlineMath } from "react-katex";
 import "katex/dist/katex.min.css";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 interface FormulaBlockProps {
     label: string;
     formula: string;
@@ -19,15 +17,13 @@ interface StepProps {
     children: React.ReactNode;
 }
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
-
 function FormulaBlock({ label, formula }: FormulaBlockProps) {
     return (
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 my-3 text-center">
+        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-4 my-3 text-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">
                 {label}
             </p>
-            <div className="text-[18px]">
+            <div className="text-[18px] dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white">
                 <BlockMath>{formula}</BlockMath>
             </div>
         </div>
@@ -41,25 +37,22 @@ function Step({ number, title, children }: StepProps) {
                 <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#1848a0] text-white flex items-center justify-center font-bold text-[16px]">
                     {number}
                 </div>
-                <h2 className="text-[20px] font-semibold">{title}</h2>
+                <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">{title}</h2>
             </div>
-            <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10">
+            <div className="ml-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10 text-gray-900 dark:text-gray-200">
                 {children}
             </div>
         </div>
     );
 }
 
-// ─── Main Component ──────────────────────────────────────────────────────────
-
 export default function ThreeDEquilibrium() {
     return (
-        <div className="relative flex flex-col min-h-screen bg-gray-50 text-gray-900 text-[18px]">
-            {/* Background grid */}
+        <div className="relative flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-[18px]">
             <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
-backgroundImage: `
+                    backgroundImage: `
     linear-gradient(rgba(24,72,160,0.07) 2px, transparent 2px),
     linear-gradient(90deg, rgba(24,72,160,0.07) 2px, transparent 2px)
 `,
@@ -69,15 +62,15 @@ backgroundImage: `
             <Header />
 
             <main className="flex-grow flex flex-col items-center px-4 py-10">
-                <h1 className="text-[32px] font-bold mb-2 text-center">
+                <h1 className="text-[32px] font-bold mb-2 text-center text-gray-900 dark:text-white">
                     3D Equilibrium Problems
                 </h1>
-                <p className="text-gray-500 mb-8 text-center">
+                <p className="text-gray-500 dark:text-gray-400 mb-8 text-center">
                     Equilibrium of a Rigid Body in Three Dimensions
                 </p>
 
                 {/* Intro Card */}
-                <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10">
+                <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10 text-gray-900 dark:text-gray-200">
                     <p className="mb-2">
                         A body is said to be in{" "}
                         <span className="font-semibold text-[#1848a0]">equilibrium</span> when
@@ -106,7 +99,6 @@ backgroundImage: `
                 {/* Steps */}
                 <div className="w-full max-w-xl">
 
-                    {/* Step 1 */}
                     <Step number={1} title="Draw the Free Body Diagram (FBD)">
                         <p>
                             Isolate the body and show all{" "}
@@ -117,7 +109,6 @@ backgroundImage: `
                         </p>
                     </Step>
 
-                    {/* Step 2 */}
                     <Step number={2} title="Choose a Coordinate System">
                         <p>
                             Define the{" "}
@@ -126,7 +117,6 @@ backgroundImage: `
                         </p>
                     </Step>
 
-                    {/* Step 3 */}
                     <Step number={3} title="Express Forces as Vectors">
                         <p>Represent forces using unit vectors in component form:</p>
                         <FormulaBlock
@@ -136,7 +126,9 @@ backgroundImage: `
                         <p>
                             For forces along a line, use a{" "}
                             <span className="font-semibold text-[#1848a0]">unit vector</span>{" "}
-                            <InlineMath>{"\\mathbf{u}"}</InlineMath>:
+                            <span className="dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white">
+                                <InlineMath>{"\\mathbf{u}"}</InlineMath>
+                            </span>:
                         </p>
                         <FormulaBlock
                             label="Force Along a Line"
@@ -144,7 +136,6 @@ backgroundImage: `
                         />
                     </Step>
 
-                    {/* Step 4 */}
                     <Step number={4} title="Compute Moments Using Cross Product">
                         <p>
                             Calculate the moment of each force about the reference point using the
@@ -156,7 +147,7 @@ backgroundImage: `
                         />
                         <p>
                             where{" "}
-                            <span className="font-semibold text-[#1848a0]">
+                            <span className="font-semibold text-[#1848a0] dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white">
                                 <InlineMath>{"\\mathbf{r}"}</InlineMath>
                             </span>{" "}
                             is the position vector from the reference point to the point of force
@@ -164,18 +155,11 @@ backgroundImage: `
                         </p>
                     </Step>
 
-                    {/* Step 5 */}
                     <Step number={5} title="Apply Equilibrium Equations">
                         <p>Set the sum of all forces and moments to zero:</p>
                         <div className="grid grid-cols-2 gap-3 mt-1">
-                            <FormulaBlock
-                                label="Force Equilibrium"
-                                formula="\sum \mathbf{F} = 0"
-                            />
-                            <FormulaBlock
-                                label="Moment Equilibrium"
-                                formula="\sum \mathbf{M} = 0"
-                            />
+                            <FormulaBlock label="Force Equilibrium"  formula="\sum \mathbf{F} = 0" />
+                            <FormulaBlock label="Moment Equilibrium" formula="\sum \mathbf{M} = 0" />
                         </div>
                         <p>Expanding into scalar equations:</p>
                         <FormulaBlock
@@ -184,7 +168,6 @@ backgroundImage: `
                         />
                     </Step>
 
-                    {/* Step 6 */}
                     <Step number={6} title="Solve for Unknowns">
                         <p>
                             Solve the system of equations for all unknown{" "}
@@ -195,7 +178,6 @@ backgroundImage: `
                         </p>
                     </Step>
 
-                    {/* Step 7 */}
                     <Step number={7} title="Check Results">
                         <ul className="list-none space-y-1 mt-1">
                             {[
@@ -215,11 +197,11 @@ backgroundImage: `
 
                 {/* Key Notes Card */}
                 <div className="w-full max-w-xl mt-2">
-                    <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                    <div className="flex items-start gap-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4">
                         <span className="text-xl">⚠️</span>
                         <div className="space-y-1">
-                            <p className="font-semibold">Key Notes (Important for Exams)</p>
-                            <ul className="list-none space-y-1 mt-1">
+                            <p className="font-semibold text-gray-900 dark:text-white">Key Notes (Important for Exams)</p>
+                            <ul className="list-none space-y-1 mt-1 text-gray-800 dark:text-gray-200">
                                 {[
                                     "Six independent equations are available in 3D equilibrium",
                                     "If unknowns exceed six, the system is statically indeterminate",

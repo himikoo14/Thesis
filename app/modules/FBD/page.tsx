@@ -3,8 +3,6 @@
 import Header from "<Ian>/components/Header";
 import Footer from "<Ian>/components/Footer";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 interface StepProps {
     number: number;
     title: string;
@@ -14,8 +12,6 @@ interface StepProps {
 interface ArrowItemProps {
     label: string;
 }
-
-// ─── Sub-components ──────────────────────────────────────────────────────────
 
 function ArrowItem({ label }: ArrowItemProps) {
     return (
@@ -33,26 +29,22 @@ function Step({ number, title, children }: StepProps) {
                 <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#1848a0] text-white flex items-center justify-center font-bold text-[16px]">
                     {number}
                 </div>
-                <h2 className="text-[20px] font-semibold">{title}</h2>
+                <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">{title}</h2>
             </div>
-            <div className="ml-12 bg-white border border-gray-200 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10">
+            <div className="ml-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10 text-gray-900 dark:text-gray-200">
                 {children}
             </div>
         </div>
     );
 }
 
-// ─── Main Component ──────────────────────────────────────────────────────────
-
 export default function FBD() {
     return (
-        <div className="relative flex flex-col min-h-screen bg-gray-50 text-gray-900 text-[18px]">
-            {/* Background grid */}
+        <div className="relative flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-[18px]">
             <div
-
                 className="absolute inset-0 pointer-events-none"
                 style={{
-backgroundImage: `
+                    backgroundImage: `
     linear-gradient(rgba(24,72,160,0.07) 2px, transparent 2px),
     linear-gradient(90deg, rgba(24,72,160,0.07) 2px, transparent 2px)
 `,
@@ -62,15 +54,15 @@ backgroundImage: `
             <Header />
 
             <main className="flex-grow flex flex-col items-center px-4 py-10">
-                <h1 className="text-[32px] font-bold mb-2 text-center">
+                <h1 className="text-[32px] font-bold mb-2 text-center text-gray-900 dark:text-white">
                     Free Body Diagram of a Particle
                 </h1>
-                <p className="text-gray-500 mb-8 text-center">
+                <p className="text-gray-500 dark:text-gray-400 mb-8 text-center">
                     Procedure for Creating a Free Body Diagram
                 </p>
 
                 {/* Intro Card */}
-                <div className="w-full max-w-xl bg-white rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10">
+                <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10 text-gray-900 dark:text-gray-200">
                     <p className="mb-3">
                         A{" "}
                         <span className="font-semibold text-[#1848a0]">
@@ -97,7 +89,6 @@ backgroundImage: `
                 {/* Steps */}
                 <div className="w-full max-w-xl">
 
-                    {/* Step 1 */}
                     <Step number={1} title="Represent the Particle and Establish Reference Axes">
                         <p>
                             Draw a{" "}
@@ -105,31 +96,36 @@ backgroundImage: `
                             to represent the particle and define the{" "}
                             <span className="font-semibold text-[#1848a0]">x- and y-axes</span>.
                         </p>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-[15px] text-gray-600 italic">
+                        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic">
                             Example: A force of 450 lb acts on the frame. Construct the free
                             body diagram.
                         </div>
-                        <div className="grid grid-cols-2 gap-3 mt-1">
-                            <div className="flex flex-col items-center gap-2">
-                                <img
-                                    src="/FBD/figure/image1.png"
-                                    alt="Figure 1"
-                                    className="w-full h-64 rounded-xl border border-gray-200 object-contain"
-                                />
-                                <span className="text-[13px] text-gray-400 uppercase tracking-widest font-semibold">Figure 1</span>
-                            </div>
-                            <div className="flex flex-col items-center gap-2">
-                                <img
-                                    src="/FBD/figure/image2.png"
-                                    alt="Figure 2"
-                                    className="w-full h-64 rounded-xl border border-gray-200 object-contain"
-                                />
-                                <span className="text-[13px] text-gray-400 uppercase tracking-widest font-semibold">Figure 2</span>
-                            </div>
-                        </div>
+<div className="grid grid-cols-2 gap-3 mt-1">
+    <div className="flex flex-col items-center gap-2">
+        <div className="w-full aspect-square rounded-xl border border-gray-200 dark:border-gray-600 bg-white overflow-hidden"
+>
+            <img
+                src="/FBD/figure/image1.png"
+                alt="Figure 1"
+                className="w-full h-full object-contain"
+            />
+        </div>
+        <span className="text-[13px] text-gray-400 uppercase tracking-widest font-semibold">Figure 1</span>
+    </div>
+    <div className="flex flex-col items-center gap-2">
+        <div className="w-full aspect-square rounded-xl border border-gray-200 dark:border-gray-600 bg-white overflow-hidden"
+>
+            <img
+                src="/FBD/figure/image2.png"
+                alt="Figure 2"
+                className="w-full h-full object-contain"
+            />
+        </div>
+        <span className="text-[13px] text-gray-400 uppercase tracking-widest font-semibold">Figure 2</span>
+    </div>
+</div>
                     </Step>
 
-                    {/* Step 2 */}
                     <Step number={2} title="Draw the Force Vectors">
                         <p>
                             Represent each force acting on the particle with an{" "}
@@ -142,17 +138,14 @@ backgroundImage: `
                             <img
                                 src="/FBD/figure/image3.png"
                                 alt="Figure 3"
-                                    className="w-full h-64 rounded-xl border border-gray-200 object-contain"
+                                className="w-full h-64 rounded-xl border border-gray-200 dark:border-gray-600 object-contain bg-white"
                             />
                             <span className="text-[13px] text-gray-400 uppercase tracking-widest font-semibold">Figure 3</span>
                         </div>
                     </Step>
 
-                    {/* Step 3 */}
                     <Step number={3} title="Identify All Forces Acting on the Point">
-                        <p>
-                            Determine every force applied to the particle, such as:
-                        </p>
+                        <p>Determine every force applied to the particle, such as:</p>
                         <ul className="list-none space-y-1 mt-1">
                             {[
                                 "Tension in cables",
@@ -165,7 +158,6 @@ backgroundImage: `
                         </ul>
                     </Step>
 
-                    {/* Step 4 */}
                     <Step number={4} title="Label Forces and Angles">
                         <p>Clearly label:</p>
                         <ul className="list-none space-y-1 mt-1">
@@ -182,15 +174,14 @@ backgroundImage: `
                             <img
                                 src="/FBD/figure/image4.png"
                                 alt="Figure 4"
-                                    className="w-full h-64 rounded-xl border border-gray-200 object-contain"
+                                className="w-full h-64 rounded-xl border border-gray-200 dark:border-gray-600 object-contain bg-white"
                             />
                             <span className="text-[13px] text-gray-400 uppercase tracking-widest font-semibold">Figure 4</span>
                         </div>
 
-                        {/* Warning note */}
-                        <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-xl p-4 mt-2">
+                        <div className="flex items-start gap-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4 mt-2">
                             <span className="text-xl">⚠️</span>
-                            <p>
+                            <p className="text-gray-800 dark:text-gray-200">
                                 Always include <strong>all</strong> forces acting on the
                                 particle. Omitting even one will result in an incorrect FBD and
                                 erroneous equilibrium analysis.

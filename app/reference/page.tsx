@@ -3,19 +3,18 @@ import Footer from "<Ian>/components/Footer";
 
 export default function ReferencesPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Header />
 
-      {/* Main Content */}
       <main className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="max-w-4xl">
-          <h1 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
+          <h1 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center">
             References{" "}
-            <span className="text-gray-500 text-[16px] font-normal">
+            <span className="text-gray-500 dark:text-gray-400 text-[16px] font-normal">
             </span>
           </h1>
 
-          <ul className="space-y-4 text-[18px] text-gray-700 leading-relaxed">
+          <ul className="space-y-4 text-[18px] text-gray-700 dark:text-gray-300 leading-relaxed">
             <li>
               Meriam, J. L., & Kraige, L. G. (2002).{" "}
               <em>Engineering Mechanics: Statics</em> (5th ed.). John Wiley & Sons.
