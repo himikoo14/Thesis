@@ -3,6 +3,14 @@
 import Header from "<Ian>/components/Header";
 import Footer from "<Ian>/components/Footer";
 
+import { BlockMath } from "react-katex";
+import "katex/dist/katex.min.css";
+
+interface FormulaBlockProps {
+    label: string;
+    formula: string;
+}
+
 interface StepProps {
     number: number;
     title: string;
@@ -11,6 +19,19 @@ interface StepProps {
 
 interface ArrowItemProps {
     label: string;
+}
+
+function FormulaBlock({ label, formula }: FormulaBlockProps) {
+    return (
+        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-4 my-3 text-center">
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">
+                {label}
+            </p>
+            <div className="text-[10px] sm:text-[13px] md:text-[18px] dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white">
+                <BlockMath>{formula}</BlockMath>
+            </div>
+        </div>
+    );
 }
 
 function ArrowItem({ label }: ArrowItemProps) {
@@ -31,7 +52,7 @@ function Step({ number, title, children }: StepProps) {
                 </div>
                 <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">{title}</h2>
             </div>
-            <div className="ml-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-2xl shadow p-5 text-[18px] space-y-3 relative z-10 text-gray-900 dark:text-gray-200">
+            <div className="ml-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-2xl shadow p-5 text-[14px] sm:text-[18px] space-y-3 relative z-10 text-gray-900 dark:text-gray-200">
                 {children}
             </div>
         </div>
@@ -40,7 +61,7 @@ function Step({ number, title, children }: StepProps) {
 
 export default function Resultant2D() {
     return (
-        <div className="relative flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-[18px]">
+        <div className="relative flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-[14px] sm:text-[18px]">
             <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
@@ -112,10 +133,10 @@ export default function Resultant2D() {
                             </span>
                             . For a force F at angle θ:
                         </p>
-                        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic space-y-1">
-                            <p>Fx = F cos θ</p>
-                            <p>Fy = F sin θ</p>
-                        </div>
+                        <FormulaBlock
+                            label="Components"
+                            formula="F_x = F\cos\theta \qquad F_y = F\sin\theta"
+                        />
                         <p>
                             Assign positive or negative signs based on the chosen coordinate
                             system.
@@ -130,10 +151,10 @@ export default function Resultant2D() {
                             </span>{" "}
                             separately:
                         </p>
-                        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic space-y-1">
-                            <p>ΣFx = sum of all x-components</p>
-                            <p>ΣFy = sum of all y-components</p>
-                        </div>
+                        <FormulaBlock
+                            label="Summation"
+                            formula="\Sigma F_x = \sum F\cos\theta \qquad \Sigma F_y = \sum F\sin\theta"
+                        />
                     </Step>
 
                     <Step number={4} title="Compute the Magnitude of the Resultant">
@@ -144,9 +165,10 @@ export default function Resultant2D() {
                             </span>{" "}
                             to find the magnitude:
                         </p>
-                        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic">
-                            R = √[ (ΣFx)² + (ΣFy)² ]
-                        </div>
+                        <FormulaBlock
+                            label="Magnitude"
+                            formula="R = \sqrt{(\Sigma F_x)^2 + (\Sigma F_y)^2}"
+                        />
                     </Step>
 
                     <Step number={5} title="Determine the Direction of the Resultant">
@@ -157,9 +179,10 @@ export default function Resultant2D() {
                             </span>{" "}
                             measured from the positive x-axis:
                         </p>
-                        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic">
-                            θR = tan⁻¹ (ΣFy / ΣFx)
-                        </div>
+                        <FormulaBlock
+                            label="Direction"
+                            formula="\theta_R = \tan^{-1}\!\left(\frac{\Sigma F_y}{\Sigma F_x}\right)"
+                        />
                         <div className="flex items-start gap-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-4 mt-2">
                             <span className="text-xl">⚠️</span>
                             <p className="text-gray-800 dark:text-gray-200">
@@ -188,10 +211,10 @@ export default function Resultant2D() {
                                 <ArrowItem key={item} label={item} />
                             ))}
                         </ul>
-                        <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic space-y-1">
-                            <p className="font-semibold not-italic text-gray-700 dark:text-gray-200">Example format:</p>
-                            <p>R = 500 N at 35°</p>
-                        </div>
+                        <FormulaBlock
+                            label="Example"
+                            formula="R = 500\,\text{N} \quad \theta = 35°"
+                        />
                     </Step>
 
                 </div>
