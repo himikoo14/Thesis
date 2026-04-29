@@ -338,35 +338,27 @@ export default function CoordinateTab() {
   };
 
 
-  const handleExportPDF = async () => {
-    if (!result) return;
-    setStatus("generating");
-    try {
-      const payload = {
-        steps: result.steps,
-        resultRows: result.resultRows,
-        points,
-        forces,
-        result: { Rx: result.Rx, Ry: result.Ry, Rz: result.Rz, R: result.R, details: result.details },
-      };
-      const res = await fetch("/api/export-pdf-3dcoordinates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "coordinate-solution.pdf";
-      a.click();
-      URL.revokeObjectURL(url);
-      setStatus("done");
-    } catch {
-      setStatus("error");
-    }
-    setTimeout(() => setStatus("idle"), 2500);
+const handleExportPDF = async () => {
+  if (!result) return;
+  setStatus("generating");
+  const payload = {
+    steps: result.steps,
+    resultRows: result.resultRows,
+    points,
+    forces,
+    result: { Rx: result.Rx, Ry: result.Ry, Rz: result.Rz, R: result.R, details: result.details },
   };
+  const encoded = encodeURIComponent(JSON.stringify(payload));
+  const win = window.open(`/print/resultant-3dcoordinate?data=${encoded}`, "_blank");
+  if (win) {
+    win.addEventListener("load", () => {
+      setTimeout(() => { setStatus("done"); setTimeout(() => setStatus("idle"), 2500); }, 800);
+    });
+  } else {
+    setStatus("error");
+    setTimeout(() => setStatus("idle"), 3000);
+  }
+};
   const inputCls = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-[13px] w-full outline-none text-gray-900 dark:text-white";
   const selectCls = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-[13px] outline-none text-gray-900 dark:text-white w-full";
   const cardCls = "bg-white dark:bg-gray-800 rounded-[14px] border border-gray-200 dark:border-gray-600 p-4 sm:p-5 shadow-sm";
@@ -463,7 +455,7 @@ export default function CoordinateTab() {
       {/* Solution */}
       {result && (
         <>
-          {/* ── WIDE SCREEN (sm+): side-by-side layout ── */}
+{/* ── WIDE SCREEN (sm+): side-by-side layout ── */}
           <div className="hidden sm:block flex-col gap-3 mt-4">
             <h3 className="text-[15px] sm:text-[16px] font-semibold text-gray-900 dark:text-white mb-4">
               Step-by-Step Solution
@@ -471,13 +463,7 @@ export default function CoordinateTab() {
 
             <div className="mt-4">
               <button
-                onClick={() => {
-                  setStatus("generating");
-                  const payload = { steps: result.steps, resultRows: result.resultRows, points, forces, result: { Rx: result.Rx, Ry: result.Ry, Rz: result.Rz, R: result.R, details: result.details } };
-                  window.open(`/print/coordinate?data=${encodeURIComponent(JSON.stringify(payload))}`, "_blank");
-                  setStatus("done");
-                  setTimeout(() => setStatus("idle"), 2500);
-                }}
+                onClick={handleExportPDF}
                 disabled={off}
                 className={`w-full py-3 rounded-[10px] text-[14px] sm:text-[15px] font-semibold text-white mb-3 transition ${off ? "opacity-60 cursor-not-allowed bg-[#1848a0]" : "cursor-pointer bg-[#1848a0] hover:bg-[#163d8a]"
                   }`}>
@@ -516,7 +502,7 @@ export default function CoordinateTab() {
             <button
               onClick={handleExportPDF}
               disabled={off}
-              className={`w-full rounded-lg px-3 py-2 font-semibold text-white transition text-[12px] ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+              className={`w-full py-3 rounded-[10px] text-[14px] sm:text-[15px] font-semibold text-white mb-3 transition ${off ? "opacity-60 cursor-not-allowed bg-[#1848a0]" : "cursor-pointer bg-[#1848a0] hover:bg-[#163d8a]"
                 }`}>
               {labels[status]}
             </button>

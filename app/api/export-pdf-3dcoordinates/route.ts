@@ -3,64 +3,52 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   const body = await req.json();
-
   const encoded = encodeURIComponent(JSON.stringify(body));
+
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.URL ||
+    "http://localhost:3000";
 
   const browser = await puppeteer.launch({
     headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
 
   const page = await browser.newPage();
 
-  await page.goto(
-`http://localhost:3000/print/resultant-3dcoordinate?data=${encoded}`,
-    { waitUntil: "networkidle0" }
-  );
+  try {
+    await page.emulateMediaType("screen");
 
-  await page.emulateMediaType("screen");
+    await page.goto(
+      `${baseUrl}/print/resultant-3dcoordinate?data=${encoded}`,
+      { waitUntil: "networkidle0" }
+    );
 
-  await page.goto(
-    `http://localhost:3000/print/resultant-3dcoordinate?data=${encoded}`,
-    { waitUntil: "networkidle0" }
-  );
+    await page.addStyleTag({
+      content: `
+        [data-next-badge-root], nextjs-portal, #__next-build-watcher,
+        [class*="issue"], [class*="Issue"], [class*="badge"],
+        [style*="position: fixed"], [style*="position:fixed"] {
+          display: none !important;
+          visibility: hidden !important;
+        }
+      `,
+    });
 
-  await page.emulateMediaType("screen");
+    const pdf = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: { top: "16mm", right: "16mm", bottom: "16mm", left: "16mm" },
+    });
 
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-
-  await page.addStyleTag({
-    content: `
-      [data-next-badge-root],
-      nextjs-portal,
-      #__next-build-watcher,
-      [class*="issue"],
-      [class*="Issue"],
-      [class*="badge"],
-      [style*="position: fixed"],
-      [style*="position:fixed"] {
-        display: none !important;
-        visibility: hidden !important;
-      }
-    `,
-  });
-
-  const pdf = await page.pdf({
-    format: "A4",
-    printBackground: true,
-    margin: {
-      top: "16mm",
-      right: "16mm",
-      bottom: "16mm",
-      left: "16mm",
-    },
-  });
-
-  await browser.close();
-
-  return new NextResponse(Buffer.from(pdf), {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": 'attachment; filename="coordinate-solution.pdf"',
-    },
-  });
+    return new NextResponse(Buffer.from(pdf), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": 'attachment; filename="coordinate-solution.pdf"',
+      },
+    });
+  } finally {
+    await browser.close();
+  }
 }
