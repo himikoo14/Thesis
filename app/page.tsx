@@ -82,7 +82,7 @@ export default function HomePage() {
     Interactive calculators for learning and solving <br /> Statics of Rigid Bodies.
   </p>
 
-  <div className="w-full max-w-2xl px-10">
+  <div className="w-full max-w-2xl px-15">
     <div className="flex flex-col">
 
       <div className="flex items-center justify-center gap-2 py-3">
@@ -99,7 +99,7 @@ export default function HomePage() {
           Chapter 2: <br /> Force Systems
         </p>
         <Link href="/2D-solver" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
-          Resultant Force Calculator
+          Resultant Force <br />Calculator
         </Link>
       </div>
 
