@@ -9,7 +9,7 @@ export default function HomePage() {
       <Header />
 
       {/* Landing Page */}
-      <section className="hidden min-[400px]:flex flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
+      <section className="hidden xs:flex flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
         <h1 className="text-[20px] md:text-[80px] font-bold mb-2 text-black dark:text-white">
           Stati
           <span className="text-[#1848a0] dark:text-blue-400">
@@ -18,7 +18,7 @@ export default function HomePage() {
         </h1>
 
         <p className="text-gray-600 dark:text-gray-300 mb-12 text-[18px]">
-          Interactive calculators for learning and solving Statics of Rigid Bodies.
+          Interactive calculators for learning and solving Statics of Rigid Bodies. ow
         </p>
 
         {/* Chapter List */}
@@ -70,11 +70,11 @@ export default function HomePage() {
       </section>
 
       {/* Landing Page for small screens */}
-      <section className="flex min-[400px]:hidden flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
+      <section className="flex xs:hidden flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
         <h1 className="text-[50px] xs:text-[80px] font-bold mb-2 text-black dark:text-white">
           Stati
           <span className="text-[#1848a0] dark:text-blue-400">
-            Calcs
+            Calcs (Small Screens)
           </span>
         </h1>
 
