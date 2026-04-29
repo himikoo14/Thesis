@@ -9,7 +9,7 @@ export default function HomePage() {
       <Header />
 
       {/* Landing Page */}
-      <section className="hidden xs:flex flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
+<section className="hidden min-[400px]:flex flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
         <h1 className="text-[20px] md:text-[80px] font-bold mb-2 text-black dark:text-white">
           Stati
           <span className="text-[#1848a0] dark:text-blue-400">
@@ -69,78 +69,70 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Landing Page for small screens */}
-      <section className="flex xs:hidden flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
-        <h1 className="text-[50px] xs:text-[80px] font-bold mb-2 text-black dark:text-white">
-          Stati
-          <span className="text-[#1848a0] dark:text-blue-400">
-            Calcs (Small Screens)
-          </span>
-        </h1>
+{/* Landing Page for small screens - below 400px only */}
+<section className="flex min-[400px]:hidden flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
+  <h1 className="text-[50px] font-bold mb-2 text-black dark:text-white">
+    Stati
+    <span className="text-[#1848a0] dark:text-blue-400">
+      Calcs
+    </span>
+  </h1>
 
-        <p className="text-gray-600 dark:text-gray-300 mb-12 text-[13px]">
-          Interactive calculators for learning and solving <br /> Statics of Rigid Bodies.
+  <p className="text-gray-600 dark:text-gray-300 mb-12 text-[13px]">
+    Interactive calculators for learning and solving <br /> Statics of Rigid Bodies.
+  </p>
+
+  <div className="w-full max-w-2xl px-10">
+    <div className="flex flex-col">
+
+      <div className="flex items-center justify-center gap-2 py-3">
+        <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
+          Chapter 1: <br /> Modules to Statics
         </p>
+        <Link href="/Introduction" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
+          Statics Modules
+        </Link>
+      </div>
 
-        {/* Chapter List */}
-        <div className="w-full max-w-2xl px-10 xs:px-10">
+      <div className="flex items-center justify-center gap-2 py-3">
+        <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
+          Chapter 2: <br /> Force Systems
+        </p>
+        <Link href="/2D-solver" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
+          Resultant Force Calculator
+        </Link>
+      </div>
 
-          {/* BELOW 400px — flex row layout */}
-          <div className="flex flex-col xs:hidden">
+      <div className="flex items-center justify-center gap-2 py-3">
+        <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
+          Chapter 3: <br /> Equilibrium
+        </p>
+        <Link href="/Equilibrium" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
+          Equilibrium Calculator
+        </Link>
+      </div>
 
-            <div className="flex items-center justify-center gap-2 py-3">
-              <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
-                Chapter 1: <br />
-                Modules to Statics
-              </p>
-              <Link href="/Introduction" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
-                Statics Modules
-              </Link>
-            </div>
+      <div className="flex items-center justify-center gap-2 py-3">
+        <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
+          Chapter 4: <br /> Structures
+        </p>
+        <Link href="/Structures" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
+          Truss Calculator
+        </Link>
+      </div>
 
-            <div className="flex items-center justify-center gap-2 py-3">
-              <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
-                Chapter 2: <br />
-                Force Systems
-              </p>
-              <Link href="/2D-solver" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
-                Resultant Force Calculator
-              </Link>
-            </div>
+      <div className="flex items-center justify-center gap-2 py-3">
+        <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
+          Chapter 5: <br /> Distributed Loads
+        </p>
+        <Link href="/Distributed-Loads" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
+          Structures Calculator
+        </Link>
+      </div>
 
-            <div className="flex items-center justify-center gap-2 py-3">
-              <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
-                Chapter 3: <br />
-                Equilibrium
-              </p>
-              <Link href="/Equilibrium" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
-                Equilibrium Calculator
-              </Link>
-            </div>
-
-            <div className="flex items-center justify-center gap-2 py-3">
-              <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
-                Chapter 4: <br />
-                Structures
-              </p>
-              <Link href="/Structures" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
-                Truss Calculator
-              </Link>
-            </div>
-
-            <div className="flex items-center justify-center gap-2 py-3">
-              <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
-                Chapter 5: <br />
-                Distributed Loads
-              </p>
-              <Link href="/Distributed-Loads" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
-                Structures Calculator
-              </Link>
-            </div>
-
-          </div>
-        </div>
-      </section>
+    </div>
+  </div>
+</section>
 
       <Footer />
     </main>

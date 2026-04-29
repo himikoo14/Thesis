@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   darkMode: "class",
   content: [
     "./app/**/*.{js,ts,jsx,tsx}",
@@ -10,9 +10,6 @@ export default {
     extend: {
       fontFamily: {
         georgia: ["Georgia", "serif"],
-      },
-      screens: {
-        'xs': '400px', // ✅ add this
       },
     },
   },
