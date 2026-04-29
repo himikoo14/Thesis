@@ -16,7 +16,7 @@ export default function Footer({
   ],
 }: FooterProps) {
   return (
-    <footer className="bg-white dark:bg-gray-900 border-t dark:border-gray-700 mt-auto relative z-50">
+    <footer className="bg-white dark:bg-gray-900 shadow-[0_-1px_4px_rgba(0,0,0,0.1)] mt-auto relative z-50">
       <div className="max-w-7xl mx-auto px-6 py-4 text-center text-gray-700 dark:text-gray-300">
         <div className="flex justify-center flex-wrap gap-x-2 gap-y-1">
           {links.map((link, idx) => (
