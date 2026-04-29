@@ -12,7 +12,7 @@ export default {
         georgia: ["Georgia", "serif"],
       },
       screens: {
-        'xs': '400px', // ✅ custom breakpoint added
+        'xs': '400px', // ✅ add this
       },
     },
   },
