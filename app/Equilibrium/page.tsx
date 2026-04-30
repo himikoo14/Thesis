@@ -438,64 +438,42 @@ export default function Equilibrium() {
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-[18px]">
       <Header />
 
-      <main className="flex-grow flex flex-col items-center px-4 pt-8 pb-10">
+      {/* ── Tabs (desktop) ── */}
+      <div className="hidden sm:flex justify-center mb-6 gap-4">
+        <button onClick={() => setActiveTab("concurrent")}
+          className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "concurrent" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
+          Concurrent Force System
+        </button>
+        <button onClick={() => setActiveTab("nonconcurrent")}
+          className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "nonconcurrent" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
+          Non-Concurrent Force System
+        </button>
+      </div>
 
-        {/* ── Tabs ── */}
-        <div className="hidden sm:flex justify-center mb-6 gap-4">
-          <button onClick={() => setActiveTab("concurrent")}
-            className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "concurrent" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
-            Concurrent Force System
-          </button>
-          <button onClick={() => setActiveTab("nonconcurrent")}
-            className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "nonconcurrent" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
-            Non-Concurrent Force System
-          </button>
-        </div>
-
-        {/* ── Tabs-sm ── */}
-        <div className="flex sm:hidden justify-center mb-6 gap-4">
-          <button onClick={() => setActiveTab("concurrent")}
-            className={`px-3 py-3 text-[12px] rounded-lg font-semibold ${activeTab === "concurrent" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
-            Concurrent Forces System
-          </button>
-          <button onClick={() => setActiveTab("nonconcurrent")}
-            className={`px-3 py-3 text-[12px] rounded-lg font-semibold ${activeTab === "nonconcurrent" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
-            Non-Concurrent Force System
-          </button>
-        </div>
-
+      {/* ================================================================
+            DESKTOP VIEW (hidden on mobile)
+        ================================================================ */}
+      <div className="hidden sm:flex flex-col items-center w-full">
         {activeTab === "concurrent" && (
           <>
-
-            {/* ── Live FBD ── */}
-            <div className="hidden sm:flex flex-col mb-8 relative z-10">
-               <h1 className="text-3xl font-bold text-center mb-2">Concurrent Force System</h1>
-
+            {/* FBD */}
+            <div className="flex flex-col items-center justify-center mb-8 relative z-10">
+             <h1 className="text-3xl font-bold text-center mb-2">Concurrent Force System</h1>
               <h2 className="text-[18px] font-semibold text-center mb-2">Unknown Forces and Angles Calculator</h2>
               <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Real-Time Free Body Diagram</p>
               <FBD forces={forces} setForces={setForces} />
               <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Drag arrows to change angles</p>
             </div>
 
-            {/* ── Live FBD sm ── */}
-           <h1 className="text-[25px] font-bold text-center mb-2">Concurrent Force System</h1>
-
-            <div className="flex flex-col sm:hidden mb-8 relative z-10">
-              <h2 className="text-[13px] font-semibold text-center mb-2">Unknown Forces and Angles Calculator</h2>
-              <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Real-Time Free Body Diagram</p>
-              <FBD forces={forces} setForces={setForces} />
-              <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Drag arrows to change angles</p>
-            </div>
-
-            <p className="w-full max-w-xl text-sm text-gray-700 dark:text-gray-300 mb-4 text-left">
+            {/* Note */}
+            <p className="w-full max-w-xl text-sm text-gray-700 dark:text-gray-300 mb-4 text-left -mt-5">
               <span className="font-semibold">Note:</span> The angle is measured from the positive x-axis, counterclockwise.
             </p>
 
-            {/* ── Force Setup Card ── */}
-            {/* FIX: added dark:bg-gray-800 */}
+            {/* Force Setup Card */}
             <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 space-y-6 relative z-10">
               <h2 className="text-[20px] font-semibold">Force Setup</h2>
-              <p className="text-[13px] text-gray-500 dark:text-gray-400">
+              <p className="text-[13px] text-gray-500 dark:text-gray-400 -mt-5 mb-3">
                 Enter the magnitude (kN) and angle (°) of each force. Click <span className="inline-flex items-center justify-center w-6 h-6 rounded border border-gray-300 dark:border-gray-600 font-bold text-[#1848a0] text-sm">?</span> to set the unknown value.
               </p>
 
@@ -564,26 +542,22 @@ export default function Equilibrium() {
               </button>
             </div>
 
-            {/* ── Error ── */}
+            {/* Error */}
             {error && (
               <div className="mt-4 w-full max-w-xl bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-xl p-4">
                 ⚠️ {error}
               </div>
             )}
 
-            {/* ── Solution ── */}
+            {/* Solution */}
             {solution && (
-              // FIX: replaced hardcoded bg-gray-50 with dark-aware classes
               <div className="mt-6 w-full max-w-xl bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-
                 {solution.solvedLabel && (
-                  // FIX: dark mode solved banner
                   <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-[#1848a0] dark:border-blue-600 rounded-xl">
                     <span className="font-semibold text-[#1848a0] dark:text-blue-400">✅ Solved: </span>
                     <strong className="dark:text-white">{solution.solvedLabel}</strong>
                   </div>
                 )}
-
                 <button
                   onClick={() => {
                     setStatus("generating");
@@ -598,8 +572,6 @@ export default function Equilibrium() {
                 >
                   {labels[status]}
                 </button>
-
-                {/* FIX: result rows — replaced hardcoded inline styles with Tailwind dark classes */}
                 <div className="grid grid-cols-2 gap-2 mb-4">
                   {solution.resultRows?.map((row: { label: string; value: string }, i: number) => (
                     <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[10px] border border-blue-100 dark:border-gray-600 px-3.5 py-2.5">
@@ -608,7 +580,6 @@ export default function Equilibrium() {
                     </div>
                   ))}
                 </div>
-
                 <StepByStepSolution steps={solution.stepLines} title="Step-by-Step Solution" />
               </div>
             )}
@@ -620,7 +591,168 @@ export default function Equilibrium() {
             <BeamPage />
           </div>
         )}
-      </main>
+      </div>
+
+      {/* ── Tabs (mobile) ── */}
+      <div className="flex sm:hidden justify-center mb-6 gap-4">
+        <button onClick={() => setActiveTab("concurrent")}
+          className={`px-3 py-3 text-[12px] rounded-lg font-semibold ${activeTab === "concurrent" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
+          Concurrent Forces System
+        </button>
+        <button onClick={() => setActiveTab("nonconcurrent")}
+          className={`px-3 py-3 text-[12px] rounded-lg font-semibold ${activeTab === "nonconcurrent" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
+          Non-Concurrent Force System
+        </button>
+      </div>
+
+      {/* ================================================================
+            MOBILE VIEW (hidden on desktop)
+        ================================================================ */}
+      <div className="flex sm:hidden flex-col items-center w-full px-6">
+        {activeTab === "concurrent" && (
+          <>
+            {/* FBD */}
+            <div className="flex flex-col mb-6 relative z-10">
+              <h1 className="text-[25px] font-bold text-center mb-2">Concurrent Force System</h1>
+              <h2 className="text-[13px] font-semibold text-center mb-2">Unknown Forces and Angles Calculator</h2>
+              <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Real-Time Free Body Diagram</p>
+              <FBD forces={forces} setForces={setForces} />
+              <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Drag arrows to change angles</p>
+            </div>
+
+            {/* Note */}
+            <p className="w-full max-w-xl text-sm text-gray-700 dark:text-gray-300 mb-4 text-left -mt-4">
+              <span className="font-semibold">Note:</span> The angle is measured from the positive x-axis, counterclockwise.
+            </p>
+
+            {/* Force Setup Card */}
+            <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 space-y-4 relative z-10">
+              <h2 className="text-[20px] font-semibold">Force Setup</h2>
+              <p className="text-[13px] text-gray-500 dark:text-gray-400 -mt-3 mb-1">
+                Enter the magnitude (kN) and angle (°) of each force. Click <span className="inline-flex items-center justify-center w-6 h-6 rounded border border-gray-300 dark:border-gray-600 font-bold text-[#1848a0] text-sm">?</span> to set the unknown value.
+              </p>
+
+              {forces.map((f, i) => (
+                <div key={i} className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    {/* MAGNITUDE */}
+                    <div className="flex-1">
+                      <label className="block font-medium text-sm">Force {i + 1} (kN)</label>
+                      <div className="relative mt-1">
+                        <input
+                          type={f.magnitudeUnknown ? "text" : "number"}
+                          value={f.magnitudeUnknown ? "" : f.magnitude}
+                          onChange={(e) => handleInputChange(i, "magnitude", e.target.value)}
+                          disabled={f.magnitudeUnknown}
+                          placeholder={f.magnitudeUnknown ? "Unknown" : ""}
+                          className={`w-full h-8 rounded-lg border px-3 pr-10 text-sm ${f.magnitudeUnknown
+                            ? "bg-blue-50 dark:bg-blue-900/30 border-[#1848a0] text-[#1848a0] dark:text-blue-300 font-semibold placeholder-[#1848a0] cursor-not-allowed"
+                            : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white"
+                            }`}
+                        />
+                        <button type="button" onClick={() => toggleUnknown(i, "magnitude")}
+                          className={`absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md border text-sm font-semibold transition duration-200 ${f.magnitudeUnknown
+                            ? "bg-[#1848a0] text-white border-[#1848a0]"
+                            : "bg-white dark:bg-gray-700 text-[#1848a0] border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                            }`}>?</button>
+                      </div>
+                    </div>
+
+                    {/* ANGLE */}
+                    <div className="flex-1">
+                      <label className="block font-medium text-sm">Angle {i + 1} (°)</label>
+                      <div className="relative mt-1">
+                        <input
+                          type={f.angleUnknown ? "text" : "number"}
+                          value={f.angleUnknown ? "" : f.angle}
+                          onChange={(e) => handleInputChange(i, "angle", e.target.value)}
+                          disabled={f.angleUnknown}
+                          placeholder={f.angleUnknown ? "Unknown" : ""}
+                          className={`w-full h-8 rounded-lg border px-3 pr-10 text-sm ${f.angleUnknown
+                            ? "bg-blue-50 dark:bg-blue-900/30 border-[#1848a0] text-[#1848a0] dark:text-blue-300 font-semibold placeholder-[#1848a0] cursor-not-allowed"
+                            : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white"
+                            }`}
+                        />
+                        <button type="button" onClick={() => toggleUnknown(i, "angle")}
+                          className={`absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md border text-sm font-semibold transition duration-200 ${f.angleUnknown
+                            ? "bg-[#1848a0] text-white border-[#1848a0]"
+                            : "bg-white dark:bg-gray-700 text-[#1848a0] border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                            }`}>?</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {forces.length > 1 && (
+                    <button onClick={() => setForces(forces.filter((_, idx) => idx !== i))}
+                      className="w-full h-8 flex items-center justify-center bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200 text-sm font-medium">
+                      Remove Force {i + 1}
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              <div className="flex flex-col gap-2">
+                <button onClick={() => setForces([...forces, { magnitude: "", angle: "", magnitudeUnknown: false, angleUnknown: false }])}
+                  className="w-full bg-[#008409] text-white px-2 py-1 rounded-lg hover:bg-[#15711b] transition duration-200 text-sm">
+                  + Add Force
+                </button>
+                <button onClick={handleCalculate}
+                  className="w-full bg-[#1848a0] text-white px-2 py-1 rounded-lg hover:bg-[#163d8a] transition duration-200 text-sm">
+                  Calculate
+                </button>
+              </div>
+            </div>
+
+            {/* Error */}
+            {error && (
+              <div className="mt-4 w-full max-w-xl bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-xl p-4">
+                ⚠️ {error}
+              </div>
+            )}
+
+            {/* Solution */}
+            {solution && (
+              <div className="mt-6 w-full max-w-xl bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                {solution.solvedLabel && (
+                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-[#1848a0] dark:border-blue-600 rounded-xl">
+                    <span className="font-semibold text-[#1848a0] dark:text-blue-400">✅ Solved: </span>
+                    <strong className="dark:text-white">{solution.solvedLabel}</strong>
+                  </div>
+                )}
+                <button
+                  onClick={() => {
+                    setStatus("generating");
+                    const payload = { steps: solution.steps, resultRows: solution.resultRows, solvedLabel: solution.solvedLabel, forces };
+                    const encoded = encodeURIComponent(JSON.stringify(payload));
+                    window.open(`/print/equilibrium?data=${encoded}`, "_blank");
+                    setStatus("done");
+                    setTimeout(() => setStatus("idle"), 2500);
+                  }}
+                  disabled={off}
+                  className={`w-full mb-4 py-3 rounded-xl font-semibold text-white transition ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"}`}
+                >
+                  {labels[status]}
+                </button>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {solution.resultRows?.map((row: { label: string; value: string }, i: number) => (
+                    <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[10px] border border-blue-100 dark:border-gray-600 px-3.5 py-2.5">
+                      <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">{row.label}</div>
+                      <div className="text-[16px] font-bold text-[#1848a0] dark:text-blue-400">{row.value}</div>
+                    </div>
+                  ))}
+                </div>
+                <StepByStepSolution steps={solution.stepLines} title="Step-by-Step Solution" />
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === "nonconcurrent" && (
+          <div className="w-full">
+            <BeamPage />
+          </div>
+        )}
+      </div>
 
       <Footer />
     </div>

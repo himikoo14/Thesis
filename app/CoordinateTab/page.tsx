@@ -396,7 +396,7 @@ const handleExportPDF = async () => {
                   value={(p as any)[field]} onChange={e => updatePoint(i, field, e.target.value)} />
               ))}
               <button onClick={() => removePoint(i)}
-                className="bg-red-500 text-white rounded-[7px] w-[26px] h-[26px] flex items-center justify-center cursor-pointer font-bold hover:bg-red-600 text-[14px]">
+                className="bg-red-500 text-white rounded-[7px] w-full h-full flex items-center justify-center cursor-pointer font-bold hover:bg-red-600 text-[14px]">
                 –
               </button>
             </div>

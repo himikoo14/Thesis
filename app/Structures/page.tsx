@@ -151,8 +151,7 @@ function TrussStepRenderer({
                 members={members}
                 allNodes={allNodes}
                 solution={solution}
-                forces={forces}
-              />
+                forces={forces} isDark={false} />
             );
           default:
             return null;
@@ -164,13 +163,14 @@ function TrussStepRenderer({
 
 
 /* ===================== MAIN FBD ===================== */
-function MainFBD({ numericNodes, members, supports, forces, solution, allNodes }: {
+function MainFBD({ numericNodes, members, supports, forces, solution, allNodes, isDark }: {
   numericNodes: { x: number; y: number }[];
   members: Member[];
   supports: Support[];
   forces: Force[];
   solution: Solution | null;
   allNodes: Joint[];
+  isDark: boolean;
 }) {
   const W = 560, H = 420, PAD = 56;
   const xs = numericNodes.map(n => n.x); const ys = numericNodes.map(n => n.y);
@@ -185,6 +185,18 @@ function MainFBD({ numericNodes, members, supports, forces, solution, allNodes }
   const arrowLen = Math.max(40, Math.min(scale * 0.6, 60));
   const tol = 1e-6;
 
+  // Theme-aware colors
+  const axisColor = isDark ? "#4b5563" : "#94a3b8";
+  const nodeFill = isDark ? "#1e293b" : "#e2e8f0";
+  const nodeLabel_ = isDark ? "#93c5fd" : "#1848a0";
+  const legendBg = isDark ? "#1e293b" : "#f1f5f9";
+  const legendStroke = isDark ? "#334155" : "#cbd5e1";
+  const legendText = isDark ? "#e2e8f0" : "#1e293b";
+  const supportFill1 = isDark ? "#6b7280" : "#94a3b8";
+  const supportStroke1 = isDark ? "#9ca3af" : "#64748b";
+  const supportFill2 = isDark ? "#4b5563" : "#cbd5e1";
+  const supportStroke2 = isDark ? "#6b7280" : "#94a3b8";
+
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" preserveAspectRatio="xMidYMid meet">
       <defs>
@@ -193,8 +205,8 @@ function MainFBD({ numericNodes, members, supports, forces, solution, allNodes }
         <ArrowMarker id="main-green" color="#16a34a" />
         <ArrowMarker id="main-blue" color="#2563eb" />
       </defs>
-      <line x1={PAD} y1={sy(0)} x2={W - PAD} y2={sy(0)} stroke="#4b5563" strokeWidth={1} />
-      <line x1={sx(0)} y1={PAD} x2={sx(0)} y2={H - PAD} stroke="#4b5563" strokeWidth={1} />
+      <line x1={PAD} y1={sy(0)} x2={W - PAD} y2={sy(0)} stroke={axisColor} strokeWidth={1} />
+      <line x1={sx(0)} y1={PAD} x2={sx(0)} y2={H - PAD} stroke={axisColor} strokeWidth={1} />
 
       {members.map((m, i) => {
         const n1 = numericNodes[m.start]; const n2 = numericNodes[m.end];
@@ -217,8 +229,8 @@ function MainFBD({ numericNodes, members, supports, forces, solution, allNodes }
 
       {numericNodes.map((n, i) => (
         <g key={`j-${i}`}>
-          <circle cx={sx(n.x)} cy={sy(n.y)} r={6} fill="#1e293b" stroke="#60a5fa" strokeWidth={2} />
-          <text x={sx(n.x)} y={sy(n.y) - 12} textAnchor="middle" fontSize={12} fontWeight="700" fill="#93c5fd">{nodeLabel(i)}</text>
+          <circle cx={sx(n.x)} cy={sy(n.y)} r={6} fill={nodeFill} stroke="#60a5fa" strokeWidth={2} />
+          <text x={sx(n.x)} y={sy(n.y) - 12} textAnchor="middle" fontSize={12} fontWeight="700" fill={nodeLabel_}>{nodeLabel(i)}</text>
         </g>
       ))}
 
@@ -227,15 +239,15 @@ function MainFBD({ numericNodes, members, supports, forces, solution, allNodes }
         const cx = sx(n.x); const cy = sy(n.y);
         return s.type === "Pinned" ? (
           <g key={`sup-${i}`}>
-            <polygon points={`${cx},${cy} ${cx - 10},${cy + 14} ${cx + 10},${cy + 14}`} fill="#6b7280" stroke="#9ca3af" strokeWidth={1} />
-            <line x1={cx - 12} y1={cy + 14} x2={cx + 12} y2={cy + 14} stroke="#9ca3af" strokeWidth={2} />
+            <polygon points={`${cx},${cy} ${cx - 10},${cy + 14} ${cx + 10},${cy + 14}`} fill={supportFill1} stroke={supportStroke1} strokeWidth={1} />
+            <line x1={cx - 12} y1={cy + 14} x2={cx + 12} y2={cy + 14} stroke={supportStroke1} strokeWidth={2} />
           </g>
         ) : (
           <g key={`sup-${i}`}>
-            <polygon points={`${cx},${cy} ${cx - 10},${cy + 14} ${cx + 10},${cy + 14}`} fill="#4b5563" stroke="#6b7280" strokeWidth={1} />
-            <circle cx={cx - 7} cy={cy + 17} r={3} fill="none" stroke="#6b7280" strokeWidth={1.5} />
-            <circle cx={cx} cy={cy + 17} r={3} fill="none" stroke="#6b7280" strokeWidth={1.5} />
-            <circle cx={cx + 7} cy={cy + 17} r={3} fill="none" stroke="#6b7280" strokeWidth={1.5} />
+            <polygon points={`${cx},${cy} ${cx - 10},${cy + 14} ${cx + 10},${cy + 14}`} fill={supportFill2} stroke={supportStroke2} strokeWidth={1} />
+            <circle cx={cx - 7} cy={cy + 17} r={3} fill="none" stroke={supportStroke2} strokeWidth={1.5} />
+            <circle cx={cx} cy={cy + 17} r={3} fill="none" stroke={supportStroke2} strokeWidth={1.5} />
+            <circle cx={cx + 7} cy={cy + 17} r={3} fill="none" stroke={supportStroke2} strokeWidth={1.5} />
           </g>
         );
       })}
@@ -283,10 +295,10 @@ function MainFBD({ numericNodes, members, supports, forces, solution, allNodes }
 
       {solution && (
         <g transform={`translate(${W - 110}, 8)`}>
-          <rect x={0} y={0} width={104} height={52} rx={4} fill="#1e293b" stroke="#334155" strokeWidth={1} />
+          <rect x={0} y={0} width={104} height={52} rx={4} fill={legendBg} stroke={legendStroke} strokeWidth={1} />
           <line x1={8} y1={14} x2={28} y2={14} stroke="#60a5fa" strokeWidth={2.5} /><text x={32} y={17} fontSize={9} fill="#60a5fa">Tension (+)</text>
           <line x1={8} y1={28} x2={28} y2={28} stroke="#f87171" strokeWidth={2.5} /><text x={32} y={31} fontSize={9} fill="#f87171">Compression (−)</text>
-          <line x1={8} y1={42} x2={28} y2={42} stroke="#6b7280" strokeWidth={2.5} /><text x={32} y={45} fontSize={9} fill="#6b7280">Zero-force</text>
+          <line x1={8} y1={42} x2={28} y2={42} stroke="#6b7280" strokeWidth={2.5} /><text x={32} y={45} fontSize={9} fill={legendText}>Zero-force</text>
         </g>
       )}
     </svg>
@@ -294,7 +306,7 @@ function MainFBD({ numericNodes, members, supports, forces, solution, allNodes }
 }
 
 /* ===================== JOINT FBD ===================== */
-function JointFBD({ jointIdx, connectedMembers, solvedMemberForces, members, allNodes, solution, forces }: {
+function JointFBD({ jointIdx, connectedMembers, solvedMemberForces, members, allNodes, solution, forces, isDark }: {
   jointIdx: number;
   connectedMembers: number[];
   solvedMemberForces: number[];
@@ -302,6 +314,7 @@ function JointFBD({ jointIdx, connectedMembers, solvedMemberForces, members, all
   allNodes: Joint[];
   solution: Solution;
   forces: Force[];
+  isDark: boolean;
 }) {
   const SIZE = 260, CX = SIZE / 2, CY = SIZE / 2;
   const tol = 1e-6;
@@ -349,9 +362,13 @@ function JointFBD({ jointIdx, connectedMembers, solvedMemberForces, members, all
   const maxForce = Math.max(...arrows.map(a => a.magnitude || 1), 1);
   const MAX_ARM = 90, MIN_ARM = 40;
 
+  const axisColor = isDark ? "#334155" : "#cbd5e1";
+  const nodeDotFill = isDark ? "#0f172a" : "#e2e8f0";
+  const titleColor = isDark ? "#e2e8f0" : "#1e293b";
+
   return (
     <svg width={SIZE} height={SIZE} style={{ display: "block", margin: "12px auto", borderRadius: 8 }}
-      className="bg-gray-800 border border-gray-700">
+      className="bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700">
       <defs>
         <ArrowMarker id={`jg-${jointIdx}`} color="#6b7280" />
         <ArrowMarker id={`jb-${jointIdx}`} color="#60a5fa" />
@@ -359,8 +376,8 @@ function JointFBD({ jointIdx, connectedMembers, solvedMemberForces, members, all
         <ArrowMarker id={`jgr-${jointIdx}`} color="#4ade80" />
         <ArrowMarker id={`jlg-${jointIdx}`} color="#9ca3af" />
       </defs>
-      <line x1={CX - MAX_ARM - 10} y1={CY} x2={CX + MAX_ARM + 10} y2={CY} stroke="#334155" strokeWidth={1} />
-      <line x1={CX} y1={CY - MAX_ARM - 10} x2={CX} y2={CY + MAX_ARM + 10} stroke="#334155" strokeWidth={1} />
+      <line x1={CX - MAX_ARM - 10} y1={CY} x2={CX + MAX_ARM + 10} y2={CY} stroke={axisColor} strokeWidth={1} />
+      <line x1={CX} y1={CY - MAX_ARM - 10} x2={CX} y2={CY + MAX_ARM + 10} stroke={axisColor} strokeWidth={1} />
 
       {arrows.map((arrow, idx) => {
         const scale = arrow.magnitude / maxForce;
@@ -394,9 +411,9 @@ function JointFBD({ jointIdx, connectedMembers, solvedMemberForces, members, all
         );
       })}
 
-      <circle cx={CX} cy={CY} r={7} fill="#0f172a" stroke="#60a5fa" strokeWidth={2.5} />
-      <text x={CX} y={CY + 4} textAnchor="middle" fontSize={10} fontWeight="800" fill="#93c5fd">{jLabel}</text>
-      <text x={SIZE / 2} y={14} textAnchor="middle" fontSize={10} fontWeight="700" fill="#e2e8f0">FBD — Joint {jLabel}</text>
+      <circle cx={CX} cy={CY} r={7} fill={nodeDotFill} stroke="#60a5fa" strokeWidth={2.5} />
+      <text x={CX} y={CY + 4} textAnchor="middle" fontSize={10} fontWeight="800" fill="#60a5fa">{jLabel}</text>
+      <text x={SIZE / 2} y={14} textAnchor="middle" fontSize={10} fontWeight="700" fill={titleColor}>FBD — Joint {jLabel}</text>
       <g transform={`translate(4, ${SIZE - 22})`}>
         <line x1={0} y1={8} x2={14} y2={8} stroke="#60a5fa" strokeWidth={2} /><text x={17} y={11} fontSize={7.5} fill="#60a5fa">Tension</text>
         <line x1={52} y1={8} x2={66} y2={8} stroke="#f87171" strokeWidth={2} /><text x={69} y={11} fontSize={7.5} fill="#f87171">Compression</text>
@@ -414,6 +431,18 @@ export default function TrussSolverUI() {
   const [members, setMembers] = useState<Member[]>([{ start: 0, end: 1 }]);
   const [forces, setForces] = useState<Force[]>([{ Joint: 0, magnitude: "", angle: "" }]);
   const [solution, setSolution] = useState<Solution | null>(null);
+  const [isDark, setIsDark] = useState(false);
+
+  // Detect dark mode
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const check = () => setIsDark(document.documentElement.classList.contains("dark") || mq.matches);
+    check();
+    mq.addEventListener("change", check);
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => { mq.removeEventListener("change", check); observer.disconnect(); };
+  }, []);
 
   const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
   const off = status === "generating";
@@ -426,10 +455,12 @@ export default function TrussSolverUI() {
 
   const allNodes: Joint[] = [...supports.map(s => ({ x: s.x, y: s.y })), ...nodes];
   const numericNodes = allNodes.map(n => ({ x: parseFloat(n.x || "0"), y: parseFloat(n.y || "0") }));
-
-  const inputClass = "w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-[18px] p-2 outline-none focus:ring-0";
-  const redButtonClass = "w-10 px-2 py-0.5 bg-red-500 text-white rounded-md hover:bg-red-600 text-[20px]";
+  const inputClassSm = "w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm px-3 py-1 outline-none focus:ring-0";
+  const inputClass = "w-full h-[46px] rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-[18px] px-2 outline-none focus:ring-0";
+  const redButtonClass = "w-10 h-[46px] bg-red-500 text-white rounded-md hover:bg-red-600 text-[20px]";
+  const redButtonClassSm = "bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition font-semibold";
   const greenButtonClass = "px-3 py-1 bg-[#008409] text-white rounded-lg hover:bg-[#15711b] transition text-[18px]";
+  const greenButtonClassSm = "px-3 py-1 bg-[#008409] text-white rounded-lg hover:bg-[#15711b] transition text-sm";
   const cardCls = "bg-white dark:bg-gray-800 rounded-xl shadow p-4 relative z-10 border border-transparent dark:border-gray-700";
 
   function handleChange<T extends GenericObject>(arr: T[], setArr: React.Dispatch<React.SetStateAction<T[]>>, index: number, field: keyof T, value: T[keyof T]) {
@@ -468,8 +499,8 @@ export default function TrussSolverUI() {
         <h2 className="text-xl font-semibold text-center mb-6 text-gray-700 dark:text-gray-300">Real-Time Free Body Diagram</h2>
 
         {/* FBD canvas */}
-        <div className="relative rounded-xl shadow h-[420px] mb-8 overflow-hidden bg-gray-800 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-          <MainFBD numericNodes={numericNodes} members={members} supports={supports} forces={forces} solution={solution} allNodes={allNodes} />
+        <div className="relative rounded-xl shadow h-[420px] mb-8 overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+          <MainFBD numericNodes={numericNodes} members={members} supports={supports} forces={forces} solution={solution} allNodes={allNodes} isDark={isDark} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -478,7 +509,7 @@ export default function TrussSolverUI() {
           <div className={cardCls}>
             <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Supports</h3>
             {supports.map((s, i) => (
-              <div key={i} className="grid grid-cols-5 gap-2 items-end mb-2">
+              <div key={i} className="grid grid-cols-5 gap-2 items-center mb-2">
                 <span className="font-medium text-[18px] text-gray-700 dark:text-gray-300">Joint {nodeLabel(i)}</span>
                 <input type="number" placeholder="x" value={s.x} onChange={e => handleChange(supports, setSupports, i, "x", e.target.value)} className={inputClass} />
                 <input type="number" placeholder="y" value={s.y} onChange={e => handleChange(supports, setSupports, i, "y", e.target.value)} className={inputClass} />
@@ -495,7 +526,7 @@ export default function TrussSolverUI() {
           <div className={cardCls}>
             <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Nodes</h3>
             {nodes.map((n, i) => (
-              <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
+              <div key={i} className="grid grid-cols-4 gap-2 items-center mb-2">
                 <span className="font-medium text-[18px] text-gray-700 dark:text-gray-300">Joint {nodeLabel(supports.length + i)}</span>
                 <input type="number" placeholder="x" value={n.x} onChange={e => handleChange(nodes, setNodes, i, "x", e.target.value)} className={inputClass} />
                 <input type="number" placeholder="y" value={n.y} onChange={e => handleChange(nodes, setNodes, i, "y", e.target.value)} className={inputClass} />
@@ -515,7 +546,7 @@ export default function TrussSolverUI() {
               <span className="text-[16px] font-medium text-gray-500 dark:text-gray-400"> </span>
             </div>
             {members.map((m, i) => (
-              <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
+              <div key={i} className="grid grid-cols-4 gap-2 items-center mb-2">
                 <span className="font-medium text-[18px] text-gray-700 dark:text-gray-300">Member {nodeLabel(m.start)}{nodeLabel(m.end)}</span>
                 <select value={m.start} onChange={e => handleChange(members, setMembers, i, "start", Number(e.target.value))} className={inputClass}>
                   {allNodes.map((_, idx) => <option key={idx} value={idx}>Joint {nodeLabel(idx)}</option>)}
@@ -533,7 +564,7 @@ export default function TrussSolverUI() {
           <div className={cardCls}>
             <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Forces</h3>
             {forces.map((f, i) => (
-              <div key={i} className="grid grid-cols-4 gap-2 items-end mb-2">
+              <div key={i} className="grid grid-cols-4 gap-2 items-center mb-2">
                 <select value={f.Joint} onChange={e => handleChange(forces, setForces, i, "Joint", Number(e.target.value))} className={inputClass}>
                   {allNodes.map((_, idx) => <option key={idx} value={idx}>Joint {nodeLabel(idx)}</option>)}
                 </select>
@@ -650,12 +681,12 @@ export default function TrussSolverUI() {
       </main>
 
       <main className="block sm:hidden flex-grow px-4 py-6 w-full">
-        <h1 className="text-2xl font-bold text-center mb-1 text-gray-900 dark:text-white">Truss Calculator</h1>
+        <h1 className="text-2xl font-bold text-center mb-1 text-gray-900 dark:text-white -mt-3">Truss Calculator</h1>
         <h2 className="text-base font-semibold text-center mb-4 text-gray-700 dark:text-gray-300">Real-Time Free Body Diagram</h2>
 
         {/* FBD canvas */}
-        <div className="relative rounded-xl shadow h-[250px] mb-6 overflow-hidden bg-gray-800 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
-          <MainFBD numericNodes={numericNodes} members={members} supports={supports} forces={forces} solution={solution} allNodes={allNodes} />
+        <div className="relative rounded-xl shadow h-[250px] mb-6 overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+          <MainFBD numericNodes={numericNodes} members={members} supports={supports} forces={forces} solution={solution} allNodes={allNodes} isDark={isDark} />
         </div>
 
         <div className="flex flex-col gap-4 mb-6">
@@ -666,17 +697,17 @@ export default function TrussSolverUI() {
             {supports.map((s, i) => (
               <div key={i} className="flex flex-col gap-1 mb-3">
                 <span className="font-medium text-sm text-gray-700 dark:text-gray-300">Joint {nodeLabel(i)}</span>
-                <div className="grid grid-cols-3 gap-2">
-                  <input type="number" placeholder="x" value={s.x} onChange={e => handleChange(supports, setSupports, i, "x", e.target.value)} className={`${inputClass} min-w-0`} />
-                  <input type="number" placeholder="y" value={s.y} onChange={e => handleChange(supports, setSupports, i, "y", e.target.value)} className={`${inputClass} min-w-0`} />
-                  <select value={s.type} onChange={e => handleChange(supports, setSupports, i, "type", e.target.value)} className={`${inputClass} min-w-0 text-sm`}>
+                <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
+                  <input type="number" placeholder="x" value={s.x} onChange={e => handleChange(supports, setSupports, i, "x", e.target.value)} className={`${inputClassSm} min-w-0`} />
+                  <input type="number" placeholder="y" value={s.y} onChange={e => handleChange(supports, setSupports, i, "y", e.target.value)} className={`${inputClassSm} min-w-0`} />
+                  <select value={s.type} onChange={e => handleChange(supports, setSupports, i, "type", e.target.value)} className={`${inputClassSm} min-w-0`}>
                     <option>Pinned</option><option>Roller</option>
                   </select>
+                  {supports.length > 1 && <button onClick={() => removeItem(supports, setSupports, i)} className={`${redButtonClassSm} w-8 h-8 flex items-center justify-center`}>–</button>}
                 </div>
-                {supports.length > 1 && <button onClick={() => removeItem(supports, setSupports, i)} className={`${redButtonClass} w-full mt-1`}>– Remove</button>}
               </div>
             ))}
-            <button onClick={() => addItem(supports, setSupports, { x: "", y: "", type: "Pinned" })} className={greenButtonClass}>+ Add Support</button>
+            <button onClick={() => addItem(supports, setSupports, { x: "", y: "", type: "Pinned" })} className={greenButtonClassSm}>+ Add Support</button>
           </div>
 
           {/* Nodes */}
@@ -686,13 +717,13 @@ export default function TrussSolverUI() {
               <div key={i} className="flex flex-col gap-1 mb-3">
                 <span className="font-medium text-sm text-gray-700 dark:text-gray-300">Joint {nodeLabel(supports.length + i)}</span>
                 <div className="grid grid-cols-2 gap-2">
-                  <input type="number" placeholder="x" value={n.x} onChange={e => handleChange(nodes, setNodes, i, "x", e.target.value)} className={`${inputClass} min-w-0`} />
-                  <input type="number" placeholder="y" value={n.y} onChange={e => handleChange(nodes, setNodes, i, "y", e.target.value)} className={`${inputClass} min-w-0`} />
+                  <input type="number" placeholder="x" value={n.x} onChange={e => handleChange(nodes, setNodes, i, "x", e.target.value)} className={`${inputClassSm} min-w-0`} />
+                  <input type="number" placeholder="y" value={n.y} onChange={e => handleChange(nodes, setNodes, i, "y", e.target.value)} className={`${inputClassSm} min-w-0`} />
                 </div>
-                {nodes.length > 1 && <button onClick={() => removeItem(nodes, setNodes, i)} className={`${redButtonClass} w-full mt-1`}>– Remove</button>}
+                {nodes.length > 1 && <button onClick={() => removeItem(nodes, setNodes, i)} className={`${redButtonClassSm} w-full mt-1`}>– Remove</button>}
               </div>
             ))}
-            <button onClick={() => addItem(nodes, setNodes, { x: "", y: "" })} className={greenButtonClass}>+ Add Joint</button>
+            <button onClick={() => addItem(nodes, setNodes, { x: "", y: "" })} className={greenButtonClassSm}>+ Add Joint</button>
           </div>
 
           {/* Members */}
@@ -702,17 +733,17 @@ export default function TrussSolverUI() {
               <div key={i} className="flex flex-col gap-1 mb-3">
                 <span className="font-medium text-sm text-gray-700 dark:text-gray-300">Member {nodeLabel(m.start)}{nodeLabel(m.end)}</span>
                 <div className="grid grid-cols-2 gap-2">
-                  <select value={m.start} onChange={e => handleChange(members, setMembers, i, "start", Number(e.target.value))} className={`${inputClass} min-w-0 text-sm`}>
+                  <select value={m.start} onChange={e => handleChange(members, setMembers, i, "start", Number(e.target.value))} className={`${inputClassSm} min-w-0 text-sm`}>
                     {allNodes.map((_, idx) => <option key={idx} value={idx}>Joint {nodeLabel(idx)}</option>)}
                   </select>
-                  <select value={m.end} onChange={e => handleChange(members, setMembers, i, "end", Number(e.target.value))} className={`${inputClass} min-w-0 text-sm`}>
+                  <select value={m.end} onChange={e => handleChange(members, setMembers, i, "end", Number(e.target.value))} className={`${inputClassSm} min-w-0 text-sm`}>
                     {allNodes.map((_, idx) => <option key={idx} value={idx}>Joint {nodeLabel(idx)}</option>)}
                   </select>
                 </div>
-                {members.length > 1 && <button onClick={() => removeItem(members, setMembers, i)} className={`${redButtonClass} w-full mt-1`}>– Remove</button>}
+                {members.length > 1 && <button onClick={() => removeItem(members, setMembers, i)} className={`${redButtonClassSm} w-full mt-1`}>– Remove</button>}
               </div>
             ))}
-            <button onClick={() => addItem(members, setMembers, { start: 0, end: 0 })} className={greenButtonClass}>+ Add Member</button>
+            <button onClick={() => addItem(members, setMembers, { start: 0, end: 0 })} className={greenButtonClassSm}>+ Add Member</button>
           </div>
 
           {/* Forces */}
@@ -720,22 +751,21 @@ export default function TrussSolverUI() {
             <h3 className="text-base font-semibold mb-2 text-gray-900 dark:text-white">Forces</h3>
             {forces.map((f, i) => (
               <div key={i} className="flex flex-col gap-1 mb-3">
-                <select value={f.Joint} onChange={e => handleChange(forces, setForces, i, "Joint", Number(e.target.value))} className={`${inputClass} min-w-0 text-sm w-full`}>
+                <select value={f.Joint} onChange={e => handleChange(forces, setForces, i, "Joint", Number(e.target.value))} className={`${inputClassSm} min-w-0 text-sm w-full`}>
                   {allNodes.map((_, idx) => <option key={idx} value={idx}>Joint {nodeLabel(idx)}</option>)}
                 </select>
                 <div className="grid grid-cols-2 gap-2">
-                  <input type="number" placeholder="kN" value={f.magnitude} onChange={e => handleChange(forces, setForces, i, "magnitude", e.target.value)} className={`${inputClass} min-w-0`} />
-                  <input type="number" placeholder="deg" value={f.angle} onChange={e => handleChange(forces, setForces, i, "angle", e.target.value)} className={`${inputClass} min-w-0`} />
+                  <input type="number" placeholder="kN" value={f.magnitude} onChange={e => handleChange(forces, setForces, i, "magnitude", e.target.value)} className={`${inputClassSm} min-w-0`} />
+                  <input type="number" placeholder="deg" value={f.angle} onChange={e => handleChange(forces, setForces, i, "angle", e.target.value)} className={`${inputClassSm} min-w-0`} />
                 </div>
-                {forces.length > 1 && <button onClick={() => removeItem(forces, setForces, i)} className={`${redButtonClass} w-full mt-1`}>– Remove</button>}
+                {forces.length > 1 && <button onClick={() => removeItem(forces, setForces, i)} className={`${redButtonClassSm} w-full mt-1`}>– Remove</button>}
               </div>
             ))}
-            <button onClick={() => addItem(forces, setForces, { Joint: 0, magnitude: "", angle: "" })} className={greenButtonClass}>+ Add Force</button>
+            <button onClick={() => addItem(forces, setForces, { Joint: 0, magnitude: "", angle: "" })} className={greenButtonClassSm}>+ Add Force</button>
           </div>
         </div>
 
-        <button className="w-full bg-[#1848a0] hover:bg-[#163d8a] text-white py-3 rounded-lg font-semibold mb-6 transition" onClick={handleSolve}>
-          Calculate
+        <button className="w-full bg-[#1848a0] hover:bg-[#163d8a] text-white px-2 py-1 rounded-lg font-semibold mb-6 transition text-lg -mt-2" onClick={handleSolve}>                    Calculate
         </button>
 
         {solution && (
@@ -839,5 +869,6 @@ export default function TrussSolverUI() {
 
       <Footer />
     </section>
+
   );
 }
