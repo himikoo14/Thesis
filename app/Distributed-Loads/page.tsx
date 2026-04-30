@@ -410,6 +410,7 @@ export default function DistributedLoadPage() {
 
           <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
             <span className="font-semibold">Note:</span> The most lower left point of the composite shape should be at (0,0).
+            <span className="block pl-[42px] mt-2">Divide the composite shape into simple shapes, then enter the dimensions and location of each shape.</span>
           </p>
 
           <div className="flex items-start gap-6 flex-wrap">
@@ -419,6 +420,7 @@ export default function DistributedLoadPage() {
               {/* Reference Axis */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 relative z-10">
                 <h3 className="font-semibold mb-3">Reference Axis</h3>
+
                 <select
                   value={axisType}
                   onChange={e => setAxisType(e.target.value as "Centroidal" | "Custom")}
@@ -652,256 +654,257 @@ export default function DistributedLoadPage() {
         </div>
       </main>
 
-            <main className="flex sm:hidden flex-col flex-grow bg-gray-50 dark:bg-gray-900">
-                <div className="w-full px-4 py-6 flex flex-col gap-4">
+      <main className="flex sm:hidden flex-col flex-grow bg-gray-50 dark:bg-gray-900">
+        <div className="w-full px-4 py-6 flex flex-col gap-4">
 
-                    <h1 className="text-[22px] font-bold text-center -mt-2">
-                        Moment of Inertia for Composite Shapes Calculator
-                    </h1>
+          <h1 className="text-[22px] font-bold text-center -mt-2">
+            Moment of Inertia for Composite Shapes Calculator
+          </h1>
 
-                    <ShapeCanvas
-                        shapes={shapes}
-                        axisType={axisType}
-                        axisX={Number(axisX)}
-                        axisY={Number(axisY)}
+          <ShapeCanvas
+            shapes={shapes}
+            axisType={axisType}
+            axisX={Number(axisX)}
+            axisY={Number(axisY)}
+          />
+
+          <p className="text-sm text-gray-700 dark:text-gray-300 -mt-6">
+            <span className="font-semibold">Note:</span> The most lower left point of the composite shape should be at (0,0). <br /> Divide the composite shape into simple shapes, then enter the dimensions and location of each shape.
+
+          </p>
+
+          {/* Reference Axis */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 w-full">
+            <h3 className="font-semibold mb-3">Reference Axis</h3>
+            <select
+              value={axisType}
+              onChange={e => setAxisType(e.target.value as "Centroidal" | "Custom")}
+              className="w-full rounded bg-white dark:bg-gray-700 dark:text-white px-2 py-1 mb-4 focus:outline-none border border-gray-200 dark:border-gray-600"
+            >
+              <option value="Centroidal">Centroidal Axis</option>
+              <option value="Custom">Custom Axis</option>
+            </select>
+            {axisType === "Custom" && (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-20 dark:text-gray-300">x-Axis</span>
+                  <input value={axisX} onChange={e => setAxisX(e.target.value)} placeholder="x"
+                    className="flex-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-20 dark:text-gray-300">y-Axis</span>
+                  <input value={axisY} onChange={e => setAxisY(e.target.value)} placeholder="y"
+                    className="flex-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Shape Cards */}
+          {shapes.map((shape, index) => {
+            const isCircular = shape.type !== "Polygon";
+            return (
+              <div key={index} className="bg-white dark:bg-gray-800 rounded-xl shadow px-4 py-4 w-full">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold dark:text-white">Shape {index + 1}</h3>
+                  <button onClick={() => handleRemoveShape(index)}
+                    className="w-8 h-8 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 transition">–</button>
+                </div>
+
+                <button
+                  onClick={() => { const copy = [...shapes]; copy[index].isOpen = !copy[index].isOpen; setShapes(copy); }}
+                  className="w-full flex justify-between bg-[#008409] text-white px-3 py-1 rounded-lg hover:bg-[#15711b] transition"
+                >
+                  Options
+                  <span className={`transition-transform ${shape.isOpen ? "rotate-180" : ""}`}>▼</span>
+                </button>
+
+                {shape.isOpen && (
+                  <div className="mt-4 space-y-4">
+                    <ShapeSelectDropdown
+                      value={shape.type}
+                      onChange={val => { const copy = [...shapes]; copy[index].type = val; setShapes(copy); }}
                     />
 
-                    <p className="text-sm text-gray-700 dark:text-gray-300 -mt-6">
-                        <span className="font-semibold">Note:</span> The most lower left point of the composite shape should be at (0,0).
-                    </p>
+                    <select value={shape.hollow}
+                      onChange={e => { const copy = [...shapes]; copy[index].hollow = e.target.value as "Hollow" | "Solid"; setShapes(copy); }}
+                      className="w-full rounded px-3 py-1 bg-white dark:bg-gray-700 dark:text-white border border-gray-200 dark:border-gray-600 focus:outline-none">
+                      <option>Hollow</option>
+                      <option>Solid</option>
+                    </select>
 
-                    {/* Reference Axis */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 w-full">
-                        <h3 className="font-semibold mb-3">Reference Axis</h3>
-                        <select
-                            value={axisType}
-                            onChange={e => setAxisType(e.target.value as "Centroidal" | "Custom")}
-                            className="w-full rounded bg-white dark:bg-gray-700 dark:text-white px-2 py-1 mb-4 focus:outline-none border border-gray-200 dark:border-gray-600"
-                        >
-                            <option value="Centroidal">Centroidal Axis</option>
-                            <option value="Custom">Custom Axis</option>
-                        </select>
-                        {axisType === "Custom" && (
-                            <div className="flex flex-col gap-3">
-                                <div className="flex items-center gap-2">
-                                    <span className="w-20 dark:text-gray-300">x-Axis</span>
-                                    <input value={axisX} onChange={e => setAxisX(e.target.value)} placeholder="x"
-                                        className="flex-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600" />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-20 dark:text-gray-300">y-Axis</span>
-                                    <input value={axisY} onChange={e => setAxisY(e.target.value)} placeholder="y"
-                                        className="flex-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600" />
-                                </div>
+                    {shape.type === "Polygon" && (
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="font-semibold mb-2 dark:text-gray-200">Vertices</h4>
+                          {shape.nodes.map((node, i) => (
+                            <div key={i} className="flex items-center gap-1 mb-2 w-full min-w-0">
+                              <span className="w-14 shrink-0 text-xs dark:text-gray-300">Vertex {getJointLabel(index, i)}</span>
+                              <input placeholder="x" value={node.x}
+                                onChange={e => { const copy = [...shapes]; copy[index].nodes[i].x = e.target.value; setShapes(copy); }}
+                                className="w-0 flex-1 min-w-0 rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600"
+                              />
+                              <input placeholder="y" value={node.y}
+                                onChange={e => { const copy = [...shapes]; copy[index].nodes[i].y = e.target.value; setShapes(copy); }}
+                                className="w-0 flex-1 min-w-0 rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600"
+                              />
+                              <button onClick={() => {
+                                if (shape.nodes.length <= 2) return;
+                                const copy = [...shapes];
+                                copy[index].nodes.splice(i, 1);
+                                copy[index].sides = copy[index].sides.filter(s => s.a !== i && s.b !== i);
+                                setShapes(copy);
+                              }} className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition font-semibold">
+                                –</button>
                             </div>
-                        )}
-                    </div>
+                          ))}
+                          <button onClick={() => { const copy = [...shapes]; copy[index].nodes.push({ x: "", y: "" }); setShapes(copy); }}
+                            className="bg-[#008409] text-white px-3 py-1 rounded-md shadow hover:bg-[#15711b] transition text-sm">+ Add Vertex</button>
+                        </div>
 
-                    {/* Shape Cards */}
-                    {shapes.map((shape, index) => {
-                        const isCircular = shape.type !== "Polygon";
-                        return (
-                            <div key={index} className="bg-white dark:bg-gray-800 rounded-xl shadow px-4 py-4 w-full">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h3 className="font-semibold dark:text-white">Shape {index + 1}</h3>
-                                    <button onClick={() => handleRemoveShape(index)}
-                                        className="w-8 h-8 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 transition">–</button>
-                                </div>
+                        <div>
+                          <h4 className="font-semibold mb-2 dark:text-gray-200">
+                            Sides</h4>
+                          {shape.sides.map((side, i) => (
+                            <div key={i} className="flex items-center gap-2 mb-2">
+                              <span className="w-10 text-xs dark:text-gray-300">Side</span>
+                              <select value={side.a}
+                                onChange={e => { const copy = [...shapes]; copy[index].sides[i].a = Number(e.target.value); setShapes(copy); }}
+                                className="flex-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-white px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600">
+                                {shape.nodes.map((_, j) => <option key={j} value={j}>Vertex {getJointLabel(index, j)}</option>)}
+                              </select>
+                              <select value={side.b}
+                                onChange={e => { const copy = [...shapes]; copy[index].sides[i].b = Number(e.target.value); setShapes(copy); }}
+                                className="flex-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-white px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600">
+                                {shape.nodes.map((_, j) => <option key={j} value={j}>Vertex {getJointLabel(index, j)}</option>)}
+                              </select>
+                              <button onClick={() => { const copy = [...shapes]; copy[index].sides.splice(i, 1); setShapes(copy); }}
+                                className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition font-semibold">
 
-                                <button
-                                    onClick={() => { const copy = [...shapes]; copy[index].isOpen = !copy[index].isOpen; setShapes(copy); }}
-                                    className="w-full flex justify-between bg-[#008409] text-white px-3 py-1 rounded-lg hover:bg-[#15711b] transition"
-                                >
-                                    Options
-                                    <span className={`transition-transform ${shape.isOpen ? "rotate-180" : ""}`}>▼</span>
-                                </button>
-
-                                {shape.isOpen && (
-                                    <div className="mt-4 space-y-4">
-                                        <ShapeSelectDropdown
-                                            value={shape.type}
-                                            onChange={val => { const copy = [...shapes]; copy[index].type = val; setShapes(copy); }}
-                                        />
-
-                                        <select value={shape.hollow}
-                                            onChange={e => { const copy = [...shapes]; copy[index].hollow = e.target.value as "Hollow" | "Solid"; setShapes(copy); }}
-                                            className="w-full rounded px-3 py-1 bg-white dark:bg-gray-700 dark:text-white border border-gray-200 dark:border-gray-600 focus:outline-none">
-                                            <option>Hollow</option>
-                                            <option>Solid</option>
-                                        </select>
-
-                                        {shape.type === "Polygon" && (
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <h4 className="font-semibold mb-2 dark:text-gray-200">Vertices</h4>
-                                                    {shape.nodes.map((node, i) => (
-                                                        <div key={i} className="flex items-center gap-1 mb-2 w-full min-w-0">
-                                                            <span className="w-14 shrink-0 text-xs dark:text-gray-300">Vertex {getJointLabel(index, i)}</span>
-                                                            <input placeholder="x" value={node.x}
-                                                                onChange={e => { const copy = [...shapes]; copy[index].nodes[i].x = e.target.value; setShapes(copy); }}
-                                                                className="w-0 flex-1 min-w-0 rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600"
-                                                            />
-                                                            <input placeholder="y" value={node.y}
-                                                                onChange={e => { const copy = [...shapes]; copy[index].nodes[i].y = e.target.value; setShapes(copy); }}
-                                                                className="w-0 flex-1 min-w-0 rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600"
-                                                            />
-                                                            <button onClick={() => {
-                                                                if (shape.nodes.length <= 2) return;
-                                                                const copy = [...shapes];
-                                                                copy[index].nodes.splice(i, 1);
-                                                                copy[index].sides = copy[index].sides.filter(s => s.a !== i && s.b !== i);
-                                                                setShapes(copy);
-                                                            }} className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition font-semibold">
-                                                                –</button>
-                                                        </div>
-                                                    ))}
-                                                    <button onClick={() => { const copy = [...shapes]; copy[index].nodes.push({ x: "", y: "" }); setShapes(copy); }}
-                                                        className="bg-[#008409] text-white px-3 py-1 rounded-md shadow hover:bg-[#15711b] transition text-sm">+ Add Vertex</button>
-                                                </div>
-
-                                                <div>
-                                                    <h4 className="font-semibold mb-2 dark:text-gray-200">
-                                                        Sides</h4>
-                                                    {shape.sides.map((side, i) => (
-                                                        <div key={i} className="flex items-center gap-2 mb-2">
-                                                            <span className="w-10 text-xs dark:text-gray-300">Side</span>
-                                                            <select value={side.a}
-                                                                onChange={e => { const copy = [...shapes]; copy[index].sides[i].a = Number(e.target.value); setShapes(copy); }}
-                                                                className="flex-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-white px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600">
-                                                                {shape.nodes.map((_, j) => <option key={j} value={j}>Vertex {getJointLabel(index, j)}</option>)}
-                                                            </select>
-                                                            <select value={side.b}
-                                                                onChange={e => { const copy = [...shapes]; copy[index].sides[i].b = Number(e.target.value); setShapes(copy); }}
-                                                                className="flex-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-white px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600">
-                                                                {shape.nodes.map((_, j) => <option key={j} value={j}>Vertex {getJointLabel(index, j)}</option>)}
-                                                            </select>
-                                                            <button onClick={() => { const copy = [...shapes]; copy[index].sides.splice(i, 1); setShapes(copy); }}
-                                                                className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition font-semibold">
-
-                                                                –</button>
-                                                        </div>
-                                                    ))}
-                                                    <button onClick={() => {
-                                                        if (shape.nodes.length < 2) return;
-                                                        const copy = [...shapes]; copy[index].sides.push({ a: 0, b: 1 }); setShapes(copy);
-                                                    }} className="bg-[#008409] text-white px-3 py-1 rounded-md shadow hover:bg-[#15711b] transition text-sm">+ Add Side</button>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {isCircular && (
-                                            <CircularInputs
-                                                radius={shape.radius} x={shape.x} y={shape.y}
-                                                onRadiusChange={val => { const copy = [...shapes]; copy[index].radius = val; setShapes(copy); }}
-                                                onXChange={val => { const copy = [...shapes]; copy[index].x = val; setShapes(copy); }}
-                                                onYChange={val => { const copy = [...shapes]; copy[index].y = val; setShapes(copy); }}
-                                            />
-                                        )}
-
-                                        <button onClick={handleAddShape}
-                                            className="w-full bg-[#008409] text-white px-3 py-1 rounded-lg hover:bg-[#15711b] transition">
-                                            + Add Shape
-                                        </button>
-                                    </div>
-                                )}
+                                –</button>
                             </div>
-                        );
-                    })}
+                          ))}
+                          <button onClick={() => {
+                            if (shape.nodes.length < 2) return;
+                            const copy = [...shapes]; copy[index].sides.push({ a: 0, b: 1 }); setShapes(copy);
+                          }} className="bg-[#008409] text-white px-3 py-1 rounded-md shadow hover:bg-[#15711b] transition text-sm">+ Add Side</button>
+                        </div>
+                      </div>
+                    )}
 
-                    {/* Calculate Button */}
-                    <button onClick={calculateResultant}
-                        className="w-full bg-[#1848a0] text-white px-3 py-2 rounded-lg hover:bg-[#163d8a] transition text-lg font-semibold">
-                        Calculate
+                    {isCircular && (
+                      <CircularInputs
+                        radius={shape.radius} x={shape.x} y={shape.y}
+                        onRadiusChange={val => { const copy = [...shapes]; copy[index].radius = val; setShapes(copy); }}
+                        onXChange={val => { const copy = [...shapes]; copy[index].x = val; setShapes(copy); }}
+                        onYChange={val => { const copy = [...shapes]; copy[index].y = val; setShapes(copy); }}
+                      />
+                    )}
+
+                    <button onClick={handleAddShape}
+                      className="w-full bg-[#008409] text-white px-3 py-1 rounded-lg hover:bg-[#15711b] transition">
+                      + Add Shape
                     </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
-                    {/* Quick Results Panel */}
-                    {result && (
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 w-full">
-                            <h3 className="font-semibold mb-3 text-blue-900 dark:text-blue-400">Quick Results</h3>
+          {/* Calculate Button */}
+          <button onClick={calculateResultant}
+            className="w-full bg-[#1848a0] text-white px-3 py-2 rounded-lg hover:bg-[#163d8a] transition text-lg font-semibold">
+            Calculate
+          </button>
 
-                            {/* Total Area — full width */}
-                            <div className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2 mb-2">
-                                <div className="text-[10px] text-gray-500 dark:text-gray-400">Total Area</div>
-                                <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{formatNumber(result.centroid.totalArea)}</div>
-                            </div>
+          {/* Quick Results Panel */}
+          {result && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 w-full">
+              <h3 className="font-semibold mb-3 text-blue-900 dark:text-blue-400">Quick Results</h3>
 
-                            {/* Centroid X and Y — side by side */}
-                            <div className="grid grid-cols-2 gap-2 mb-2">
-                                {[
-                                    ["Centroid X̄", `${formatNumber(result.centroid.centroidX)}`],
-                                    ["Centroid Ȳ", `${formatNumber(result.centroid.centroidY)}`],
-                                ].map(([label, val]) => (
-                                    <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2">
-                                        <div className="text-[10px] text-gray-500 dark:text-gray-400">{label}</div>
-                                        <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
-                                    </div>
-                                ))}
-                            </div>
+              {/* Total Area — full width */}
+              <div className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2 mb-2">
+                <div className="text-[10px] text-gray-500 dark:text-gray-400">Total Area</div>
+                <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{formatNumber(result.centroid.totalArea)}</div>
+              </div>
 
-                            <hr className="my-2 border-gray-200 dark:border-gray-600" />
+              {/* Centroid X and Y — side by side */}
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                {[
+                  ["Centroid X̄", `${formatNumber(result.centroid.centroidX)}`],
+                  ["Centroid Ȳ", `${formatNumber(result.centroid.centroidY)}`],
+                ].map(([label, val]) => (
+                  <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400">{label}</div>
+                    <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
+                  </div>
+                ))}
+              </div>
 
-                            {/* Ix and Iy centroidal — side by side */}
-                            <div className="grid grid-cols-2 gap-2">
-                                {[
-                                    ["Ix (centroid)", `${formatNumber(result.centroidMOI.Ix)}`],
-                                    ["Iy (centroid)", `${formatNumber(result.centroidMOI.Iy)}`],
-                                ].map(([label, val]) => (
-                                    <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2">
-                                        <div className="text-[10px] text-gray-500 dark:text-gray-400">{label}</div>
-                                        <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
-                                    </div>
-                                ))}
-                            </div>
+              <hr className="my-2 border-gray-200 dark:border-gray-600" />
 
-                            {/* Custom axis results */}
-                            {axisType === "Custom" && result.customMOI && (
-                                <>
-                                    <hr className="my-2 border-gray-200 dark:border-gray-600" />
-                                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-2">About Custom Axis</p>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {[
-                                            ["Ix (custom)", `${formatNumber(result.customMOI.Ix)}`],
-                                            ["Iy (custom)", `${formatNumber(result.customMOI.Iy)}`],
-                                        ].map(([label, val]) => (
-                                            <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2">
-                                                <div className="text-[10px] text-gray-500 dark:text-gray-400">{label}</div>
-                                                <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    )}
+              {/* Ix and Iy centroidal — side by side */}
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ["Ix (centroid)", `${formatNumber(result.centroidMOI.Ix)}`],
+                  ["Iy (centroid)", `${formatNumber(result.centroidMOI.Iy)}`],
+                ].map(([label, val]) => (
+                  <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400">{label}</div>
+                    <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
+                  </div>
+                ))}
+              </div>
 
-                    {/* Solution Display */}
-                    {result && stepLines.length > 0 && (
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 w-full">
-                            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Step-by-Step Solution</h3>
-                            </div>
-                            <div className="px-4 py-4">
-                                <button
-                                    onClick={() => {
-                                        setStatus("generating");
-                                        const payload = { lines: stepLines, resultRows, shapes };
-                                        const encoded = encodeURIComponent(JSON.stringify(payload));
-                                        window.open(`/print/moi?data=${encoded}`, "_blank");
-                                        setStatus("done");
-                                        setTimeout(() => setStatus("idle"), 2500);
-                                    }}
-                                    disabled={off}
-                                    className={`w-full mb-4 py-3 rounded-xl font-semibold text-white transition ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"}`}
-                                >
-                                    {labels[status]}
-                                </button>
-                                <MOIStepRenderer lines={stepLines} />
-                            </div>
-                        </div>
-                    )}
+              {/* Custom axis results */}
+              {axisType === "Custom" && result.customMOI && (
+                <>
+                  <hr className="my-2 border-gray-200 dark:border-gray-600" />
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-2">About Custom Axis</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      ["Ix (custom)", `${formatNumber(result.customMOI.Ix)}`],
+                      ["Iy (custom)", `${formatNumber(result.customMOI.Iy)}`],
+                    ].map(([label, val]) => (
+                      <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400">{label}</div>
+                        <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
-                </div>
-            </main>
+          {/* Solution Display */}
+          {result && stepLines.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 w-full">
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Step-by-Step Solution</h3>
+              </div>
+              <div className="px-4 py-4">
+                <button
+                  onClick={() => {
+                    setStatus("generating");
+                    const payload = { lines: stepLines, resultRows, shapes };
+                    const encoded = encodeURIComponent(JSON.stringify(payload));
+                    window.open(`/print/moi?data=${encoded}`, "_blank");
+                    setStatus("done");
+                    setTimeout(() => setStatus("idle"), 2500);
+                  }}
+                  disabled={off}
+                  className={`w-full mb-4 py-3 rounded-xl font-semibold text-white transition ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"}`}
+                >
+                  {labels[status]}
+                </button>
+                <MOIStepRenderer lines={stepLines} />
+              </div>
+            </div>
+          )}
+
+        </div>
+      </main>
 
       <Footer />
     </div>

@@ -81,8 +81,10 @@ export default function Header() {
             )}
           </div>
 
-          <span className="text-gray-400 dark:text-gray-500 px-0.5">|</span>
-          <Link href="/about" className="hover:text-[#1848a0] dark:hover:text-blue-400 whitespace-nowrap">About</Link>
+          <span className="text-gray-400 dark:text-gray-500 px-0.5 text-[5px] sm:text-[20px] text-semibold">|</span>
+          <Link href="https://docs.google.com/forms/d/e/1FAIpQLSfvFkHs98DUzwh0qH3iplBqid4s6yeMcZjpkZwD1Om0AHSSbA/viewform" target="_blank" rel="noopener noreferrer" className="bg-[#1848a0] dark:bg-blue-600 text-white px-4 py-1.5 rounded-md shadow hover:bg-[#163d8a] dark:hover:bg-blue-700 transition text-[13px] sm:text-[15px] whitespace-nowrap">
+             Take Our Survey
+          </Link>
         </nav>
 
       </div>

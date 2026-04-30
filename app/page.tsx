@@ -18,7 +18,7 @@ export default function HomePage() {
         </h1>
 
         <p className="text-gray-600 dark:text-gray-300 mb-12 text-[18px]">
-          Interactive calculators for learning and solving Statics of Rigid Bodies. ow
+          Interactive calculators for learning and solving Statics of Rigid Bodies.
         </p>
 
         {/* Chapter List */}
