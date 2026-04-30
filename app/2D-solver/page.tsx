@@ -7,6 +7,8 @@ import Solver3D from "../solver/page";
 import "katex/dist/katex.min.css";
 import { useStepByStepPDF } from "../ToPDF/Page";
 import { StepByStepSolution, fromLegacySteps } from "../../components/StepByStep";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense } from "react";
 
 const fmt2 = (v: number): string => {
   if (Math.abs(v - Math.round(v)) < 1e-9) return Math.round(v).toString();
@@ -55,8 +57,8 @@ class ForceSystem2D {
 
     const fxTerms = this.vectors.map((_, i) => `F_{x${i + 1}}`).join(" + ");
     const fyTerms = this.vectors.map((_, i) => `F_{y${i + 1}}`).join(" + ");
-    const fxNums  = this.vectors.map(v => fmt2(v.fx)).join(" + ");
-    const fyNums  = this.vectors.map(v => fmt2(v.fy)).join(" + ");
+    const fxNums = this.vectors.map(v => fmt2(v.fx)).join(" + ");
+    const fyNums = this.vectors.map(v => fmt2(v.fy)).join(" + ");
 
     steps.push(`
 \\begin{align*}
@@ -70,7 +72,7 @@ class ForceSystem2D {
 \\end{align*}
 `);
 
-    const R     = Math.hypot(sumFx, sumFy);
+    const R = Math.hypot(sumFx, sumFy);
     const theta = (Math.atan2(sumFy, sumFx) * 180) / Math.PI;
     const arrow = theta >= 0 ? "↺" : "↻";
 
@@ -91,7 +93,7 @@ class ForceSystem2D {
 }
 
 /* ===================== Types ===================== */
-type ForceInput  = { magnitude: string; angle: string };
+type ForceInput = { magnitude: string; angle: string };
 type ForceResult = { steps: string[]; sumFx: number; sumFy: number; R: number; theta: number };
 
 /* ===================== ResultantFBD ===================== */
@@ -112,9 +114,9 @@ function ResultantFBD({
     })
     .filter(Boolean) as { x: number; y: number }[];
 
-  const R        = { x: result.sumFx, y: result.sumFy };
-  const maxMag   = Math.max(1, ...vectors.map(v => Math.hypot(v.x, v.y)), Math.hypot(R.x, R.y));
-  const scale    = 90 / maxMag;
+  const R = { x: result.sumFx, y: result.sumFy };
+  const maxMag = Math.max(1, ...vectors.map(v => Math.hypot(v.x, v.y)), Math.hypot(R.x, R.y));
+  const scale = 90 / maxMag;
 
   return (
     <svg
@@ -151,7 +153,7 @@ function ResultantFBD({
 
 /* ===================== Draggable FBD (live preview) ===================== */
 function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: ForceInput[]) => void }) {
-  const svgRef    = useRef<SVGSVGElement | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   const vectors = forces
@@ -165,7 +167,7 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
     .filter(Boolean) as { x: number; y: number }[];
 
   const maxMag = Math.max(1, ...vectors.map(v => Math.hypot(v.x, v.y)));
-  const scale  = 80 / maxMag;
+  const scale = 80 / maxMag;
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (dragIndex === null) return;
@@ -173,7 +175,7 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
     if (!svg) return;
     const pt = svg.createSVGPoint();
     pt.x = e.clientX; pt.y = e.clientY;
-    const cursor  = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+    const cursor = pt.matrixTransform(svg.getScreenCTM()?.inverse());
     const newAngle = (Math.atan2(-(cursor.y - 150), cursor.x - 150) * 180) / Math.PI;
     const newForces = [...forces];
     newForces[dragIndex] = { ...newForces[dragIndex], angle: newAngle.toFixed(3) };
@@ -221,22 +223,25 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
 
 /* ===================== MAIN COMPONENT ===================== */
 export default function Solver2D() {
-  const [activeTab, setActiveTab] = useState<"2d" | "3d">("2d");
-  const [forces, setForces]       = useState<ForceInput[]>([{ magnitude: "", angle: "" }]);
-  const [result, setResult]       = useState<ForceResult | null>(null);
-  const [status, setStatus]       = useState<"idle" | "generating" | "done" | "error">("idle");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const activeTab = (searchParams.get("tab") as "2d" | "3d") || "2d";
+  const setActiveTab = (tab: "2d" | "3d") => router.replace(`?tab=${tab}`, { scroll: false });
+  const [forces, setForces] = useState<ForceInput[]>([{ magnitude: "", angle: "" }]);
+  const [result, setResult] = useState<ForceResult | null>(null);
+  const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
 
   const off = status === "generating";
   const labels: Record<typeof status, string> = {
-    idle:       "⬇ Download Solution as PDF",
+    idle: "⬇ Download Solution as PDF",
     generating: "⏳ Opening print view…",
-    done:       "✅ Done!",
-    error:      "❌ Export failed — try again",
+    done: "✅ Done!",
+    error: "❌ Export failed — try again",
   };
 
   const fbdRef = useRef<SVGSVGElement>(null);
   const [solutionRef] = useStepByStepPDF({
-    title:    "2D Resultant Force — Step-by-Step Solution",
+    title: "2D Resultant Force — Step-by-Step Solution",
     filename: "resultant-2d-solution.pdf",
   });
 
@@ -263,9 +268,9 @@ export default function Solver2D() {
       steps: result.steps,
       resultRows: [
         { label: "Horizontal component (Fx)", value: `${fmt2(result.sumFx)} kN` },
-        { label: "Vertical component (Fy)",   value: `${fmt2(result.sumFy)} kN` },
-        { label: "Magnitude (R)",              value: `${fmt2(result.R)} kN` },
-        { label: "Angle (θ)",                  value: `${result.theta.toFixed(2)}°` },
+        { label: "Vertical component (Fy)", value: `${fmt2(result.sumFy)} kN` },
+        { label: "Magnitude (R)", value: `${fmt2(result.R)} kN` },
+        { label: "Angle (θ)", value: `${result.theta.toFixed(2)}°` },
       ],
       forces,
       result: { sumFx: result.sumFx, sumFy: result.sumFy, R: result.R, theta: result.theta },
@@ -291,15 +296,13 @@ export default function Solver2D() {
         {/* ── TABS ── */}
         <div className="flex justify-center mb-5 gap-2 sm:gap-4 w-full max-w-xl">
           <button onClick={() => setActiveTab("2d")}
-            className={`flex-1 sm:flex-none px-3 sm:px-5 py-2 rounded-lg font-semibold text-[15px] sm:text-[17px] transition ${
-              activeTab === "2d" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"
-            }`}>
+            className={`flex-1 sm:flex-none px-3 sm:px-5 py-2 rounded-lg font-semibold text-[15px] sm:text-[17px] transition ${activeTab === "2d" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"
+              }`}>
             2D Resultant
           </button>
           <button onClick={() => setActiveTab("3d")}
-            className={`flex-1 sm:flex-none px-3 sm:px-5 py-2 rounded-lg font-semibold text-[15px] sm:text-[17px] transition ${
-              activeTab === "3d" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"
-            }`}>
+            className={`flex-1 sm:flex-none px-3 sm:px-5 py-2 rounded-lg font-semibold text-[15px] sm:text-[17px] transition ${activeTab === "3d" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"
+              }`}>
             3D Resultant
           </button>
         </div>
@@ -389,9 +392,8 @@ export default function Solver2D() {
                 <button
                   onClick={() => handleExportPDF(result)}
                   disabled={off}
-                  className={`w-full mt-4 rounded-xl px-4 py-2.5 sm:py-3 font-semibold text-white transition text-[14px] sm:text-[16px] ${
-                    off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
-                  }`}>
+                  className={`w-full mt-4 rounded-xl px-4 py-2.5 sm:py-3 font-semibold text-white transition text-[14px] sm:text-[16px] ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+                    }`}>
                   {labels[status]}
                 </button>
 
@@ -401,9 +403,9 @@ export default function Solver2D() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {[
                       ["Horizontal component (Fx)", `${fmt2(result.sumFx)} kN`],
-                      ["Vertical component (Fy)",   `${fmt2(result.sumFy)} kN`],
-                      ["Magnitude (R)",              `${result.R.toFixed(3)} kN`],
-                      ["Direction (θ)",              `${result.theta.toFixed(2)}°`],
+                      ["Vertical component (Fy)", `${fmt2(result.sumFy)} kN`],
+                      ["Magnitude (R)", `${result.R.toFixed(3)} kN`],
+                      ["Direction (θ)", `${result.theta.toFixed(2)}°`],
                     ].map(([label, val]) => (
                       <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-xl border border-blue-100 dark:border-gray-600 px-3 py-2.5">
                         <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">{label}</div>

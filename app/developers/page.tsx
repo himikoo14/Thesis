@@ -16,7 +16,7 @@ export default function DevelopersSection() {
 
         <DeveloperCard
           image="/ian.png"
-          name="Ian Carl P. Coña"
+          name="Ian Carl P. Coña, SO2"
           email="iancarl.cona@msugensan.edu.ph"
           facebook="facebook.com/Himiikoo14"
           roles={["Programmer", "Website Developer"]}
@@ -24,7 +24,7 @@ export default function DevelopersSection() {
 
         <DeveloperCard
           image="/sophia.jpg"
-          name="Sophia Daphne C. Faelnar"
+          name="Sophia Daphne C. Faelnar, SO2"
           email="sophiadaphne.faelnar@msugensan.edu.ph"
           facebook="facebook.com/piafaelnar"
           roles={["Web Designer", "Content Developer"]}
@@ -56,12 +56,12 @@ function DeveloperCard({ image, name, email, facebook, roles }: Props) {
         />
       </div>
 
-      <h2 className="text-2xl font-serif font-bold text-[#1848a0]">
+      <h2 className="text-[20px] sm:text-[18px] font-serif font-bold text-[#1848a0]">
         {name}
       </h2>
 
-      <p className="italic text-gray-600 dark:text-gray-400 mt-1">
-        4th Year Civil Engineering Student, MSU-Gensan
+      <p className="italic text-gray-600 dark:text-gray-400 mt-1 text-[14px] sm:text-[14px]">
+        Bachelor of Science in Civil Engineering <br />Mindanao State University-General Santos
       </p>
 
       <div className="mt-1 leading-tight">
@@ -75,12 +75,12 @@ function DeveloperCard({ image, name, email, facebook, roles }: Props) {
       <div className="mt-3 space-y-1 text-gray-800 dark:text-gray-300">
         <div className="flex items-center justify-center gap-2">
           <span>✉</span>
-          <span className="text-sm">{email}</span>
+          <a href={`mailto:${email}`} className="text-sm text-[#1848a0] hover:underline">{email}</a>
         </div>
 
         <div className="flex items-center justify-center gap-2">
           <span>f</span>
-          <span className="text-sm">{facebook}</span>
+          <a href={`https://${facebook}`} target="_blank" rel="noopener noreferrer" className="text-sm text-[#1848a0] hover:underline">{facebook}</a>
         </div>
       </div>
     </div>

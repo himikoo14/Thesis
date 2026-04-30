@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect, ReactNode } from "react";
-import Header from "../../components/Header";
+import { useRef, useState, useCallback, useEffect, ReactNode, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import "katex/dist/katex.min.css";
 import BeamPage from "../Beam/page";
@@ -391,14 +391,18 @@ function calculate(forces: ForceInput[]): {
 }
 
 /* ===================== MAIN COMPONENT ===================== */
-export default function Equilibrium() {
+function EquilibriumContent() {
+
   const [forces, setForces] = useState<ForceInput[]>([
     { magnitude: "", angle: "", magnitudeUnknown: false, angleUnknown: false },
   ]);
   const [solution, setSolution] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
-  const [activeTab, setActiveTab] = useState<"concurrent" | "nonconcurrent">("concurrent");
+  const searchParams = useSearchParams();
+const router = useRouter();
+const activeTab = (searchParams.get("tab") as "concurrent" | "nonconcurrent") || "concurrent";
+const setActiveTab = (tab: "concurrent" | "nonconcurrent") => router.replace(`?tab=${tab}`, { scroll: false });
 
   const off = status === "generating";
   const labels: Record<typeof status, string> = {
@@ -756,5 +760,12 @@ export default function Equilibrium() {
 
       <Footer />
     </div>
+  );
+}
+export default function Equilibrium() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <EquilibriumContent />
+    </Suspense>
   );
 }
