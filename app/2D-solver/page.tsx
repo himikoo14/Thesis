@@ -222,7 +222,7 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
 }
 
 /* ===================== MAIN COMPONENT ===================== */
-export default function Solver2D() {
+function Solver2DContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const activeTab = (searchParams.get("tab") as "2d" | "3d") || "2d";
@@ -442,5 +442,12 @@ export default function Solver2D() {
 
       <Footer />
     </div>
+  );
+}
+export default function Solver2D() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Solver2DContent />
+    </Suspense>
   );
 }
