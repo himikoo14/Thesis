@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Header from "<Ian>/components/Header";
+import Header from "<Ian>/components/Header1";
 import Footer from "<Ian>/components/Footer";
 
 export default function HomePage() {
