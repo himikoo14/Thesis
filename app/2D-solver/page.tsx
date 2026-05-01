@@ -361,14 +361,18 @@ function Solver2DContent() {
                     </div>
                     {/* Remove button */}
                     {forces.length > 1 && (
-                      <div className="flex sm:items-end">
+                      <div className="flex flex-col">
+                        <label className="block font-medium text-[13px] sm:text-[16px] mb-1 invisible">
+                          &nbsp;
+                        </label>
                         <button
                           onClick={() => setForces(forces.filter((_, idx) => idx !== i))}
                           className="w-full sm:w-auto px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-[13px] sm:text-[15px] transition">
-                          – Remove
+                          –
                         </button>
                       </div>
                     )}
+
                   </div>
                 ))}
               </div>
@@ -387,7 +391,7 @@ function Solver2DContent() {
 
             {/* ── Output card ── */}
             {result && (
-              <div ref={solutionRef as React.Ref<HTMLDivElement>} className="w-full max-w-xl">
+              <div ref={solutionRef as React.Ref<HTMLDivElement>} className="w-full max-w-xl bg-transparent dark:text-white">
 
                 <button
                   onClick={() => handleExportPDF(result)}
@@ -399,7 +403,7 @@ function Solver2DContent() {
 
                 {/* Result values — 2-col grid on mobile too since values are short */}
                 <div className="mt-4 bg-white dark:bg-gray-800 rounded-2xl shadow p-4 sm:p-6">
-                  <h2 className="text-[16px] sm:text-[20px] font-semibold mb-3">Resultant Force (kN)</h2>
+                  <h2 className="text-[16px] sm:text-[20px] font-semibold mb-3 dark:text-white">Resultant Force (kN)</h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {[
                       ["Horizontal component (Fx)", `${fmt2(result.sumFx)} kN`],

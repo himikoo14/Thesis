@@ -73,10 +73,10 @@ export function StepByStepSolution({
   return (
     <div
       ref={containerRef}
-      className="w-full max-w-xl mt-6 bg-white rounded-2xl shadow p-6"
+      className="w-full max-w-xl mt-6 bg-white dark:bg-gray-800 rounded-2xl shadow p-6"
     >
       {/* ── Card header ── */}
-      <h2 className="text-[20px] font-semibold mb-4">{title}</h2>
+      <h2 className="text-[20px] font-semibold mb-4 dark:text-white">{title}</h2>
 
       {/* ── Steps ── */}
       <div className="space-y-4">
@@ -85,7 +85,7 @@ export function StepByStepSolution({
             /* Bold step heading — "Step 1: …" */
             case "heading":
               return (
-                <p key={`${line.type}-${i}`} className="font-medium text-[18px] text-gray-900">
+                <p key={`${line.type}-${i}`} className="font-medium text-[18px] text-gray-900 dark:text-gray-100">
                   {line.text}
                 </p>
               );
@@ -93,7 +93,7 @@ export function StepByStepSolution({
             /* LaTeX math block */
             case "math":
               return (
-                <div key={`${line.type}-${i}`} className="text-[18px] overflow-x-auto py-1">
+                <div key={`${line.type}-${i}`} className="text-[18px] overflow-x-auto py-1 dark:[&_.katex]:text-white">
                   <BlockMath>{line.tex}</BlockMath>
                 </div>
               );
@@ -101,8 +101,7 @@ export function StepByStepSolution({
             /* Plain descriptive text */
             case "text":
               return (
-                <p key={`${line.type}-${i}`} className="text-[18px] text-gray-700">
-                  {line.text}
+                <p key={`${line.type}-${i}`} className="text-[18px] text-gray-700 dark:text-gray-300">                  {line.text}
                 </p>
               );
 
