@@ -443,7 +443,7 @@ const setActiveTab = (tab: "concurrent" | "nonconcurrent") => router.replace(`?t
       <Header />
 
       {/* ── Tabs (desktop) ── */}
-      <div className="hidden sm:flex justify-center mb-6 gap-4">
+      <div className="hidden sm:flex justify-center mb-6 gap-4 mt-4">
         <button onClick={() => setActiveTab("concurrent")}
           className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "concurrent" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
           Concurrent Force System
@@ -461,7 +461,7 @@ const setActiveTab = (tab: "concurrent" | "nonconcurrent") => router.replace(`?t
         {activeTab === "concurrent" && (
           <>
             {/* FBD */}
-            <div className="flex flex-col items-center justify-center mb-8 relative z-10">
+            <div className="flex flex-col items-center justify-center mb-8 relative z-10 ">
              <h1 className="text-3xl font-bold text-center mb-2">Concurrent Force System</h1>
               <h2 className="text-[18px] font-semibold text-center mb-2">Unknown Forces and Angles Calculator</h2>
               <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Real-Time Free Body Diagram</p>
@@ -598,7 +598,7 @@ const setActiveTab = (tab: "concurrent" | "nonconcurrent") => router.replace(`?t
       </div>
 
       {/* ── Tabs (mobile) ── */}
-      <div className="flex sm:hidden justify-center mb-6 gap-4">
+      <div className="flex sm:hidden justify-center mb-6 gap-4 ">
         <button onClick={() => setActiveTab("concurrent")}
           className={`px-3 py-3 text-[12px] rounded-lg font-semibold ${activeTab === "concurrent" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
           Concurrent Forces System
