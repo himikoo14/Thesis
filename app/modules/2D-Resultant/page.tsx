@@ -1,6 +1,6 @@
 "use client";
 
-import Header from "<Ian>/components/Header";
+import Header from "<Ian>/components/Header1";
 import Footer from "<Ian>/components/Footer";
 
 import { BlockMath } from "react-katex";
@@ -37,7 +37,7 @@ function FormulaBlock({ label, formula }: FormulaBlockProps) {
 function ArrowItem({ label }: ArrowItemProps) {
     return (
         <li className="flex items-center gap-2">
-            <span className="text-[#1848a0] font-bold">{"→"}</span>
+            <span className="text-[#008409] font-bold">{"→"}</span>
             {label}
         </li>
     );
@@ -47,7 +47,7 @@ function Step({ number, title, children }: StepProps) {
     return (
         <div className="mb-6">
             <div className="flex items-center gap-3 mb-3">
-                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#1848a0] text-white flex items-center justify-center font-bold text-[16px]">
+                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#008409] text-white flex items-center justify-center font-bold text-[16px]">
                     {number}
                 </div>
                 <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">{title}</h2>
@@ -83,10 +83,10 @@ export default function Resultant2D() {
                 </p>
 
                 {/* Intro Card */}
-                <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10 text-gray-900 dark:text-gray-200">
+                <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#008409] relative z-10 text-gray-900 dark:text-gray-200">
                     <p className="mb-3">
                         A{" "}
-                        <span className="font-semibold text-[#1848a0]">
+                        <span className="font-semibold text-[#008409]">
                             Resultant Force
                         </span>{" "}
                         is the single force that has the same effect as a system of two or
@@ -94,11 +94,11 @@ export default function Resultant2D() {
                     </p>
                     <p>
                         For a{" "}
-                        <span className="font-semibold text-[#1848a0]">
+                        <span className="font-semibold text-[#008409]">
                             Two-Dimensional Force System
                         </span>
                         , the resultant is obtained by resolving each force into its{" "}
-                        <span className="font-semibold text-[#1848a0]">
+                        <span className="font-semibold text-[#008409]">
                             horizontal and vertical components
                         </span>{" "}
                         and summing them.
@@ -111,7 +111,7 @@ export default function Resultant2D() {
                     <Step number={1} title="Draw the Free Body Diagram (FBD)">
                         <p>
                             Represent the body and show all{" "}
-                            <span className="font-semibold text-[#1848a0]">forces</span>{" "}
+                            <span className="font-semibold text-[#008409]">forces</span>{" "}
                             acting on it with their magnitudes and directions.
                         </p>
                         <ul className="list-none space-y-1 mt-1">
@@ -128,7 +128,7 @@ export default function Resultant2D() {
                     <Step number={2} title="Resolve Each Force into Components">
                         <p>
                             Break every force into{" "}
-                            <span className="font-semibold text-[#1848a0]">
+                            <span className="font-semibold text-[#008409]">
                                 x and y components
                             </span>
                             . For a force F at angle θ:
@@ -146,7 +146,7 @@ export default function Resultant2D() {
                     <Step number={3} title="Sum the Force Components">
                         <p>
                             Add all{" "}
-                            <span className="font-semibold text-[#1848a0]">
+                            <span className="font-semibold text-[#008409]">
                                 horizontal and vertical components
                             </span>{" "}
                             separately:
@@ -160,7 +160,7 @@ export default function Resultant2D() {
                     <Step number={4} title="Compute the Magnitude of the Resultant">
                         <p>
                             Use the{" "}
-                            <span className="font-semibold text-[#1848a0]">
+                            <span className="font-semibold text-[#008409]">
                                 Pythagorean theorem
                             </span>{" "}
                             to find the magnitude:
@@ -174,7 +174,7 @@ export default function Resultant2D() {
                     <Step number={5} title="Determine the Direction of the Resultant">
                         <p>
                             Find the{" "}
-                            <span className="font-semibold text-[#1848a0]">
+                            <span className="font-semibold text-[#008409]">
                                 angle of the resultant
                             </span>{" "}
                             measured from the positive x-axis:
@@ -196,9 +196,9 @@ export default function Resultant2D() {
                     <Step number={6} title="Express the Resultant Force">
                         <p>
                             Write the final answer including the{" "}
-                            <span className="font-semibold text-[#1848a0]">magnitude</span>{" "}
+                            <span className="font-semibold text-[#008409]">magnitude</span>{" "}
                             and{" "}
-                            <span className="font-semibold text-[#1848a0]">
+                            <span className="font-semibold text-[#008409]">
                                 direction angle
                             </span>
                             :

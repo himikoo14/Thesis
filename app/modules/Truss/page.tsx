@@ -1,6 +1,6 @@
 "use client";
 
-import Header from "<Ian>/components/Header";
+import Header from "<Ian>/components/Header1";
 import Footer from "<Ian>/components/Footer";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -20,7 +20,7 @@ interface ArrowItemProps {
 function ArrowItem({ label }: ArrowItemProps) {
     return (
         <li className="flex items-center gap-2">
-            <span className="text-[#1848a0] font-bold">{"→"}</span>
+            <span className="text-[#008409] font-bold">{"→"}</span>
             {label}
         </li>
     );
@@ -30,7 +30,7 @@ function Step({ number, title, children }: StepProps) {
     return (
         <div className="mb-6">
             <div className="flex items-center gap-3 mb-3">
-                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#1848a0] text-white flex items-center justify-center font-bold text-[16px]">
+                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#008409] text-white flex items-center justify-center font-bold text-[16px]">
                     {number}
                 </div>
                 <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">{title}</h2>
@@ -69,10 +69,10 @@ export default function MethodOfJoints() {
                 </p>
 
                 {/* Intro Card */}
-                <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10 text-gray-900 dark:text-gray-200">
+                <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#008409] relative z-10 text-gray-900 dark:text-gray-200">
                     <p className="mb-3">
                         The{" "}
-                        <span className="font-semibold text-[#1848a0]">
+                        <span className="font-semibold text-[#008409]">
                             Method of Joints
                         </span>{" "}
                         is used to determine the forces in each member of a truss by
@@ -80,7 +80,7 @@ export default function MethodOfJoints() {
                     </p>
                     <p className="mb-3">
                         Each joint is treated as a{" "}
-                        <span className="font-semibold text-[#1848a0]">
+                        <span className="font-semibold text-[#008409]">
                             concurrent force system
                         </span>
                         , where only two equilibrium equations apply:
@@ -97,7 +97,7 @@ export default function MethodOfJoints() {
                     <Step number={1} title="Determine Support Reactions">
                         <p>
                             Analyze the entire truss as a{" "}
-                            <span className="font-semibold text-[#1848a0]">
+                            <span className="font-semibold text-[#008409]">
                                 single rigid body
                             </span>{" "}
                             and determine all support reactions using the equilibrium
@@ -119,7 +119,7 @@ export default function MethodOfJoints() {
                     <Step number={2} title="Select a Suitable Joint">
                         <p>
                             Select a joint where there are at most{" "}
-                            <span className="font-semibold text-[#1848a0]">
+                            <span className="font-semibold text-[#008409]">
                                 two unknown member forces
                             </span>
                             .
@@ -143,7 +143,7 @@ export default function MethodOfJoints() {
                     <Step number={3} title="Draw the Free Body Diagram (FBD) of the Joint">
                         <p>
                             Isolate the selected joint and draw its{" "}
-                            <span className="font-semibold text-[#1848a0]">
+                            <span className="font-semibold text-[#008409]">
                                 Free Body Diagram (FBD)
                             </span>
                             .
@@ -166,7 +166,7 @@ export default function MethodOfJoints() {
                     <Step number={4} title="Resolve Forces into Components">
                         <p>
                             Resolve all inclined member forces into{" "}
-                            <span className="font-semibold text-[#1848a0]">
+                            <span className="font-semibold text-[#008409]">
                                 horizontal and vertical components
                             </span>
                             :
@@ -184,7 +184,7 @@ export default function MethodOfJoints() {
                     <Step number={5} title="Apply Equilibrium Equations at the Joint">
                         <p>
                             Apply the equilibrium equations at the joint and solve for the{" "}
-                            <span className="font-semibold text-[#1848a0]">
+                            <span className="font-semibold text-[#008409]">
                                 unknown member forces
                             </span>
                             :
@@ -198,7 +198,7 @@ export default function MethodOfJoints() {
                     <Step number={6} title="Move to the Next Joint">
                         <p>
                             Move to an{" "}
-                            <span className="font-semibold text-[#1848a0]">
+                            <span className="font-semibold text-[#008409]">
                                 adjacent joint
                             </span>{" "}
                             where the number of unknowns has been reduced.
@@ -235,7 +235,7 @@ export default function MethodOfJoints() {
                     {/* Key Notes Card */}
                     <div className="mb-6">
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#1848a0] text-white flex items-center justify-center font-bold text-[16px]">
+                            <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#008409] text-white flex items-center justify-center font-bold text-[16px]">
                                 📝
                             </div>
                             <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">Key Notes (Important for Exams)</h2>

@@ -1,6 +1,6 @@
 "use client";
 
-import Header from "<Ian>/components/Header";
+import Header from "<Ian>/components/Header1";
 import Footer from "<Ian>/components/Footer";
 
 import { BlockMath } from "react-katex";
@@ -37,7 +37,7 @@ function FormulaBlock({ label, formula }: FormulaBlockProps) {
 function ArrowItem({ label }: ArrowItemProps) {
   return (
     <li className="flex items-start gap-2">
-      <span className="text-[#1848a0] font-bold mt-0.5">{"→"}</span>
+      <span className="text-[#008409] font-bold mt-0.5">{"→"}</span>
       <span>{label}</span>
     </li>
   );
@@ -47,7 +47,7 @@ function Step({ number, title, children }: StepProps) {
   return (
     <div className="mb-6">
       <div className="flex items-center gap-3 mb-3">
-        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#1848a0] text-white flex items-center justify-center font-bold text-[16px]">
+        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#008409] text-white flex items-center justify-center font-bold text-[16px]">
           {number}
         </div>
         <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">{title}</h2>
@@ -83,19 +83,19 @@ export default function MOICustom() {
         </p>
 
         {/* Intro Card */}
-        <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10 text-gray-900 dark:text-gray-200">
+        <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#008409] relative z-10 text-gray-900 dark:text-gray-200">
           <p className="mb-3">
             A{" "}
-            <span className="font-semibold text-[#1848a0]">Composite Area</span>{" "}
+            <span className="font-semibold text-[#008409]">Composite Area</span>{" "}
             is formed by combining simple parts or shapes such as rectangles,
             triangles, and circles.
           </p>
           <p>
             The{" "}
-            <span className="font-semibold text-[#1848a0]">Moment of Inertia</span>{" "}
+            <span className="font-semibold text-[#008409]">Moment of Inertia</span>{" "}
             of a Composite Area is found by algebraically summing the moments of
             inertia of all parts, provided each component is evaluated about the{" "}
-            <span className="font-semibold text-[#1848a0]">same axis</span>.
+            <span className="font-semibold text-[#008409]">same axis</span>.
           </p>
         </div>
 
@@ -105,7 +105,7 @@ export default function MOICustom() {
           <Step number={1} title="Divide the Composite Area">
             <p>
               Split the area into simple parts or shapes and choose a{" "}
-              <span className="font-semibold text-[#1848a0]">reference axis</span>.
+              <span className="font-semibold text-[#008409]">reference axis</span>.
               Label each part (e.g., A, B, C) as shown.
             </p>
             <ul className="list-none space-y-1 mt-1">
@@ -120,13 +120,13 @@ export default function MOICustom() {
             <ul className="list-none space-y-1 mt-1">
               <ArrowItem
                 label={
-                  <span className="font-semibold text-[#1848a0]">Area (A)</span>
+                  <span className="font-semibold text-[#008409]">Area (A)</span>
                 }
               />
               <ArrowItem
                 label={
                   <>
-                    <span className="font-semibold text-[#1848a0]">
+                    <span className="font-semibold text-[#008409]">
                       Centroid location (x&#x1D62;, y&#x1D62;)
                     </span>{" "}
                     measured from the chosen reference axis
@@ -136,7 +136,7 @@ export default function MOICustom() {
               <ArrowItem
                 label={
                   <>
-                    <span className="font-semibold text-[#1848a0]">
+                    <span className="font-semibold text-[#008409]">
                       Centroidal Moment of Inertia (I&#x1D9C;)
                     </span>{" "}
                     using standard formulas
@@ -157,27 +157,27 @@ export default function MOICustom() {
             />
             <p>
               where the distance{" "}
-              <span className="font-semibold text-[#1848a0]">d</span> is defined
+              <span className="font-semibold text-[#008409]">d</span> is defined
               as follows:
             </p>
             <ul className="list-none space-y-2 mt-1">
               <ArrowItem
                 label={
                   <>
-                    For <span className="font-semibold text-[#1848a0]">I&#x2093;</span>:{" "}
+                    For <span className="font-semibold text-[#008409]">I&#x2093;</span>:{" "}
                     <span className="font-semibold">d&#x1D62;</span> = vertical distance
                     from the centroid of the part to the{" "}
-                    <span className="font-semibold text-[#1848a0]">x-axis</span>
+                    <span className="font-semibold text-[#008409]">x-axis</span>
                   </>
                 }
               />
               <ArrowItem
                 label={
                   <>
-                    For <span className="font-semibold text-[#1848a0]">I&#x1D67;</span>:{" "}
+                    For <span className="font-semibold text-[#008409]">I&#x1D67;</span>:{" "}
                     <span className="font-semibold">d&#x1D62;</span> = horizontal distance
                     from the centroid of the part to the{" "}
-                    <span className="font-semibold text-[#1848a0]">y-axis</span>
+                    <span className="font-semibold text-[#008409]">y-axis</span>
                   </>
                 }
               />

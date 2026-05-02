@@ -1,6 +1,6 @@
 "use client";
 
-import Header from "<Ian>/components/Header";
+import Header from "<Ian>/components/Header1";
 import Footer from "<Ian>/components/Footer";
 
 import { BlockMath, InlineMath } from "react-katex";
@@ -34,7 +34,7 @@ function Step({ number, title, children }: StepProps) {
     return (
         <div className="mb-6">
             <div className="flex items-center gap-3 mb-3">
-                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#1848a0] text-white flex items-center justify-center font-bold text-[16px]">
+                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#008409] text-white flex items-center justify-center font-bold text-[16px]">
                     {number}
                 </div>
                 <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">{title}</h2>
@@ -70,16 +70,16 @@ export default function ThreeDEquilibrium() {
                 </p>
 
                 {/* Intro Card */}
-                <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10 text-gray-900 dark:text-gray-200">
+                <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#008409] relative z-10 text-gray-900 dark:text-gray-200">
                     <p className="mb-2">
                         A body is said to be in{" "}
-                        <span className="font-semibold text-[#1848a0]">equilibrium</span> when
+                        <span className="font-semibold text-[#008409]">equilibrium</span> when
                         the resultant of all external forces and the resultant moment acting on
                         it are zero.
                     </p>
                     <p className="mb-3">
                         For a{" "}
-                        <span className="font-semibold text-[#1848a0]">
+                        <span className="font-semibold text-[#008409]">
                             Three-Dimensional System
                         </span>
                         , six equilibrium equations must be satisfied:
@@ -102,7 +102,7 @@ export default function ThreeDEquilibrium() {
                     <Step number={1} title="Draw the Free Body Diagram (FBD)">
                         <p>
                             Isolate the body and show all{" "}
-                            <span className="font-semibold text-[#1848a0]">
+                            <span className="font-semibold text-[#008409]">
                                 external forces and moments
                             </span>{" "}
                             acting in the x, y, and z directions.
@@ -112,7 +112,7 @@ export default function ThreeDEquilibrium() {
                     <Step number={2} title="Choose a Coordinate System">
                         <p>
                             Define the{" "}
-                            <span className="font-semibold text-[#1848a0]">x, y, and z axes</span>.
+                            <span className="font-semibold text-[#008409]">x, y, and z axes</span>.
                             Align axes conveniently along edges, cables, or symmetry when possible.
                         </p>
                     </Step>
@@ -125,7 +125,7 @@ export default function ThreeDEquilibrium() {
                         />
                         <p>
                             For forces along a line, use a{" "}
-                            <span className="font-semibold text-[#1848a0]">unit vector</span>{" "}
+                            <span className="font-semibold text-[#008409]">unit vector</span>{" "}
                             <span className="dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white">
                                 <InlineMath>{"\\mathbf{u}"}</InlineMath>
                             </span>:
@@ -147,7 +147,7 @@ export default function ThreeDEquilibrium() {
                         />
                         <p>
                             where{" "}
-                            <span className="font-semibold text-[#1848a0] dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white">
+                            <span className="font-semibold text-[#008409] dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white">
                                 <InlineMath>{"\\mathbf{r}"}</InlineMath>
                             </span>{" "}
                             is the position vector from the reference point to the point of force
@@ -171,7 +171,7 @@ export default function ThreeDEquilibrium() {
                     <Step number={6} title="Solve for Unknowns">
                         <p>
                             Solve the system of equations for all unknown{" "}
-                            <span className="font-semibold text-[#1848a0]">
+                            <span className="font-semibold text-[#008409]">
                                 forces, reactions, or tensions
                             </span>
                             .
@@ -186,7 +186,7 @@ export default function ThreeDEquilibrium() {
                                 "Substitute back into all six equations to confirm equilibrium",
                             ].map((item) => (
                                 <li key={item} className="flex items-center gap-2">
-                                    <span className="text-[#1848a0] font-bold">{"→"}</span>
+                                    <span className="text-[#008409] font-bold">{"→"}</span>
                                     {item}
                                 </li>
                             ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import Header from "<Ian>/components/Header";
+import Header from "<Ian>/components/Header1";
 import Footer from "<Ian>/components/Footer";
 
 interface StepProps {
@@ -16,7 +16,7 @@ interface ArrowItemProps {
 function ArrowItem({ label }: ArrowItemProps) {
     return (
         <li className="flex items-center gap-2">
-            <span className="text-[#1848a0] font-bold">{"→"}</span>
+            <span className="text-[#008409] font-bold">{"→"}</span>
             {label}
         </li>
     );
@@ -26,7 +26,7 @@ function Step({ number, title, children }: StepProps) {
     return (
         <div className="mb-6">
             <div className="flex items-center gap-3 mb-3">
-                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#1848a0] text-white flex items-center justify-center font-bold text-[16px]">
+                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#008409] text-white flex items-center justify-center font-bold text-[16px]">
                     {number}
                 </div>
                 <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">{title}</h2>
@@ -62,10 +62,10 @@ export default function FBD() {
                 </p>
 
                 {/* Intro Card */}
-                <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10 text-gray-900 dark:text-gray-200">
+                <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#008409] relative z-10 text-gray-900 dark:text-gray-200">
                     <p className="mb-3">
                         A{" "}
-                        <span className="font-semibold text-[#1848a0]">
+                        <span className="font-semibold text-[#008409]">
                             Free Body Diagram (FBD)
                         </span>{" "}
                         is a sketch of a body isolated from its surroundings showing all
@@ -73,13 +73,13 @@ export default function FBD() {
                     </p>
                     <p className="mb-3">
                         The{" "}
-                        <span className="font-semibold text-[#1848a0]">Particle</span> is
+                        <span className="font-semibold text-[#008409]">Particle</span> is
                         represented by a single point, and all forces acting on it are drawn
                         as vectors originating from that point.
                     </p>
                     <p>
                         It is commonly used in problems involving{" "}
-                        <span className="font-semibold text-[#1848a0]">
+                        <span className="font-semibold text-[#008409]">
                             concurrent force systems
                         </span>
                         , cables, and particles in equilibrium.
@@ -92,9 +92,9 @@ export default function FBD() {
                     <Step number={1} title="Represent the Particle and Establish Reference Axes">
                         <p>
                             Draw a{" "}
-                            <span className="font-semibold text-[#1848a0]">single point</span>{" "}
+                            <span className="font-semibold text-[#008409]">single point</span>{" "}
                             to represent the particle and define the{" "}
-                            <span className="font-semibold text-[#1848a0]">x- and y-axes</span>.
+                            <span className="font-semibold text-[#008409]">x- and y-axes</span>.
                         </p>
                         <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-[15px] text-gray-600 dark:text-gray-300 italic">
                             Example: A force of 450 lb acts on the frame. Construct the free
@@ -129,7 +129,7 @@ export default function FBD() {
                     <Step number={2} title="Draw the Force Vectors">
                         <p>
                             Represent each force acting on the particle with an{" "}
-                            <span className="font-semibold text-[#1848a0]">
+                            <span className="font-semibold text-[#008409]">
                                 arrow originating from the point
                             </span>
                             .

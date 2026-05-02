@@ -1,6 +1,6 @@
 "use client";
 
-import Header from "<Ian>/components/Header";
+import Header from "<Ian>/components/Header1";
 import Footer from "<Ian>/components/Footer";
 
 import { BlockMath } from "react-katex";
@@ -37,7 +37,7 @@ function FormulaBlock({ label, formula }: FormulaBlockProps) {
 function ArrowItem({ label }: ArrowItemProps) {
   return (
     <li className="flex items-start gap-2">
-      <span className="text-[#1848a0] font-bold mt-0.5">{"→"}</span>
+      <span className="text-[#008409] font-bold mt-0.5">{"→"}</span>
       <span>{label}</span>
     </li>
   );
@@ -47,7 +47,7 @@ function Step({ number, title, children }: StepProps) {
   return (
     <div className="mb-6">
       <div className="flex items-center gap-3 mb-3">
-        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#1848a0] text-white flex items-center justify-center font-bold text-[16px]">
+        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#008409] text-white flex items-center justify-center font-bold text-[16px]">
           {number}
         </div>
         <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">{title}</h2>
@@ -83,21 +83,21 @@ export default function ConcurrentForces3D() {
         </p>
 
         {/* Intro Card */}
-        <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10 text-gray-900 dark:text-gray-200">
+        <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#008409] relative z-10 text-gray-900 dark:text-gray-200">
           <p className="mb-3">
             A{" "}
-            <span className="font-semibold text-[#1848a0]">resultant force</span>{" "}
+            <span className="font-semibold text-[#008409]">resultant force</span>{" "}
             is a single force that produces the same external effect as a system
             of forces acting simultaneously on a particle.
           </p>
           <p>
             In{" "}
-            <span className="font-semibold text-[#1848a0]">
+            <span className="font-semibold text-[#008409]">
               three-dimensional problems
             </span>
             , forces are commonly directed along lines in space and must be
             expressed using{" "}
-            <span className="font-semibold text-[#1848a0]">vector notation</span>{" "}
+            <span className="font-semibold text-[#008409]">vector notation</span>{" "}
             before they can be combined.
           </p>
         </div>
@@ -108,7 +108,7 @@ export default function ConcurrentForces3D() {
           <Step number={1} title="Express Points in Cartesian Form">
             <p>
               Identify and write the coordinates of all relevant points in the{" "}
-              <span className="font-semibold text-[#1848a0]">
+              <span className="font-semibold text-[#008409]">
                 Cartesian coordinate system
               </span>
               .
@@ -122,7 +122,7 @@ export default function ConcurrentForces3D() {
           <Step number={2} title="Determine the Position Vector">
             <p>
               Form the{" "}
-              <span className="font-semibold text-[#1848a0]">position vector</span>{" "}
+              <span className="font-semibold text-[#008409]">position vector</span>{" "}
               from point A to point B by subtracting their coordinates.
             </p>
             <FormulaBlock
@@ -137,7 +137,7 @@ export default function ConcurrentForces3D() {
           <Step number={3} title="Compute the Magnitude of the Position Vector">
             <p>
               Determine the{" "}
-              <span className="font-semibold text-[#1848a0]">length</span> of the
+              <span className="font-semibold text-[#008409]">length</span> of the
               position vector using the three-dimensional distance formula.
             </p>
             <FormulaBlock
@@ -149,7 +149,7 @@ export default function ConcurrentForces3D() {
           <Step number={4} title="Determine the Unit Vector">
             <p>
               Obtain the{" "}
-              <span className="font-semibold text-[#1848a0]">unit vector</span> by
+              <span className="font-semibold text-[#008409]">unit vector</span> by
               dividing the position vector by its magnitude.
             </p>
             <FormulaBlock
@@ -164,7 +164,7 @@ export default function ConcurrentForces3D() {
           <Step number={5} title="Express the Force Vector">
             <p>
               Multiply the{" "}
-              <span className="font-semibold text-[#1848a0]">
+              <span className="font-semibold text-[#008409]">
                 magnitude of the force
               </span>{" "}
               by its unit vector to obtain the force in Cartesian form.
@@ -175,7 +175,7 @@ export default function ConcurrentForces3D() {
           <Step number={6} title="Compute the Resultant Force and its Magnitude">
             <p>
               Add all force vectors{" "}
-              <span className="font-semibold text-[#1848a0]">component-wise</span>{" "}
+              <span className="font-semibold text-[#008409]">component-wise</span>{" "}
               to obtain the resultant.
             </p>
             <FormulaBlock label="Resultant Vector" formula="\vec{R} = \sum \vec{F}" />

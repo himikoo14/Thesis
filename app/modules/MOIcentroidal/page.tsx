@@ -1,6 +1,6 @@
 "use client";
 
-import Header from "<Ian>/components/Header";
+import Header from "<Ian>/components/Header1";
 import Footer from "<Ian>/components/Footer";
 
 import { BlockMath } from "react-katex";
@@ -38,7 +38,7 @@ function Step({ number, title, children }: StepProps) {
   return (
     <div className="mb-6">
       <div className="flex items-center gap-3 mb-3">
-        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#1848a0] text-white flex items-center justify-center font-bold text-[16px]">
+        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-[#008409] text-white flex items-center justify-center font-bold text-[16px]">
           {number}
         </div>
         <h2 className="text-[20px] font-semibold text-gray-900 dark:text-white">{title}</h2>
@@ -75,17 +75,17 @@ export default function Centroid() {
         <p className="text-gray-500 dark:text-gray-400 mb-8 text-center">About the Centroidal Axis</p>
 
         {/* Intro Card */}
-        <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#1848a0] relative z-10 text-gray-900 dark:text-gray-200">
+        <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 mb-8 border-l-4 border-[#008409] relative z-10 text-gray-900 dark:text-gray-200">
           <p className="mb-2">
-            A <span className="font-semibold text-[#1848a0]">Composite Area</span> is
+            A <span className="font-semibold text-[#008409]">Composite Area</span> is
             formed by combining simple parts or shapes such as rectangles, triangles,
             and circles.
           </p>
           <p>
-            The <span className="font-semibold text-[#1848a0]">Moment of Inertia</span> of
+            The <span className="font-semibold text-[#008409]">Moment of Inertia</span> of
             a Composite Area is found by algebraically summing the moments of inertia of
             all parts, provided each component is evaluated about the{" "}
-            <span className="font-semibold text-[#1848a0]">same axis</span>.
+            <span className="font-semibold text-[#008409]">same axis</span>.
           </p>
         </div>
 
@@ -98,7 +98,7 @@ export default function Centroid() {
             <ul className="list-none space-y-1 mt-1">
               {["Rectangle", "Triangle", "Circle"].map((shape) => (
                 <li key={shape} className="flex items-center gap-2">
-                  <span className="text-[#1848a0] font-bold">{"→"}</span>
+                  <span className="text-[#008409] font-bold">{"→"}</span>
                   {shape}
                 </li>
               ))}
@@ -109,9 +109,9 @@ export default function Centroid() {
           <Step number={2} title="Identify the Location of Centroidal Axis">
             <p>
               For every labeled part, identify the{" "}
-              <span className="font-semibold text-[#1848a0]">Area (Aᵢ)</span> and
+              <span className="font-semibold text-[#008409]">Area (Aᵢ)</span> and
               determine its centroid{" "}
-              <span className="font-semibold text-[#1848a0]">(xᵢ, yᵢ)</span>.
+              <span className="font-semibold text-[#008409]">(xᵢ, yᵢ)</span>.
             </p>
             <p>Then compute the overall centroid of the composite:</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
@@ -130,7 +130,7 @@ export default function Centroid() {
           <Step number={3} title="Compute Centroidal MOI of Each Shape">
             <p>
               For each shape, compute its{" "}
-              <span className="font-semibold text-[#1848a0]">
+              <span className="font-semibold text-[#008409]">
                 centroidal Moment of Inertia
               </span>{" "}
               using standard formulas from reference tables.
@@ -147,7 +147,7 @@ export default function Centroid() {
               formula="I_i = \bar{I}_{c_i} + A_i d^2"
             />
             <p>
-              where <span className="font-semibold text-[#1848a0]">d</span> is the
+              where <span className="font-semibold text-[#008409]">d</span> is the
               perpendicular distance between the shape's centroidal axis and the
               reference axis.
             </p>
