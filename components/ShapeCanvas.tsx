@@ -138,21 +138,24 @@ export default function ShapeCanvas({ shapes, axisType, axisX, axisY }: Props) {
     >
       {/* Inject CSS vars for dark mode — SVG can't read Tailwind classes directly */}
       <style>{`
-        @media (prefers-color-scheme: dark) {
-          :root {
-            --canvas-bg: #1e293b;
-            --canvas-inner: #0f172a;
-            --grid-minor: #1e3a5f;
-            --grid-major: #334155;
-          }
-        }
-        .dark {
-          --canvas-bg: #1e293b;
-          --canvas-inner: #0f172a;
-          --grid-minor: #1e3a5f;
-          --grid-major: #334155;
-        }
-      `}</style>
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --canvas-bg: #1e293b;
+      --canvas-inner: #0f172a;
+      --grid-minor: #1e3a5f;
+      --grid-major: #334155;
+      --canvas-label: #e2e8f0;
+    }
+  }
+  .dark {
+    --canvas-bg: #1e293b;
+    --canvas-inner: #0f172a;
+    --grid-minor: #1e3a5f;
+    --grid-major: #334155;
+    --canvas-label: #e2e8f0;
+  }
+`}</style>
+
       <svg
         viewBox={`0 0 ${SIZE} ${SIZE}`}
         className="w-full h-full"
@@ -193,15 +196,15 @@ export default function ShapeCanvas({ shapes, axisType, axisX, axisY }: Props) {
             // Colors — same hues but readable on both light and dark backgrounds
             // The SVG sits on top of the CSS-var-coloured rects, so we keep shape
             // colours constant (they have enough contrast on both bg shades).
-            const COLOR_SOLID_FILL    = "rgba(59,130,246,0.20)";
-            const COLOR_SOLID_STROKE  = "#3b82f6";
-            const COLOR_HOLLOW_FILL   = "rgba(148,163,184,0.22)";
+            const COLOR_SOLID_FILL = "rgba(59,130,246,0.20)";
+            const COLOR_SOLID_STROKE = "#3b82f6";
+            const COLOR_HOLLOW_FILL = "rgba(148,163,184,0.22)";
             const COLOR_HOLLOW_STROKE = "#94a3b8";
-            const COLOR_NODE          = "#ef4444";
-            const COLOR_LABEL         = "#e2e8f0";   // light text — readable on dark inner bg
-            const COLOR_DIST          = "#f1f5f9";
-            const COLOR_RADIUS        = "#4ade80";
-            const COLOR_CENTER        = "#f87171";
+            const COLOR_NODE = "#ef4444";
+            const COLOR_LABEL = "var(--canvas-label, #1e293b)";
+            const COLOR_DIST = "var(--canvas-label, #1e293b)";
+            const COLOR_RADIUS = "#4ade80";
+            const COLOR_CENTER = "#f87171";
 
             /* ── SEMI-CIRCLES ── */
             if (shape.type?.startsWith("Semi-circle")) {
