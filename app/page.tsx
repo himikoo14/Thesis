@@ -1,15 +1,39 @@
+"use client";
+import { useState } from "react";
 import Link from "next/link";
 import Header from "<Ian>/components/Header";
 import Footer from "<Ian>/components/Footer";
 
 export default function HomePage() {
+  const [showBanner, setShowBanner] = useState(true);
+
   return (
     <main className="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col relative">
       <div />
       <Header />
 
+      {/* Floating Ad Banner Popup */}
+      {showBanner && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setShowBanner(false)}>
+          <div className="relative max-w-2xl w-full mx-4 max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowBanner(false)}
+              className="absolute -top-3 -right-3 z-10 bg-white dark:bg-gray-800 text-black dark:text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-lg font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+              ✕
+            </button>
+            <img
+              src="/BACK.png"
+              alt="StatiCalcs Ad Banner"
+              className="w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Landing Page */}
-<section className="hidden sm:flex flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
+      <section className="hidden sm:flex flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
         <h1 className="text-[20px] md:text-[80px] font-bold mb-2 text-black dark:text-white">
           Stati
           <span className="text-[#1848a0] dark:text-blue-400">
@@ -69,70 +93,70 @@ export default function HomePage() {
         </div>
       </section>
 
-{/* Landing Page for small screens - below 640px only */}
-<section className="flex sm:hidden flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
-  <h1 className="text-[50px] font-bold mb-2 text-black dark:text-white">
-    Stati
-    <span className="text-[#1848a0] dark:text-blue-400">
-      Calcs
-    </span>
-  </h1>
+      {/* Landing Page for small screens - below 640px only */}
+      <section className="flex sm:hidden flex-col items-center text-center py-12 bg-gray-50 dark:bg-gray-900 flex-grow">
+        <h1 className="text-[50px] font-bold mb-2 text-black dark:text-white">
+          Stati
+          <span className="text-[#1848a0] dark:text-blue-400">
+            Calcs
+          </span>
+        </h1>
 
-  <p className="text-gray-600 dark:text-gray-300 mb-12 text-[13px]">
-    Interactive calculators for learning and solving <br /> Statics of Rigid Bodies.
-  </p>
-
-  <div className="w-full max-w-2xl px-15">
-    <div className="flex flex-col">
-
-      <div className="flex items-center justify-center gap-2 py-3">
-        <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
-          Chapter 1: <br /> Modules to Statics
+        <p className="text-gray-600 dark:text-gray-300 mb-6 text-[13px]">
+          Interactive calculators for learning and solving <br /> Statics of Rigid Bodies.
         </p>
-        <Link href="/Introduction" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
-          Statics Modules
-        </Link>
-      </div>
 
-      <div className="flex items-center justify-center gap-2 py-3">
-        <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
-          Chapter 2: <br /> Force Systems
-        </p>
-        <Link href="/2D-solver" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
-          Resultant Force <br />Calculator
-        </Link>
-      </div>
+        <div className="w-full max-w-2xl px-15">
+          <div className="flex flex-col">
 
-      <div className="flex items-center justify-center gap-2 py-3">
-        <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
-          Chapter 3: <br /> Equilibrium
-        </p>
-        <Link href="/Equilibrium" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
-          Equilibrium Calculator
-        </Link>
-      </div>
+            <div className="flex items-center justify-center gap-2 py-3">
+              <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
+                Chapter 1: <br /> Modules to Statics
+              </p>
+              <Link href="/Introduction" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
+                Statics Modules
+              </Link>
+            </div>
 
-      <div className="flex items-center justify-center gap-2 py-3">
-        <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
-          Chapter 4: <br /> Structures
-        </p>
-        <Link href="/Structures" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
-          Truss Calculator
-        </Link>
-      </div>
+            <div className="flex items-center justify-center gap-2 py-3">
+              <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
+                Chapter 2: <br /> Force Systems
+              </p>
+              <Link href="/2D-solver" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
+                Resultant Force <br />Calculator
+              </Link>
+            </div>
 
-      <div className="flex items-center justify-center gap-2 py-3">
-        <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
-          Chapter 5: <br /> Distributed Loads
-        </p>
-        <Link href="/Distributed-Loads" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
-          Structures Calculator
-        </Link>
-      </div>
+            <div className="flex items-center justify-center gap-2 py-3">
+              <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
+                Chapter 3: <br /> Equilibrium
+              </p>
+              <Link href="/Equilibrium" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
+                Equilibrium Calculator
+              </Link>
+            </div>
 
-    </div>
-  </div>
-</section>
+            <div className="flex items-center justify-center gap-2 py-3">
+              <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
+                Chapter 4: <br /> Structures
+              </p>
+              <Link href="/Structures" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
+                Truss Calculator
+              </Link>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 py-3">
+              <p className="text-left text-black dark:text-white text-[13px] font-bold w-[140px] leading-snug">
+                Chapter 5: <br /> Distributed Loads
+              </p>
+              <Link href="/Distributed-Loads" className="bg-[#1848a0] dark:bg-blue-600 text-white py-2 rounded-md text-[12px] font-medium text-center w-40">
+                Structures Calculator
+              </Link>
+            </div>
+
+          </div>
+        </div>
+      </section>
 
       <Footer />
     </main>
