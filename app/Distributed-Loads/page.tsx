@@ -299,6 +299,9 @@ export default function DistributedLoadPage() {
     "idle" | "generating" | "done" | "error"
   >("idle");
 
+  const [showHowTo, setShowHowTo] = useState(false);
+
+
   const off = status === "generating";
 
   const labels: Record<typeof status, string> = {
@@ -394,6 +397,26 @@ export default function DistributedLoadPage() {
     <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
       <Header />
 
+      {/* How to Use Modal */} 
+      {showHowTo && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
+          onClick={() => setShowHowTo(false)}>
+          <div className="relative max-w-2xl w-full mx-4 max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowHowTo(false)}
+              className="absolute -top-3 -right-3 z-10 bg-white dark:bg-gray-800 text-black dark:text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-lg font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+              ✕
+            </button>
+            <img
+              src="/EX.png"
+              alt="How to Use"
+              className="w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Landing Page */}
       <main className="hidden sm:flex flex-col flex-grow bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-6 py-10">
@@ -446,8 +469,16 @@ export default function DistributedLoadPage() {
                 )}
               </div>
 
-              {/* Calculate Button */}
+              {/* How to Use Button */}
               <div className="mt-4">
+                <button onClick={() => setShowHowTo(true)}
+                  className="w-full bg-[#008409] text-white py-1 rounded-lg hover:bg-[#15711b] transition text-[18px]">
+                  How to Use
+                </button>
+              </div>
+
+              {/* Calculate Button */}
+              <div className="mt-2">
                 <button onClick={calculateResultant}
                   className="w-full bg-[#1848a0] text-white py-3 rounded-lg hover:bg-[#163d8a] transition text-[18px]">
                   Calculate
@@ -810,6 +841,13 @@ export default function DistributedLoadPage() {
               </div>
             );
           })}
+
+          {/* Calculate Button */}
+          {/* How to Use Button */}
+          <button onClick={() => setShowHowTo(true)}
+            className="w-full bg-[#008409] text-white px-1 -py-1 rounded-lg hover:bg-[#15711b] transition text-lg font-semibold">
+           How to Use 
+          </button>
 
           {/* Calculate Button */}
           <button onClick={calculateResultant}

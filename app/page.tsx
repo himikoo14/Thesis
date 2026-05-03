@@ -14,8 +14,7 @@ export default function HomePage() {
 
       {/* Floating Ad Banner Popup */}
       {showBanner && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          onClick={() => setShowBanner(false)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"          onClick={() => setShowBanner(false)}>
           <div className="relative max-w-2xl w-full mx-4 max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}>
             <button
