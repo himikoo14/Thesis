@@ -336,48 +336,42 @@ function Solver2DContent() {
 
               <div className="space-y-3">
                 {forces.map((f, i) => (
-                  <div key={i} className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-                    {/* Magnitude + Angle side-by-side even on mobile */}
-                    <div className="flex gap-2 flex-1">
-                      <div className="flex-1">
-                        <label className="block font-medium text-[13px] sm:text-[16px] mb-1">
-                          Force {i + 1} (kN)
-                        </label>
-                        <input
-                          type="number"
-                          value={f.magnitude}
-                          onChange={(e) => handleInputChange(i, "magnitude", e.target.value)}
-                          placeholder="Magnitude"
-                          className="w-full rounded-lg border border-gray-300 dark:border-gray-600 text-[14px] sm:text-[16px] p-2 bg-white dark:bg-gray-700 dark:text-white"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <label className="block font-medium text-[13px] sm:text-[16px] mb-1">
-                          Angle {i + 1} (°)
-                        </label>
-                        <input
-                          type="number"
-                          value={f.angle}
-                          onChange={(e) => handleInputChange(i, "angle", e.target.value)}
-                          placeholder="Angle"
-                          className="w-full rounded-lg border border-gray-300 dark:border-gray-600 text-[14px] sm:text-[16px] p-2 bg-white dark:bg-gray-700 dark:text-white"
-                        />
-                      </div>
+                  <div key={i} className="flex gap-2 items-end">
+                    {/* Magnitude */}
+                    <div className="flex-1">
+                      <label className="block font-medium text-[13px] sm:text-[16px] mb-1">
+                        Force {i + 1} (kN)
+                      </label>
+                      <input
+                        type="number"
+                        value={f.magnitude}
+                        onChange={(e) => handleInputChange(i, "magnitude", e.target.value)}
+                        placeholder="Magnitude"
+                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 text-[14px] sm:text-[16px] p-2 bg-white dark:bg-gray-700 dark:text-white"
+                      />
                     </div>
-                    {/* Remove button */}
+                    {/* Angle */}
+                    <div className="flex-1">
+                      <label className="block font-medium text-[13px] sm:text-[16px] mb-1">
+                        Angle {i + 1} (°)
+                      </label>
+                      <input
+                        type="number"
+                        value={f.angle}
+                        onChange={(e) => handleInputChange(i, "angle", e.target.value)}
+                        placeholder="Angle"
+                        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 text-[14px] sm:text-[16px] p-2 bg-white dark:bg-gray-700 dark:text-white"
+                      />
+                    </div>
+                    {/* Remove button — compact, always inline */}
                     {forces.length > 1 && (
-                      <div className="flex flex-col">
-                        <label className="block font-medium text-[13px] sm:text-[16px] mb-1 invisible">
-                          &nbsp;
-                        </label>
-                        <button
-                          onClick={() => setForces(forces.filter((_, idx) => idx !== i))}
-                          className="w-full sm:w-auto px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-[13px] sm:text-[15px] transition">
-                          –
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => setForces(forces.filter((_, idx) => idx !== i))}
+                        className="shrink-0 w-8 h-9 flex items-center justify-center bg-red-500 text-white rounded-lg hover:bg-red-600 text-lg font-bold transition"
+                      >
+                        –
+                      </button>
                     )}
-
                   </div>
                 ))}
               </div>
