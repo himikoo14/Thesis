@@ -45,9 +45,9 @@ class ForceSystem3D {
       steps.push(`\\text{Force ${i + 1}: }|F|=${v.magnitude}\\,\\text{kN},\\;\\phi=${v.azimuthDeg}^\\circ,\\;\\alpha=${v.elevationDeg}^\\circ`);
       steps.push(
         `\\begin{align*}` +
-        `F_{x${i+1}}&=${v.magnitude}\\cos(${v.elevationDeg}^\\circ)\\cos(${v.azimuthDeg}^\\circ)=${v.fx.toFixed(3)}\\,\\text{kN}\\\\` +
-        `F_{y${i+1}}&=${v.magnitude}\\cos(${v.elevationDeg}^\\circ)\\sin(${v.azimuthDeg}^\\circ)=${v.fy.toFixed(3)}\\,\\text{kN}\\\\` +
-        `F_{z${i+1}}&=${v.magnitude}\\sin(${v.elevationDeg}^\\circ)=${v.fz.toFixed(3)}\\,\\text{kN}` +
+        `F_{x${i + 1}}&=${v.magnitude}\\cos(${v.elevationDeg}^\\circ)\\cos(${v.azimuthDeg}^\\circ)=${v.fx.toFixed(3)}\\,\\text{kN}\\\\` +
+        `F_{y${i + 1}}&=${v.magnitude}\\cos(${v.elevationDeg}^\\circ)\\sin(${v.azimuthDeg}^\\circ)=${v.fy.toFixed(3)}\\,\\text{kN}\\\\` +
+        `F_{z${i + 1}}&=${v.magnitude}\\sin(${v.elevationDeg}^\\circ)=${v.fz.toFixed(3)}\\,\\text{kN}` +
         `\\end{align*}`
       );
       sumFx += v.fx; sumFy += v.fy; sumFz += v.fz;
@@ -61,7 +61,7 @@ class ForceSystem3D {
       `\\end{align*}`
     );
     const R = Math.sqrt(sumFx ** 2 + sumFy ** 2 + sumFz ** 2);
-    const azimuth   = (Math.atan2(sumFy, sumFx) * 180) / Math.PI;
+    const azimuth = (Math.atan2(sumFy, sumFx) * 180) / Math.PI;
     const elevation = (Math.asin(sumFz / (R || 1)) * 180) / Math.PI;
     steps.push("Step 3: Resultant force:");
     steps.push(
@@ -73,13 +73,13 @@ class ForceSystem3D {
     );
     if (R > 0.0001) {
       const alpha = (Math.acos(sumFx / R) * 180) / Math.PI;
-      const beta  = (Math.acos(sumFy / R) * 180) / Math.PI;
+      const beta = (Math.acos(sumFy / R) * 180) / Math.PI;
       const gamma = (Math.acos(sumFz / R) * 180) / Math.PI;
       steps.push("Step 4: Direction angles (α, β, γ):");
       steps.push(`\\alpha=\\cos^{-1}\\!\\left(\\dfrac{${sumFx.toFixed(3)}}{${R.toFixed(3)}}\\right)=${alpha.toFixed(2)}^\\circ`);
       steps.push(`\\beta=\\cos^{-1}\\!\\left(\\dfrac{${sumFy.toFixed(3)}}{${R.toFixed(3)}}\\right)=${beta.toFixed(2)}^\\circ`);
       steps.push(`\\gamma=\\cos^{-1}\\!\\left(\\dfrac{${sumFz.toFixed(3)}}{${R.toFixed(3)}}\\right)=${gamma.toFixed(2)}^\\circ`);
-      steps.push(`\\cos^2\\alpha+\\cos^2\\beta+\\cos^2\\gamma=${((sumFx/R)**2+(sumFy/R)**2+(sumFz/R)**2).toFixed(3)}\\approx 1\\checkmark`);
+      steps.push(`\\cos^2\\alpha+\\cos^2\\beta+\\cos^2\\gamma=${((sumFx / R) ** 2 + (sumFy / R) ** 2 + (sumFz / R) ** 2).toFixed(3)}\\approx 1\\checkmark`);
     }
     return { steps, sumFx, sumFy, sumFz, R, azimuth, elevation };
   }
@@ -100,9 +100,9 @@ function buildBaseScene(dark: boolean) {
       new THREE.BufferGeometry().setFromPoints([a, b]),
       new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.6 })
     );
-  scene.add(mkAxis(new THREE.Vector3(-axLen,0,0), new THREE.Vector3(axLen,0,0), 0xff4444));
-  scene.add(mkAxis(new THREE.Vector3(0,-axLen,0), new THREE.Vector3(0,axLen,0), 0x2266ff));
-  scene.add(mkAxis(new THREE.Vector3(0,0,-axLen), new THREE.Vector3(0,0,axLen), 0x22bb44));
+  scene.add(mkAxis(new THREE.Vector3(-axLen, 0, 0), new THREE.Vector3(axLen, 0, 0), 0xff4444));
+  scene.add(mkAxis(new THREE.Vector3(0, -axLen, 0), new THREE.Vector3(0, axLen, 0), 0x2266ff));
+  scene.add(mkAxis(new THREE.Vector3(0, 0, -axLen), new THREE.Vector3(0, 0, axLen), 0x22bb44));
   scene.add(new THREE.Mesh(
     new THREE.SphereGeometry(0.07, 16, 16),
     new THREE.MeshBasicMaterial({ color: dark ? 0xffffff : 0x333333 })
@@ -112,22 +112,46 @@ function buildBaseScene(dark: boolean) {
 }
 
 function attachOrbit(canvas: HTMLElement, state: any) {
-  const onDown  = (e: MouseEvent) => { state.isDragging = true; state.prevMouse = { x: e.clientX, y: e.clientY }; };
-  const onUp    = () => { state.isDragging = false; };
-  const onMove  = (e: MouseEvent) => {
+  const onDown = (e: MouseEvent) => { state.isDragging = true; state.prevMouse = { x: e.clientX, y: e.clientY }; };
+  const onUp = () => { state.isDragging = false; };
+  const onMove = (e: MouseEvent) => {
     if (!state.isDragging) return;
     state.theta -= (e.clientX - state.prevMouse.x) * 0.012;
     state.phi = Math.max(0.15, Math.min(Math.PI - 0.15, state.phi + (e.clientY - state.prevMouse.y) * 0.012));
     state.prevMouse = { x: e.clientX, y: e.clientY };
   };
   const onWheel = (e: WheelEvent) => { state.radius = Math.max(3, Math.min(16, state.radius + e.deltaY * 0.012)); };
+
+  // Touch support
+  const onTouchStart = (e: TouchEvent) => {
+    if (e.touches.length === 1) {
+      state.isDragging = true;
+      state.prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  };
+  const onTouchEnd = () => { state.isDragging = false; };
+  const onTouchMove = (e: TouchEvent) => {
+    if (!state.isDragging || e.touches.length !== 1) return;
+    e.preventDefault();
+    state.theta -= (e.touches[0].clientX - state.prevMouse.x) * 0.012;
+    state.phi = Math.max(0.15, Math.min(Math.PI - 0.15, state.phi + (e.touches[0].clientY - state.prevMouse.y) * 0.012));
+    state.prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
   canvas.addEventListener("mousedown", onDown);
   canvas.addEventListener("wheel", onWheel as any, { passive: true });
+  canvas.addEventListener("touchstart", onTouchStart, { passive: true });
+  canvas.addEventListener("touchend", onTouchEnd);
+  canvas.addEventListener("touchmove", onTouchMove, { passive: false });
   window.addEventListener("mousemove", onMove);
   window.addEventListener("mouseup", onUp);
+
   return () => {
     canvas.removeEventListener("mousedown", onDown);
     canvas.removeEventListener("wheel", onWheel as any);
+    canvas.removeEventListener("touchstart", onTouchStart);
+    canvas.removeEventListener("touchend", onTouchEnd);
+    canvas.removeEventListener("touchmove", onTouchMove);
     window.removeEventListener("mousemove", onMove);
     window.removeEventListener("mouseup", onUp);
   };
@@ -137,12 +161,12 @@ function attachOrbit(canvas: HTMLElement, state: any) {
    FBD3D — live canvas with reactive dark mode
 ================================================================ */
 function FBD3D({ forces }: { forces: any[] }) {
-  const mountRef  = useRef<HTMLDivElement>(null);
-  const sceneRef  = useRef<THREE.Scene | null>(null);
-  const rendRef   = useRef<THREE.WebGLRenderer | null>(null);
+  const mountRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const rendRef = useRef<THREE.WebGLRenderer | null>(null);
   const arrowsRef = useRef<THREE.ArrowHelper[]>([]);
-  const orbitRef  = useRef({ theta: -0.6, phi: 0.85, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } });
-  const darkMode  = useDarkMode();
+  const orbitRef = useRef({ theta: -0.6, phi: 0.85, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } });
+  const darkMode = useDarkMode();
 
   // Mount once
   useEffect(() => {
@@ -158,7 +182,7 @@ function FBD3D({ forces }: { forces: any[] }) {
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
-    const orbit  = orbitRef.current;
+    const orbit = orbitRef.current;
     let raf: number;
     const animate = () => {
       raf = requestAnimationFrame(animate);
@@ -204,7 +228,7 @@ function FBD3D({ forces }: { forces: any[] }) {
       if (isNaN(m) || isNaN(az) || isNaN(el) || m === 0) return;
       const azR = az * Math.PI / 180, elR = el * Math.PI / 180;
       const vec = new THREE.Vector3(m * Math.cos(elR) * Math.cos(azR), m * Math.sin(elR), m * Math.cos(elR) * Math.sin(azR));
-      const arr = new THREE.ArrowHelper(vec.clone().normalize(), new THREE.Vector3(0,0,0), m * scale, FORCE_COLORS[i % FORCE_COLORS.length], m * scale * 0.2, m * scale * 0.12);
+      const arr = new THREE.ArrowHelper(vec.clone().normalize(), new THREE.Vector3(0, 0, 0), m * scale, FORCE_COLORS[i % FORCE_COLORS.length], m * scale * 0.2, m * scale * 0.12);
       scene.add(arr);
       arrowsRef.current.push(arr);
     });
@@ -218,7 +242,7 @@ function FBD3D({ forces }: { forces: any[] }) {
         <span className="text-[#22bb44]">■</span> Y &nbsp;
         <span className="text-[#2266ff]">■</span> Z
       </div>
-      <div className="absolute bottom-2 right-2.5 text-[10px] text-gray-400 pointer-events-none hidden sm:block">
+      <div className="absolute bottom-2 right-2.5 text-[10px] text-gray-400 pointer-events-none">
         Drag to rotate · Scroll to zoom
       </div>
     </div>
@@ -254,11 +278,11 @@ function ResultantFBD3D({ forces, result }: { forces: any[]; result: any }) {
       if (isNaN(m) || isNaN(az) || isNaN(el) || m === 0) return;
       const azR = az * Math.PI / 180, elR = el * Math.PI / 180;
       const vec = new THREE.Vector3(m * Math.cos(elR) * Math.cos(azR), m * Math.sin(elR), m * Math.cos(elR) * Math.sin(azR));
-      scene.add(new THREE.ArrowHelper(vec.clone().normalize(), new THREE.Vector3(0,0,0), m * scale, FORCE_COLORS[i % FORCE_COLORS.length], m * scale * 0.2, m * scale * 0.12));
+      scene.add(new THREE.ArrowHelper(vec.clone().normalize(), new THREE.Vector3(0, 0, 0), m * scale, FORCE_COLORS[i % FORCE_COLORS.length], m * scale * 0.2, m * scale * 0.12));
     });
     if (result.R > 0.001) {
       const rv = new THREE.Vector3(result.sumFx, result.sumFz, result.sumFy);
-      scene.add(new THREE.ArrowHelper(rv.clone().normalize(), new THREE.Vector3(0,0,0), result.R * scale, 0x009900, result.R * scale * 0.2, result.R * scale * 0.12));
+      scene.add(new THREE.ArrowHelper(rv.clone().normalize(), new THREE.Vector3(0, 0, 0), result.R * scale, 0x009900, result.R * scale * 0.2, result.R * scale * 0.12));
     }
 
     const orbit = { theta: -0.6, phi: 0.85, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } };
@@ -327,7 +351,7 @@ function MathBlock({ tex }: { tex: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!ref.current || !(window as any).katex) return;
-    try { (window as any).katex.render(tex.trim(), ref.current, { displayMode: true, throwOnError: false }); } catch (_) {}
+    try { (window as any).katex.render(tex.trim(), ref.current, { displayMode: true, throwOnError: false }); } catch (_) { }
   }, [tex]);
   return <div ref={ref} className="overflow-x-auto my-1" />;
 }
@@ -336,9 +360,9 @@ function MathBlock({ tex }: { tex: string }) {
    MAIN EXPORT
 ================================================================ */
 export default function AnglesTab() {
-  const [forces, setForces]   = useState([{ magnitude: "", azimuth: "", elevation: "" }]);
-  const [result, setResult]   = useState<any>(null);
-  const [status, setStatus]   = useState<"idle"|"generating"|"done"|"error">("idle");
+  const [forces, setForces] = useState([{ magnitude: "", azimuth: "", elevation: "" }]);
+  const [result, setResult] = useState<any>(null);
+  const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
   const katexOk = useMathJax();
 
   const off = status === "generating";
@@ -353,9 +377,9 @@ export default function AnglesTab() {
     { label: "X component (Fx)", value: `${result.sumFx.toFixed(3)} kN` },
     { label: "Y component (Fy)", value: `${result.sumFy.toFixed(3)} kN` },
     { label: "Z component (Fz)", value: `${result.sumFz.toFixed(3)} kN` },
-    { label: "Magnitude (R)",    value: `${result.R.toFixed(3)} kN` },
-    { label: "Azimuth (φ)",      value: `${result.azimuth.toFixed(2)}°` },
-    { label: "Elevation (α)",    value: `${result.elevation.toFixed(2)}°` },
+    { label: "Magnitude (R)", value: `${result.R.toFixed(3)} kN` },
+    { label: "Azimuth (φ)", value: `${result.azimuth.toFixed(2)}°` },
+    { label: "Elevation (α)", value: `${result.elevation.toFixed(2)}°` },
     { label: "α (angle with X)", value: `${(Math.acos(result.sumFx / result.R) * 180 / Math.PI).toFixed(2)}°` },
     { label: "β (angle with Y)", value: `${(Math.acos(result.sumFy / result.R) * 180 / Math.PI).toFixed(2)}°` },
     { label: "γ (angle with Z)", value: `${(Math.acos(result.sumFz / result.R) * 180 / Math.PI).toFixed(2)}°` },
@@ -373,38 +397,38 @@ export default function AnglesTab() {
   const update = (i: number, field: string, value: string) =>
     setForces(f => f.map((v, j) => j === i ? { ...v, [field]: value } : v));
 
-const calculate = () => {
-  const sys = new ForceSystem3D();
-  forces.forEach(f => {
-    const m = parseFloat(f.magnitude), az = parseFloat(f.azimuth), el = parseFloat(f.elevation);
-    if (!isNaN(m) && !isNaN(az) && !isNaN(el)) sys.addForce(m, az, el);
-  });
-  const solved = sys.solve();
-  const { sumFx, sumFy, sumFz, R, azimuth, elevation, steps } = solved;
+  const calculate = () => {
+    const sys = new ForceSystem3D();
+    forces.forEach(f => {
+      const m = parseFloat(f.magnitude), az = parseFloat(f.azimuth), el = parseFloat(f.elevation);
+      if (!isNaN(m) && !isNaN(az) && !isNaN(el)) sys.addForce(m, az, el);
+    });
+    const solved = sys.solve();
+    const { sumFx, sumFy, sumFz, R, azimuth, elevation, steps } = solved;
 
-  setResult({
-    ...solved,
-    resultRows: [
-      { label: "X component (Fx)", value: `${sumFx.toFixed(3)} kN` },
-      { label: "Y component (Fy)", value: `${sumFy.toFixed(3)} kN` },
-      { label: "Z component (Fz)", value: `${sumFz.toFixed(3)} kN` },
-      { label: "Magnitude (R)",    value: `${R.toFixed(3)} kN` },
-      { label: "Azimuth (φ)",      value: `${azimuth.toFixed(2)}°` },
-      { label: "Elevation (α)",    value: `${elevation.toFixed(2)}°` },
-      { label: "α (angle with X)", value: `${(Math.acos(sumFx / R) * 180 / Math.PI).toFixed(2)}°` },
-      { label: "β (angle with Y)", value: `${(Math.acos(sumFy / R) * 180 / Math.PI).toFixed(2)}°` },
-      { label: "γ (angle with Z)", value: `${(Math.acos(sumFz / R) * 180 / Math.PI).toFixed(2)}°` },
-    ],
-  });
-};
+    setResult({
+      ...solved,
+      resultRows: [
+        { label: "X component (Fx)", value: `${sumFx.toFixed(3)} kN` },
+        { label: "Y component (Fy)", value: `${sumFy.toFixed(3)} kN` },
+        { label: "Z component (Fz)", value: `${sumFz.toFixed(3)} kN` },
+        { label: "Magnitude (R)", value: `${R.toFixed(3)} kN` },
+        { label: "Azimuth (φ)", value: `${azimuth.toFixed(2)}°` },
+        { label: "Elevation (α)", value: `${elevation.toFixed(2)}°` },
+        { label: "α (angle with X)", value: `${(Math.acos(sumFx / R) * 180 / Math.PI).toFixed(2)}°` },
+        { label: "β (angle with Y)", value: `${(Math.acos(sumFy / R) * 180 / Math.PI).toFixed(2)}°` },
+        { label: "γ (angle with Z)", value: `${(Math.acos(sumFz / R) * 180 / Math.PI).toFixed(2)}°` },
+      ],
+    });
+  };
 
   const inputCls = "w-full mt-1 rounded-lg border border-gray-300 dark:border-gray-600 text-[15px] p-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none";
   const labelCls = "block font-medium text-[14px] sm:text-[15px] text-gray-800 dark:text-gray-200";
-  const cardCls  = "w-full bg-white dark:bg-gray-800 rounded-2xl shadow p-4 sm:p-6 mt-4";
-  const h3Cls    = "text-[16px] font-semibold mb-4 text-gray-900 dark:text-white";
+  const cardCls = "w-full bg-white dark:bg-gray-800 rounded-2xl shadow p-4 sm:p-6 mt-4";
+  const h3Cls = "text-[16px] font-semibold mb-4 text-gray-900 dark:text-white";
 
   return (
-<div className="flex flex-col items-center w-full" style={{ scrollbarGutter: "stable" }}>
+    <div className="flex flex-col items-center w-full" style={{ scrollbarGutter: "stable" }}>
 
 
       {/* Canvas */}
@@ -432,7 +456,7 @@ const calculate = () => {
             {/* On small screens: stack vertically. On sm+: 3-column grid */}
             <div className="flex flex-col sm:grid sm:grid-cols-3 gap-2 mb-2">
               <div>
-                <label className={labelCls}>Force {i+1} (kN)</label>
+                <label className={labelCls}>Force {i + 1} (kN)</label>
                 <input type="number" placeholder="Magnitude" value={f.magnitude}
                   onChange={e => update(i, "magnitude", e.target.value)} className={inputCls} />
               </div>
@@ -467,98 +491,96 @@ const calculate = () => {
           Calculate
         </button>
       </div>
-<div className="w-full max-w-xl">
-{/* Results + Step-by-step */}
-      {result && (
-        <>
-      {/* ── WIDE SCREEN (sm+): stacked layout ── */}
-      <div className="hidden sm:flex flex-col gap-4 mt-4 w-full max-w-xl">
-        {/* Top: result grid */}
-        <div className={cardCls}>
-          <h3 className={h3Cls}>Results</h3>
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            {result.resultRows.map((row: { label: string; value: string }, i: number) => (
-              <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[10px] border border-blue-100 dark:border-gray-600 px-3 py-2.5">
-                <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">{row.label}</div>
-                <div className="text-[15px] font-bold text-[#1848a0] dark:text-blue-400">{row.value}</div>
+      <div className="w-full max-w-xl">
+        {/* Results + Step-by-step */}
+        {result && (
+          <>
+            {/* ── WIDE SCREEN (sm+): stacked layout ── */}
+            <div className="hidden sm:flex flex-col gap-4 mt-4 w-full max-w-xl">
+              {/* Top: result grid */}
+              <div className={cardCls}>
+                <h3 className={h3Cls}>Results</h3>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {result.resultRows.map((row: { label: string; value: string }, i: number) => (
+                    <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[10px] border border-blue-100 dark:border-gray-600 px-3 py-2.5">
+                      <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">{row.label}</div>
+                      <div className="text-[15px] font-bold text-[#1848a0] dark:text-blue-400">{row.value}</div>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={handleExportPDF} disabled={off}
+                  className={`w-full py-3 rounded-[10px] text-[14px] font-semibold text-white transition ${off ? "opacity-60 cursor-not-allowed bg-[#1848a0]" : "cursor-pointer bg-[#1848a0] hover:bg-[#163d8a]"
+                    }`}>
+                  {labels[status]}
+                </button>
               </div>
-            ))}
-          </div>
-          <button onClick={handleExportPDF} disabled={off}
-            className={`w-full py-3 rounded-[10px] text-[14px] font-semibold text-white transition ${
-              off ? "opacity-60 cursor-not-allowed bg-[#1848a0]" : "cursor-pointer bg-[#1848a0] hover:bg-[#163d8a]"
-            }`}>
-            {labels[status]}
-          </button>
-        </div>
 
-        {/* Bottom: step-by-step */}
-        <div className={cardCls}>
-          <h3 className={h3Cls}>Step-by-Step Solution</h3>
-          <div className="space-y-4">
-            {result.steps.map((line: string, i: number) =>
-              line.startsWith("Step") ? (
-                <p key={i} className="font-medium text-[16px] text-gray-900 dark:text-white">{line}</p>
-              ) : katexOk ? (
-                <MathBlock key={i} tex={line} />
-              ) : (
-                <pre key={i} className="text-[13px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap">{line}</pre>
-              )
-            )}
-          </div>
-        </div>
+              {/* Bottom: step-by-step */}
+              <div className={cardCls}>
+                <h3 className={h3Cls}>Step-by-Step Solution</h3>
+                <div className="space-y-4">
+                  {result.steps.map((line: string, i: number) =>
+                    line.startsWith("Step") ? (
+                      <p key={i} className="font-medium text-[16px] text-gray-900 dark:text-white">{line}</p>
+                    ) : katexOk ? (
+                      <MathBlock key={i} tex={line} />
+                    ) : (
+                      <pre key={i} className="text-[13px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap">{line}</pre>
+                    )
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ── MOBILE (below sm): compact stacked ── */}
+            <div className="flex sm:hidden flex-col gap-3 mt-4 w-full max-w-xl">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-3">
+                <h3 className="text-[11px] font-semibold mb-2 text-gray-900 dark:text-white">Resultant Force</h3>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    ["X component (Fx)", `${result.sumFx.toFixed(3)} kN`],
+                    ["Y component (Fy)", `${result.sumFy.toFixed(3)} kN`],
+                    ["Z component (Fz)", `${result.sumFz.toFixed(3)} kN`],
+                    ["Magnitude (R)", `${result.R.toFixed(3)} kN`],
+                    ["Azimuth (φ)", `${result.azimuth.toFixed(2)}°`],
+                    ["Elevation (α)", `${result.elevation.toFixed(2)}°`],
+                  ].map(([label, val]) => (
+                    <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-[6px] border border-blue-100 dark:border-gray-600 px-2 py-1.5">
+                      <div className="text-[9px] text-gray-500 dark:text-gray-400 mb-0.5 leading-tight">{label}</div>
+                      <div className="text-[12px] font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={handleExportPDF} disabled={off}
+                className={`w-full rounded-lg px-3 py-2 font-semibold text-white transition text-[12px] ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+                  }`}>
+                {labels[status]}
+              </button>
+
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-3 overflow-x-auto text-[11px]">
+                <h3 className="text-[11px] font-semibold mb-2 text-gray-900 dark:text-white">Step-by-Step Solution</h3>
+                <div className="leading-relaxed">
+                  {result.steps.map((line: string, i: number) =>
+                    line.startsWith("Step") ? (
+                      <p key={i} className="font-semibold text-[11px] mt-2.5 mb-0.5 text-gray-900 dark:text-white">{line}</p>
+                    ) : katexOk ? (
+                      <MathBlock key={i} tex={line} />
+                    ) : (
+                      <pre key={i} className="text-[10px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap">{line}</pre>
+                    )
+                  )}
+                </div>
+                <div className="mt-3">
+                  <p className="font-semibold text-[11px] mb-1.5 text-gray-900 dark:text-white">Final FBD</p>
+                  <ResultantFBD3D forces={forces} result={result} />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
-
-          {/* ── MOBILE (below sm): compact stacked ── */}
-          <div className="flex sm:hidden flex-col gap-3 mt-4 w-full max-w-xl">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-3">
-              <h3 className="text-[11px] font-semibold mb-2 text-gray-900 dark:text-white">Resultant Force</h3>
-              <div className="grid grid-cols-2 gap-1.5">
-                {[
-                  ["X component (Fx)", `${result.sumFx.toFixed(3)} kN`],
-                  ["Y component (Fy)", `${result.sumFy.toFixed(3)} kN`],
-                  ["Z component (Fz)", `${result.sumFz.toFixed(3)} kN`],
-                  ["Magnitude (R)",    `${result.R.toFixed(3)} kN`],
-                  ["Azimuth (φ)",      `${result.azimuth.toFixed(2)}°`],
-                  ["Elevation (α)",    `${result.elevation.toFixed(2)}°`],
-                ].map(([label, val]) => (
-                  <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-[6px] border border-blue-100 dark:border-gray-600 px-2 py-1.5">
-                    <div className="text-[9px] text-gray-500 dark:text-gray-400 mb-0.5 leading-tight">{label}</div>
-                    <div className="text-[12px] font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <button onClick={handleExportPDF} disabled={off}
-              className={`w-full rounded-lg px-3 py-2 font-semibold text-white transition text-[12px] ${
-                off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
-              }`}>
-              {labels[status]}
-            </button>
-
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-3 overflow-x-auto text-[11px]">
-              <h3 className="text-[11px] font-semibold mb-2 text-gray-900 dark:text-white">Step-by-Step Solution</h3>
-              <div className="leading-relaxed">
-                {result.steps.map((line: string, i: number) =>
-                  line.startsWith("Step") ? (
-                    <p key={i} className="font-semibold text-[11px] mt-2.5 mb-0.5 text-gray-900 dark:text-white">{line}</p>
-                  ) : katexOk ? (
-                    <MathBlock key={i} tex={line} />
-                  ) : (
-                    <pre key={i} className="text-[10px] text-gray-500 dark:text-gray-400 whitespace-pre-wrap">{line}</pre>
-                  )
-                )}
-              </div>
-              <div className="mt-3">
-                <p className="font-semibold text-[11px] mb-1.5 text-gray-900 dark:text-white">Final FBD</p>
-                <ResultantFBD3D forces={forces} result={result} />
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
     </div>
 
   );

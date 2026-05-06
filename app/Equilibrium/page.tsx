@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect, ReactNode, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";import Header from "../../components/Header";
+import { useSearchParams, useRouter } from "next/navigation"; import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import "katex/dist/katex.min.css";
 import BeamPage from "../Beam/page";
@@ -146,11 +146,11 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
   const maxMag = Math.max(1, ...knownMags);
   const scale = 80 / maxMag;
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMove = (clientX: number, clientY: number) => {
     if (dragIndex === null || !svgRef.current) return;
     const svg = svgRef.current;
     const pt = svg.createSVGPoint();
-    pt.x = e.clientX; pt.y = e.clientY;
+    pt.x = clientX; pt.y = clientY;
     const cursor = pt.matrixTransform(svg.getScreenCTM()?.inverse());
     const x = cursor.x - 150, y = cursor.y - 150;
     const newAngle = (Math.atan2(-y, x) * 180) / Math.PI;
@@ -165,8 +165,11 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
       ref={svgRef}
       width="300" height="300"
       className="border rounded-lg bg-white dark:bg-gray-800 dark:border-gray-600 shadow"
-      onMouseMove={handleMouseMove}
+      style={{ touchAction: "none" }}
+      onMouseMove={(e) => handleMove(e.clientX, e.clientY)}
+      onTouchMove={(e) => { e.preventDefault(); handleMove(e.touches[0].clientX, e.touches[0].clientY); }}
       onMouseUp={() => setDragIndex(null)}
+      onTouchEnd={() => setDragIndex(null)}
       onMouseLeave={() => setDragIndex(null)}
     >
       <defs>
@@ -211,7 +214,8 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
           const aLy = -Math.sin(midRad) * (arcR + 10);
 
           return (
-            <g key={i} className="cursor-pointer" onMouseDown={() => setDragIndex(i)}>
+            <g key={i} className="cursor-pointer" onMouseDown={() => setDragIndex(i)} onTouchStart={() => setDragIndex(i)}>
+
               {showArc && v.angle !== 0 && (
                 <>
                   <path d={`M ${arcR} 0 A ${arcR} ${arcR} 0 ${largeArc} 0 ${arcEndX} ${arcEndY}`}
@@ -400,9 +404,9 @@ function EquilibriumContent() {
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
   const searchParams = useSearchParams();
-const router = useRouter();
-const activeTab = (searchParams.get("tab") as "concurrent" | "nonconcurrent") || "concurrent";
-const setActiveTab = (tab: "concurrent" | "nonconcurrent") => router.replace(`?tab=${tab}`, { scroll: false });
+  const router = useRouter();
+  const activeTab = (searchParams.get("tab") as "concurrent" | "nonconcurrent") || "concurrent";
+  const setActiveTab = (tab: "concurrent" | "nonconcurrent") => router.replace(`?tab=${tab}`, { scroll: false });
 
   const off = status === "generating";
   const labels: Record<typeof status, string> = {
@@ -462,7 +466,7 @@ const setActiveTab = (tab: "concurrent" | "nonconcurrent") => router.replace(`?t
           <>
             {/* FBD */}
             <div className="flex flex-col items-center justify-center mb-8 relative z-10 ">
-             <h1 className="text-3xl font-bold text-center mb-2">Concurrent Force System</h1>
+              <h1 className="text-3xl font-bold text-center mb-2">Concurrent Force System</h1>
               <h2 className="text-[18px] font-semibold text-center mb-2">Unknown Forces and Angles Calculator</h2>
               <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Real-Time Free Body Diagram</p>
               <FBD forces={forces} setForces={setForces} />

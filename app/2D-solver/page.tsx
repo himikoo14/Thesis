@@ -169,12 +169,12 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
   const maxMag = Math.max(1, ...vectors.map(v => Math.hypot(v.x, v.y)));
   const scale = 80 / maxMag;
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMove = (clientX: number, clientY: number) => {
     if (dragIndex === null) return;
     const svg = svgRef.current;
     if (!svg) return;
     const pt = svg.createSVGPoint();
-    pt.x = e.clientX; pt.y = e.clientY;
+    pt.x = clientX; pt.y = clientY;
     const cursor = pt.matrixTransform(svg.getScreenCTM()?.inverse());
     const newAngle = (Math.atan2(-(cursor.y - 150), cursor.x - 150) * 180) / Math.PI;
     const newForces = [...forces];
@@ -183,12 +183,16 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
   };
 
   return (
+    // AFTER:
     <svg
       ref={svgRef}
       viewBox="0 0 300 300"
       className="w-full max-w-[280px] sm:max-w-[300px] border rounded-lg bg-white dark:bg-gray-800 dark:border-gray-600 shadow"
-      onMouseMove={handleMouseMove}
+      style={{ touchAction: "none" }}
+      onMouseMove={(e) => handleMove(e.clientX, e.clientY)}
+      onTouchMove={(e) => { e.preventDefault(); handleMove(e.touches[0].clientX, e.touches[0].clientY); }}
       onMouseUp={() => setDragIndex(null)}
+      onTouchEnd={() => setDragIndex(null)}
       onMouseLeave={() => setDragIndex(null)}
     >
       <g transform="translate(150,150)">
@@ -201,7 +205,8 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
             <g key={i}>
               <line x1={0} y1={0} x2={x} y2={y} stroke="#1848a0" strokeWidth="3"
                 markerEnd="url(#arrow)" className="cursor-pointer"
-                onMouseDown={() => setDragIndex(i)} />
+                onMouseDown={() => setDragIndex(i)}
+                onTouchStart={() => setDragIndex(i)} />
               <text
                 x={x + (x / Math.hypot(x, y)) * offset}
                 y={y + (y / Math.hypot(x, y)) * offset}

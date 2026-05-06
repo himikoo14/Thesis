@@ -85,8 +85,23 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
     };
     const onWheel = (e: WheelEvent) => { orbit.r = Math.max(3, Math.min(12, orbit.r + e.deltaY * 0.01)); };
 
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) { orbit.isDragging = true; orbit.prev = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
+    };
+    const onTouchEnd = () => { orbit.isDragging = false; };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!orbit.isDragging || e.touches.length !== 1) return;
+      e.preventDefault();
+      orbit.theta -= (e.touches[0].clientX - orbit.prev.x) * 0.014;
+      orbit.phi = Math.max(0.12, Math.min(Math.PI - 0.12, orbit.phi + (e.touches[0].clientY - orbit.prev.y) * 0.014));
+      orbit.prev = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    };
+
     renderer.domElement.addEventListener("mousedown", onDown);
     renderer.domElement.addEventListener("wheel", onWheel, { passive: true });
+    renderer.domElement.addEventListener("touchstart", onTouchStart, { passive: true });
+    renderer.domElement.addEventListener("touchend", onTouchEnd);
+    renderer.domElement.addEventListener("touchmove", onTouchMove, { passive: false });
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
 
@@ -106,6 +121,9 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
       cancelAnimationFrame(rafRef.current);
       renderer.domElement.removeEventListener("mousedown", onDown);
       renderer.domElement.removeEventListener("wheel", onWheel);
+      renderer.domElement.removeEventListener("touchstart", onTouchStart);
+      renderer.domElement.removeEventListener("touchend", onTouchEnd);
+      renderer.domElement.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
       renderer.dispose();
@@ -167,7 +185,7 @@ function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) 
           </span>
         ))}
       </div>
-      <div className="absolute bottom-2 right-3 text-[10px] text-gray-300 dark:text-gray-500 pointer-events-none hidden sm:block">
+      <div className="absolute bottom-2 right-3 text-[10px] text-gray-300 dark:text-gray-500 pointer-events-none">
         Drag to rotate · Scroll to zoom
       </div>
     </div>
@@ -338,27 +356,27 @@ export default function CoordinateTab() {
   };
 
 
-const handleExportPDF = async () => {
-  if (!result) return;
-  setStatus("generating");
-  const payload = {
-    steps: result.steps,
-    resultRows: result.resultRows,
-    points,
-    forces,
-    result: { Rx: result.Rx, Ry: result.Ry, Rz: result.Rz, R: result.R, details: result.details },
+  const handleExportPDF = async () => {
+    if (!result) return;
+    setStatus("generating");
+    const payload = {
+      steps: result.steps,
+      resultRows: result.resultRows,
+      points,
+      forces,
+      result: { Rx: result.Rx, Ry: result.Ry, Rz: result.Rz, R: result.R, details: result.details },
+    };
+    const encoded = encodeURIComponent(JSON.stringify(payload));
+    const win = window.open(`/print/resultant-3dcoordinate?data=${encoded}`, "_blank");
+    if (win) {
+      win.addEventListener("load", () => {
+        setTimeout(() => { setStatus("done"); setTimeout(() => setStatus("idle"), 2500); }, 800);
+      });
+    } else {
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
+    }
   };
-  const encoded = encodeURIComponent(JSON.stringify(payload));
-  const win = window.open(`/print/resultant-3dcoordinate?data=${encoded}`, "_blank");
-  if (win) {
-    win.addEventListener("load", () => {
-      setTimeout(() => { setStatus("done"); setTimeout(() => setStatus("idle"), 2500); }, 800);
-    });
-  } else {
-    setStatus("error");
-    setTimeout(() => setStatus("idle"), 3000);
-  }
-};
   const inputCls = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-[13px] w-full outline-none text-gray-900 dark:text-white";
   const selectCls = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-[13px] outline-none text-gray-900 dark:text-white w-full";
   const cardCls = "bg-white dark:bg-gray-800 rounded-[14px] border border-gray-200 dark:border-gray-600 p-4 sm:p-5 shadow-sm";
@@ -455,7 +473,7 @@ const handleExportPDF = async () => {
       {/* Solution */}
       {result && (
         <>
-{/* ── WIDE SCREEN (sm+): side-by-side layout ── */}
+          {/* ── WIDE SCREEN (sm+): side-by-side layout ── */}
           <div className="hidden sm:block flex-col gap-3 mt-4">
             <h3 className="text-[15px] sm:text-[16px] font-semibold text-gray-900 dark:text-white mb-4">
               Step-by-Step Solution
