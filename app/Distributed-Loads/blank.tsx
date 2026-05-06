@@ -1,44 +1,143 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
+import Header from "../../components/Header";
+import Footer from "../../components/Footer";
+import CircularInputs from "../../components/CircularInputs";
+import ShapeCanvas from "../../components/ShapeCanvas";
+import { computeMOI } from "../../lib/MOIEngine";
+import { computeCustomAxis } from "../../lib/MOIcustom";
+import ShapeSelectDropdown from "../../components/ShapeSelectDropdown";
+import type { ShapeType } from "../../types/shapes";
+
+
+/* ── KaTeX via CDN ─────────────────────────────────────────────────────────── */
+
+function useKatexScript() {
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    if (window.katex) { setOk(true); return; }
+    if (!document.getElementById("katex-css")) {
+      const link = document.createElement("link");
+      link.id = "katex-css"; link.rel = "stylesheet";
+      link.href = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css";
+      document.head.appendChild(link);
+    }
+    if (!document.getElementById("katex-js")) {
+      const script = document.createElement("script");
+      script.id = "katex-js";
+      script.src = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js";
+      script.async = true;
+      script.onload = () => setOk(true);
+      document.head.appendChild(script);
+    } else {
+      const t = setInterval(() => { if (window.katex) { setOk(true); clearInterval(t); } }, 80);
+    }
+  }, []);
+  return ok;
+}
+
+function KTX({ tex }: { tex: string }) {
+  const ref = useCallback((el: HTMLDivElement | null) => {
+    if (!el || !window.katex) return;
+    try { window.katex.render(tex, el, { displayMode: true, throwOnError: false }); }
+    catch { el.innerText = tex; }
+  }, [tex]);
+  const ready = useKatexScript();
+  if (!ready) return null;
+  return <div ref={ref} style={{ margin: "3px 0", overflowX: "auto" }} />;
+}
+
+/* ===================== TYPES ===================== */
 type XY = { x: string; y: string };
 
-type ShapeType =
-  | "Polygon"
-  | "Circle"
-  | "Semi-circle-1"
-  | "Semi-circle-2"
-  | "Semi-circle-3"
-  | "Semi-circle-4"
-  | "Quarter-circle-1"
-  | "Quarter-circle-2"
-  | "Quarter-circle-3"
-  | "Quarter-circle-4";
-
 type ShapeData = {
-  type: string;
+  type: ShapeType;
   hollow: "Hollow" | "Solid";
+  isOpen: boolean;
   nodes: XY[];
   sides: { a: number; b: number }[];
-  radius?: string;
-  x?: string;
-  y?: string;
+  radius: string;
+  x: string;
+  y: string;
 };
 
-type Props = {
-  shapes: ShapeData[];
-  axisType?: "Centroidal" | "Custom";
-  axisX?: number;
-  axisY?: number;
+type MOIResult = {
+  step1: any[];
+  centroid: { totalArea: number; centroidX: number; centroidY: number };
+  step3: any[];
+  centroidMOI?: { Ix: number; Iy: number };
+  customMOI?: { Ix: number; Iy: number; shapes: { dx: number; dy: number; Ix: number; Iy: number }[] };
+  final: { Ix: number; Iy: number };
+};
+
+type StepLine =
+  | { kind: "heading"; text: string }
+  | { kind: "subheading"; text: string }
+  | { kind: "text"; text: string }
+  | { kind: "eq"; tex: string }
+  | { kind: "result"; tex: string }
+  | { kind: "spacer" };
+
+/* ===================== STEP RENDERER ===================== */
+function MOIStepRenderer({ lines }: { lines: StepLine[] }) {
+  return (
+    <div style={{ lineHeight: 1.8 }}>
+      {lines.map((line, idx) => {
+        switch (line.kind) {
+          case "heading":
+            return (
+              <p key={idx} style={{ fontWeight: 700, fontSize: 16, color: "#1848a0", marginTop: 16, marginBottom: 2 }}
+                className="dark:text-blue-400">
+                {line.text}
+              </p>
+            );
+          case "subheading":
+            return (
+              <p key={idx} style={{ fontWeight: 600, fontSize: 14, marginTop: 10, marginBottom: 2 }}
+                className="text-gray-700 dark:text-gray-300">
+                {line.text}
+              </p>
+            );
+          case "text":
+            return (
+              <p key={idx} style={{ margin: "2px 0", fontSize: 14 }}
+                className="text-gray-500 dark:text-gray-400">
+                {line.text}
+              </p>
+            );
+          case "eq":
+            return (
+              <div key={idx} className="dark:text-white">
+                <KTX tex={line.tex} />
+              </div>
+            );
+          case "result":
+            return (
+              <div key={idx}
+                className="bg-blue-50 dark:bg-blue-950 border-l-[3px] border-[#1848a0] dark:border-blue-400 rounded-[6px] px-3 my-1">
+                <KTX tex={line.tex} />
+              </div>
+            );
+          case "spacer":
+            return <div key={idx} style={{ height: 8 }} />;
+          default:
+            return null;
+        }
+      })}
+    </div>
+  );
+}
+
+/* ===================== HELPERS ===================== */
+const fmtS = (n: number, _d = 4) => {
+  const rounded = Math.round(n * 100) / 100;
+  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2);
 };
 
 /* ===================== ORDER NODES BY SIDES ===================== */
-function orderNodesBySides(
-  nodes: XY[],
-  sides: { a: number; b: number }[]
-): XY[] {
+function orderNodesBySides(nodes: XY[], sides: { a: number; b: number }[]): XY[] {
   if (sides.length === 0) return nodes;
-
-  // Build adjacency list
   const adj: Map<number, number[]> = new Map();
   sides.forEach(({ a, b }) => {
     if (!adj.has(a)) adj.set(a, []);
@@ -46,12 +145,9 @@ function orderNodesBySides(
     adj.get(a)!.push(b);
     adj.get(b)!.push(a);
   });
-
-  // Walk the polygon boundary starting from first side
   const ordered: number[] = [];
   const visited = new Set<number>();
   let current = sides[0].a;
-
   while (ordered.length < sides.length) {
     ordered.push(current);
     visited.add(current);
@@ -60,479 +156,833 @@ function orderNodesBySides(
     if (next === undefined) break;
     current = next;
   }
-
   return ordered.map(i => nodes[i]);
 }
 
-export default function ShapeCanvas({
-  shapes,
-  axisType,
-  axisX,
-  axisY,
-}: Props) {
-  function getGlobalLabel(shapeIndex: number, nodeIndex: number) {
-    let count = 0;
+/* ===================== BUILD STEP LINES ===================== */
+function buildStepLines(computed: MOIResult, axisType: "Centroidal" | "Custom", axisX: string, axisY: string): StepLine[] {
+  const lines: StepLine[] = [];
+  const { totalArea, centroidX, centroidY } = computed.centroid;
+  const { Ix: IxC, Iy: IyC } = computed.centroidMOI!;
 
-    for (let i = 0; i < shapeIndex; i++) {
-      count += shapes[i].nodes.length;
+  const H = (text: string) => lines.push({ kind: "heading", text });
+  const SH = (text: string) => lines.push({ kind: "subheading", text });
+  const T = (text: string) => lines.push({ kind: "text", text });
+  const E = (tex: string) => lines.push({ kind: "eq", tex });
+  const R = (tex: string) => lines.push({ kind: "result", tex });
+  const SP = () => lines.push({ kind: "spacer" });
+
+  /* ── Step 1 ── */
+  H("Step 1: Individual Shape Properties");
+  if (computed.step1?.length > 0) {
+    computed.step1.forEach((shape: any, i: number) => {
+      const sign = shape.hollow === "Hollow" ? "-" : "+";
+      SH(`Shape ${i + 1}${shape.hollow === "Hollow" ? " (Hollow — subtracted)" : " (Solid)"}`);
+      E(`A_{${i + 1}} = ${sign}${fmtS(Math.abs(shape.area), 4)} \\text{ units}^2`);
+      E(`\\bar{x}_{${i + 1}} = ${fmtS(shape.cx, 4)}, \\quad \\bar{y}_{${i + 1}} = ${fmtS(shape.cy, 4)}`);
+      E(`I_{x,${i + 1}} = ${shape.Ix_formula ?? `${fmtS(shape.Ix_own, 4)}`} = ${fmtS(shape.Ix_own, 4)} \\text{ units}^4`);
+      E(`I_{y,${i + 1}} = ${shape.Iy_formula ?? `${fmtS(shape.Iy_own, 4)}`} = ${fmtS(shape.Iy_own, 4)} \\text{ units}^4`);
+      SP();
+    });
+  } else {
+    T("No shape data available.");
+  }
+
+  /* ══════════════════════════════════════════════════
+     CENTROIDAL PATH — Steps 2, 3, 4
+  ══════════════════════════════════════════════════ */
+  if (axisType === "Centroidal") {
+
+    /* ── Step 2 ── */
+    H("Step 2: Composite Centroid");
+    const aTerms = computed.step1?.map((sh: any) => sh.hollow === "Hollow" ? `(-${fmtS(Math.abs(sh.area), 3)})` : fmtS(sh.area, 3)).join(" + ") || "0";
+    const axTerms = computed.step1?.map((sh: any) => sh.hollow === "Hollow" ? `(-${fmtS(Math.abs(sh.area), 3)})(${fmtS(sh.cx, 3)})` : `(${fmtS(sh.area, 3)})(${fmtS(sh.cx, 3)})`).join(" + ") || "0";
+    const ayTerms = computed.step1?.map((sh: any) => sh.hollow === "Hollow" ? `(-${fmtS(Math.abs(sh.area), 3)})(${fmtS(sh.cy, 3)})` : `(${fmtS(sh.area, 3)})(${fmtS(sh.cy, 3)})`).join(" + ") || "0";
+    E(`\\Sigma A = ${aTerms} = ${fmtS(totalArea, 4)} \\text{ units}^2`);
+    E(`\\bar{X} = \\dfrac{\\Sigma A_i \\bar{x}_i}{\\Sigma A} = \\dfrac{${axTerms}}{${fmtS(totalArea, 3)}} = ${fmtS(centroidX, 4)}`);
+    E(`\\bar{Y} = \\dfrac{\\Sigma A_i \\bar{y}_i}{\\Sigma A} = \\dfrac{${ayTerms}}{${fmtS(totalArea, 3)}} = ${fmtS(centroidY, 4)}`);
+    SP();
+
+    /* ── Step 3 ── */
+    H("Step 3: Parallel Axis Theorem");
+    E(`I_{x} = \\Sigma\\left(I_{x,i} + A_i \\, d_{y,i}^2\\right), \\quad I_{y} = \\Sigma\\left(I_{y,i} + A_i \\, d_{x,i}^2\\right)`);
+    SP();
+    if (computed.step3?.length > 0) {
+      computed.step3.forEach((sh: any, i: number) => {
+        const dy = sh.dy ?? (sh.cy - centroidY);
+        const dx = sh.dx ?? (sh.cx - centroidX);
+        const A = sh.area;
+        SH(`Shape ${i + 1}`);
+        E(`d_{x,${i + 1}} = \\bar{X} - \\bar{x}_{${i + 1}} = ${fmtS(centroidX, 4)} - ${fmtS(sh.cx, 4)} = ${fmtS(dx, 4)}`);
+        E(`d_{y,${i + 1}} = \\bar{Y} - \\bar{y}_{${i + 1}} = ${fmtS(centroidY, 4)} - ${fmtS(sh.cy, 4)} = ${fmtS(dy, 4)}`);
+        const hollow = sh.hollow === "Hollow";
+        const dIxOwn = hollow ? `-${fmtS(sh.Ix_own ?? 0, 4)}` : fmtS(sh.Ix_own ?? 0, 4);
+        const dIyOwn = hollow ? `-${fmtS(sh.Iy_own ?? 0, 4)}` : fmtS(sh.Iy_own ?? 0, 4);
+        const dA = hollow ? `-${fmtS(Math.abs(A), 3)}` : fmtS(Math.abs(A), 3);
+        E(`I_{x,${i + 1}}' = ${dIxOwn} + (${dA})(${fmtS(dy, 4)})^2 = ${fmtS(sh.Ix_transferred ?? sh.Ix_own ?? 0, 4)}`);
+        E(`I_{y,${i + 1}}' = ${dIyOwn} + (${dA})(${fmtS(dx, 4)})^2 = ${fmtS(sh.Iy_transferred ?? sh.Iy_own ?? 0, 4)}`);
+        SP();
+      });
     }
 
-    let globalIndex = count + nodeIndex + 1;
+    /* ── Step 4 ── */
+    H("Step 4: Composite MOI About Centroidal Axis");
+    const IxTerms = computed.step3.map((sh: any) => fmtS(sh.Ix_transferred ?? sh.Ix_own ?? 0, 4)).join(" + ");
+    const IyTerms = computed.step3.map((sh: any) => fmtS(sh.Iy_transferred ?? sh.Iy_own ?? 0, 4)).join(" + ");
+    E(`I_{x,\\text{centroid}} = \\Sigma I_{x,i}' = ${IxTerms} = ${fmtS(IxC, 4)} \\text{ units}^4`);
+    E(`I_{y,\\text{centroid}} = \\Sigma I_{y,i}' = ${IyTerms} = ${fmtS(IyC, 4)} \\text{ units}^4`);
+    SP();
+  }
 
+  /* ══════════════════════════════════════════════════
+     CUSTOM AXIS PATH — Step 2 only (direct transfer)
+  ══════════════════════════════════════════════════ */
+  if (axisType === "Custom" && computed.customMOI) {
+    H(`Step 2: Parallel Axis Theorem `);
+    E(`I_{x} = \\Sigma\\left(I_{x,i} + A_i \\, d_{y,i}^2\\right), \\quad I_{y} = \\Sigma\\left(I_{y,i} + A_i \\, d_{x,i}^2\\right)`);
+    SP();
+
+    computed.customMOI.shapes.forEach((sh: any, i: number) => {
+      const s1 = computed.step1[i];
+      SH(`Shape ${i + 1}`);
+      E(`d_{x,${i + 1}} = \\bar{x}_{${i + 1}} - x_{\\text{axis}} = ${fmtS(s1.cx)} - ${fmtS(Number(axisX))} = ${fmtS(sh.dx)}`);
+      E(`d_{y,${i + 1}} = \\bar{y}_{${i + 1}} - y_{\\text{axis}} = ${fmtS(s1.cy)} - ${fmtS(Number(axisY))} = ${fmtS(sh.dy)}`);
+      const isHollow = s1.hollow === "Hollow";
+      const dispIxOwn = isHollow ? `-${fmtS(s1.Ix_own)}` : fmtS(s1.Ix_own);
+      const dispIyOwn = isHollow ? `-${fmtS(s1.Iy_own)}` : fmtS(s1.Iy_own);
+      const dispA = isHollow ? `-${fmtS(Math.abs(s1.area))}` : fmtS(Math.abs(s1.area));
+      E(`I_{x,${i + 1}}' = ${dispIxOwn} + (${dispA})(${fmtS(sh.dy)})^2 = ${fmtS(sh.Ix)}`);
+      E(`I_{y,${i + 1}}' = ${dispIyOwn} + (${dispA})(${fmtS(sh.dx)})^2 = ${fmtS(sh.Iy)}`);
+      SP();
+    });
+
+    /* ── Step 3 (custom) — summation ── */
+    H("Step 3: Composite MOI About Custom Axis");
+    const IxTerms = computed.customMOI.shapes.map((sh: any) => fmtS(sh.Ix)).join(" + ");
+    const IyTerms = computed.customMOI.shapes.map((sh: any) => fmtS(sh.Iy)).join(" + ");
+    E(`I_{x} = ${IxTerms} = ${fmtS(computed.customMOI.Ix)} \\text{ units}^4`);
+    E(`I_{y} = ${IyTerms} = ${fmtS(computed.customMOI.Iy)} \\text{ units}^4`);
+    SP();
+  }
+
+  /* ── Final Result ── */
+  H("Final Result");
+  if (axisType === "Custom" && computed.customMOI) {
+    R(`I_x = ${fmtS(computed.customMOI.Ix, 4)} \\text{ units}^4`);
+    R(`I_y = ${fmtS(computed.customMOI.Iy, 4)} \\text{ units}^4`);
+  } else {
+    R(`\\bar{X} = ${fmtS(centroidX, 4)}, \\quad \\bar{Y} = ${fmtS(centroidY, 4)}`);
+    R(`I_x = ${fmtS(IxC, 4)} \\text{ units}^4`);
+    R(`I_y = ${fmtS(IyC, 4)} \\text{ units}^4`);
+  }
+
+  return lines;
+}
+
+/* ===================== COMPONENT ===================== */
+export default function DistributedLoadPage() {
+  const [axisType, setAxisType] = useState<"Centroidal" | "Custom">("Centroidal");
+  const [axisX, setAxisX] = useState("");
+  const [axisY, setAxisY] = useState("");
+
+  const [shapes, setShapes] = useState<ShapeData[]>([{
+    type: "Polygon", hollow: "Solid", isOpen: true,
+    nodes: [{ x: "", y: "" }, { x: "", y: "" }],
+    sides: [{ a: 0, b: 1 }],
+    radius: "", x: "", y: "",
+  }]);
+
+  const [result, setResult] = useState<any>(null);
+  const [stepLines, setStepLines] = useState<StepLine[]>([]);
+
+  const [status, setStatus] = useState<
+    "idle" | "generating" | "done" | "error"
+  >("idle");
+
+  const [showHowTo, setShowHowTo] = useState(false);
+
+
+  const off = status === "generating";
+
+  const labels: Record<typeof status, string> = {
+    idle: "⬇ Download Solution as PDF",
+    generating: "⏳ Opening print view…",
+    done: "✅ Done!",
+    error: "❌ Export failed — try again",
+  };
+
+  const formatNumber = (num: number) => Number(num.toFixed(3));
+
+  /* ── All solving delegated to engines ── */
+  const calculateResultant = () => {
+    const orderedShapes = shapes.map(shape => {
+      if (shape.type !== "Polygon") return shape;
+      return { ...shape, nodes: orderNodesBySides(shape.nodes, shape.sides) };
+    });
+
+    // Step 1–4: centroidal MOI from MOIEngine
+    const centroidal = computeMOI(orderedShapes) as MOIResult;
+    centroidal.centroidMOI = { Ix: centroidal.final.Ix, Iy: centroidal.final.Iy };
+
+    // Step 5: custom axis from MOIcustom (only if needed)
+    let customMOI: MOIResult["customMOI"] | undefined = undefined;
+    if (axisType === "Custom") {
+      const shapeMOIInputs = centroidal.step1.map((sh: any) => ({
+        Ix: sh.Ix_own,
+        Iy: sh.Iy_own,
+        area: sh.signedArea,
+        centroidX: sh.cx,
+        centroidY: sh.cy,
+      }));
+
+      customMOI = computeCustomAxis(
+        shapeMOIInputs,
+        Number(axisX),
+        Number(axisY),
+      );
+    }
+
+    const finalResult: MOIResult = {
+      ...centroidal,
+      customMOI,
+      final: axisType === "Custom" && customMOI
+        ? { Ix: customMOI.Ix, Iy: customMOI.Iy }
+        : centroidal.centroidMOI,
+    };
+
+    setResult(finalResult);
+    setStepLines(buildStepLines(finalResult, axisType, axisX, axisY));
+  };
+
+  const handleAddShape = () => setShapes(prev => [...prev, {
+    type: "Polygon", hollow: "Solid", isOpen: true,
+    nodes: [{ x: "", y: "" }, { x: "", y: "" }],
+    sides: [{ a: 0, b: 1 }],
+    radius: "", x: "", y: "",
+  }]);
+
+  const handleRemoveShape = (index: number) => {
+    if (shapes.length === 1) return;
+    setShapes(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const getJointLabel = (shapeIndex: number, nodeIndex: number) => {
+    let count = 0;
+    for (let i = 0; i < shapeIndex; i++) count += shapes[i].nodes.length;
+    let globalIndex = count + nodeIndex + 1;
     let label = "";
     while (globalIndex > 0) {
       const remainder = (globalIndex - 1) % 26;
       label = String.fromCharCode(65 + remainder) + label;
       globalIndex = Math.floor((globalIndex - 1) / 26);
     }
-
     return label;
-  }
+  };
 
-  const SIZE = 1000;
-  const PADDING = 80;
+  /* ── Result rows for PDF summary ── */
+  const resultRows = result ? [
+    { label: "Total Area", value: `${formatNumber(result.centroid.totalArea)} units²` },
+    { label: "Centroid X̄", value: `${formatNumber(result.centroid.centroidX)}` },
+    { label: "Centroid Ȳ", value: `${formatNumber(result.centroid.centroidY)}` },
+    { label: "Ix (centroidal)", value: `${formatNumber(result.centroidMOI.Ix)} units⁴` },
+    { label: "Iy (centroidal)", value: `${formatNumber(result.centroidMOI.Iy)} units⁴` },
+    ...(axisType === "Custom" && result.customMOI ? [
+      { label: "Ix (custom axis)", value: `${formatNumber(result.customMOI.Ix)} units⁴` },
+      { label: "Iy (custom axis)", value: `${formatNumber(result.customMOI.Iy)} units⁴` },
+    ] : []),
+  ] : [];
 
-  const points: { x: number; y: number }[] = [];
-
-  shapes.forEach(s => {
-
-    // ✅ POLYGON
-    if (s.type === "Polygon") {
-      s.nodes.forEach(n => {
-        if (n.x.trim() === "" || n.y.trim() === "") return;
-
-        const x = Number(n.x);
-        const y = Number(n.y);
-
-        if (!isNaN(x) && !isNaN(y)) {
-          points.push({ x, y });
-        }
-      });
-    }
-
-    // ✅ CIRCLE
-    if (s.type === "Circle") {
-      const cx = Number(s.x);
-      const cy = Number(s.y);
-      const r = Number(s.radius);
-
-      if ([cx, cy, r].some(isNaN)) return;
-
-      points.push({ x: cx - r, y: cy - r });
-      points.push({ x: cx + r, y: cy + r });
-    }
-
-    // ✅ SEMI-CIRCLE
-    if (s.type?.startsWith("Semi-circle")) {
-      const cx = Number(s.x);
-      const cy = Number(s.y);
-      const r = Number(s.radius);
-
-      if ([cx, cy, r].some(isNaN)) return;
-
-      points.push({ x: cx - r, y: cy - r });
-      points.push({ x: cx + r, y: cy + r });
-    }
-
-    // ✅ QUARTER CIRCLE
-    if (s.type?.startsWith("Quarter-circle")) {
-      const cx = Number(s.x);
-      const cy = Number(s.y);
-      const r = Number(s.radius);
-
-      if ([cx, cy, r].some(isNaN)) return;
-
-      points.push({ x: cx - r, y: cy - r });
-      points.push({ x: cx + r, y: cy + r });
-    }
-  });
-
-  // 🚨 If no valid points, render empty canvas
-  if (points.length === 0) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm w-full max-w-[360px] aspect-square mb-6 overflow-hidden mx-auto relative z-10">
-        <svg
-          viewBox={`0 0 ${SIZE} ${SIZE}`}
-          className="w-full h-full"
-          preserveAspectRatio="xMidYMid meet"
-        />
-      </div>
-    );
-  }
-
-  const xs = points.map(p => p.x);
-  const ys = points.map(p => p.y);
-
-  const minX = Math.floor(Math.min(...xs));
-  const maxX = Math.ceil(Math.max(...xs));
-  const minY = Math.floor(Math.min(...ys));
-  const maxY = Math.ceil(Math.max(...ys));
-
-  const spanX = maxX - minX || 1;
-  const spanY = maxY - minY || 1;
-
-  const scale = Math.min(
-    (SIZE - 2 * PADDING) / spanX,
-    (SIZE - 2 * PADDING) / spanY
-  );
-
-  const GRID_STEP = scale;
-
-  const map = (x: number, y: number) => ({
-    x: (x - minX) * scale + PADDING,
-    y: SIZE - ((y - minY) * scale + PADDING),
-  });
-
-  const GRID_COUNT = Math.floor((SIZE - 2 * PADDING) / GRID_STEP);
-
+  /* ===================== JSX ===================== */
   return (
-    <div className="bg-white rounded-xl shadow-sm w-full max-w-[360px] aspect-square mb-6 overflow-hidden mx-auto relative z-10">
-      <svg
-        viewBox={`0 0 ${SIZE} ${SIZE}`}
-        className="w-full h-full"
-        preserveAspectRatio="xMidYMid meet"
-      >
-        {/* GRID */}
-        {Array.from({ length: GRID_COUNT + 1 }).map((_, i) => {
-          const px = PADDING + i * GRID_STEP;
-          const py = SIZE - (PADDING + i * GRID_STEP);
+    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
+      <Header />
 
-          return (
-            <g key={i}>
-              <line x1={px} y1={0} x2={px} y2={SIZE} stroke="#0f1011" />
-              <line x1={0} y1={py} x2={SIZE} y2={py} stroke="#0f1011" />
-            </g>
-          );
-        })}
+      {/* How to Use Modal */}
+      {showHowTo && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
+          onClick={() => setShowHowTo(false)}>
+          <div className="relative max-w-2xl w-full mx-4 max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowHowTo(false)}
+              className="absolute -top-3 -right-3 z-10 bg-white dark:bg-gray-800 text-black dark:text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-lg font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+              ✕
+            </button>
+            <img
+              src="/EX.png"
+              alt="How to Use"
+              className="w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
 
-        {/* SHAPES */}
-        {shapes.map((shape, si) => {
+      {/* Landing Page */}
+      <main className="hidden sm:flex flex-col flex-grow bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-6 py-10">
+          <h1 className="text-3xl font-bold mb-8 text-center">
+            Moment of Inertia for Composite Shapes Calculator
+          </h1>
 
-          // ======================
-          // 🟣 SEMICIRCLES
-          // ======================
-          if (shape.type?.startsWith("Semi-circle")) {
-            const cx = Number(shape.x);
-            const cy = Number(shape.y);
-            const r = Number(shape.radius);
+          <ShapeCanvas
+            shapes={shapes}
+            axisType={axisType}
+            axisX={Number(axisX)}
+            axisY={Number(axisY)}
+          />
+          {/* ADD THIS */}
+          <p className="text-sm text-center -mt-5 mb-2">
+            <button
+              onClick={() => setShowHowTo(true)}
+              className="font-sans text-[#1848a0] dark:text-blue-400 underline underline-offset-2 hover:text-[#163d8a] dark:hover:text-blue-300 transition font-medium"
+            >
+              How to Use Calculator
+            </button>
+          </p>
 
-            if (isNaN(cx) || isNaN(cy) || isNaN(r) || r <= 0) return null;
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+            <span className="font-semibold">Note:</span> The most lower left point of the composite shape should be at (0,0).
+            <span className="block pl-[42px] mt-2">Divide the composite shape into simple shapes, then enter the dimensions and location of each shape.</span>
+          </p>
 
-            const mapped = map(cx, cy);
-            const sr = r * scale;
+          <div className="flex items-start gap-6 flex-wrap">
+            {/* LEFT COLUMN */}
+            <div className="flex flex-col w-[300px] shrink-0">
 
-            let startX = 0, startY = 0, endX = 0, endY = 0, sweep = 1;
+              {/* Reference Axis */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 relative z-10">
+                <h3 className="font-semibold mb-3">Reference Axis</h3>
 
-            switch (shape.type) {
-              case "Semi-circle-1":
-                startX = mapped.x - sr; startY = mapped.y;
-                endX = mapped.x + sr; endY = mapped.y;
-                sweep = 1; break;
-              case "Semi-circle-2":
-                startX = mapped.x - sr; startY = mapped.y;
-                endX = mapped.x + sr; endY = mapped.y;
-                sweep = 0; break;
-              case "Semi-circle-3":
-                startX = mapped.x; startY = mapped.y - sr;
-                endX = mapped.x; endY = mapped.y + sr;
-                sweep = 0; break;
-              case "Semi-circle-4":
-                startX = mapped.x; startY = mapped.y - sr;
-                endX = mapped.x; endY = mapped.y + sr;
-                sweep = 1; break;
-            }
-
-            const pathData = `M ${startX} ${startY} A ${sr} ${sr} 0 0 ${sweep} ${endX} ${endY} L ${startX} ${startY} Z`;
-
-            return (
-              <g key={si}>
-                <path
-                  d={pathData}
-                  fill={shape.hollow === "Hollow" ? "rgba(156,163,175,0.5)" : "rgba(59,130,246,0.3)"}
-                  stroke="#111827"
-                  strokeWidth={3}
-                  strokeDasharray={shape.hollow === "Hollow" ? "8 6" : "0"}
-                />
-                <circle cx={mapped.x} cy={mapped.y} r={10} fill="#dc2626" />
-                <text
-                  x={mapped.x + 16}
-                  y={mapped.y - 16}
-                  fontSize="26"
-                  fontWeight="bold"
-                  fill="#dc2626"
+                <select
+                  value={axisType}
+                  onChange={e => setAxisType(e.target.value as "Centroidal" | "Custom")}
+                  className="w-full rounded bg-white dark:bg-gray-700 dark:text-white px-3 py-2 mb-4 focus:outline-none border border-gray-200 dark:border-gray-600"
                 >
-                  C({cx}, {cy})
-                </text>
-                <circle cx={startX} cy={startY} r={8} fill="#2563eb" />
-                <circle cx={endX} cy={endY} r={8} fill="#2563eb" />
-                <line x1={mapped.x} y1={mapped.y} x2={startX} y2={startY} stroke="#16a34a" strokeWidth={3} />
-                <text x={(mapped.x + startX) / 2} y={(mapped.y + startY) / 2 - 12}
-                  fontSize="28" fontWeight="bold" fill="#16a34a" textAnchor="middle">
-                  r = {r}
-                </text>
-              </g>
-            );
-          }
+                  <option value="Centroidal">Centroidal Axis</option>
+                  <option value="Custom">Custom Axis</option>
+                </select>
 
-          // ======================
-          // 🟠 QUARTER CIRCLES
-          // ======================
-          if (shape.type?.startsWith("Quarter-circle")) {
-            const cx = Number(shape.x);
-            const cy = Number(shape.y);
-            const r = Number(shape.radius);
+                {axisType === "Custom" && (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-20 dark:text-gray-300">x-Axis</span>
+                      <input value={axisX} onChange={e => setAxisX(e.target.value)} placeholder="x"
+                        className="w-full rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-20 dark:text-gray-300">y-Axis</span>
+                      <input value={axisY} onChange={e => setAxisY(e.target.value)} placeholder="y"
+                        className="w-full rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600" />
+                    </div>
+                  </div>
+                )}
+              </div>
 
-            if (isNaN(cx) || isNaN(cy) || isNaN(r) || r <= 0) return null;
+              {/* How to Use Button */}
+              <div className="mt-4">
+                <button onClick={() => setShowHowTo(true)}
+                  className="w-full bg-[#008409] text-white py-1 rounded-lg hover:bg-[#15711b] transition text-[18px]">
+                  How to Use
+                </button>
+              </div>
 
-            const mapped = map(cx, cy);
-            const sr = r * scale;
+              {/* Calculate Button */}
+              <div className="mt-2">
+                <button onClick={calculateResultant}
+                  className="w-full bg-[#1848a0] text-white py-3 rounded-lg hover:bg-[#163d8a] transition text-[18px]">
+                  Calculate
+                </button>
+              </div>
+              {/* Quick Results Panel */}
+              {result && (
+                <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow p-4 relative z-10">
+                  <h3 className="font-semibold mb-3 text-blue-900 dark:text-blue-400">Quick Results</h3>
 
-            let startX = 0, startY = 0, endX = 0, endY = 0, sweep = 0;
+                  {/* Total Area — full width */}
+                  <div className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2 mb-2">
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400">Total Area</div>
+                    <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{formatNumber(result.centroid.totalArea)}</div>
+                  </div>
 
-            switch (shape.type) {
-              case "Quarter-circle-1":
-                startX = mapped.x; startY = mapped.y - sr;
-                endX = mapped.x + sr; endY = mapped.y;
-                sweep = 1; break;
-              case "Quarter-circle-2":
-                startX = mapped.x - sr; startY = mapped.y;
-                endX = mapped.x; endY = mapped.y - sr;
-                sweep = 1; break;
-              case "Quarter-circle-3":
-                startX = mapped.x; startY = mapped.y + sr;
-                endX = mapped.x - sr; endY = mapped.y;
-                sweep = 1; break;
-              case "Quarter-circle-4":
-                startX = mapped.x + sr; startY = mapped.y;
-                endX = mapped.x; endY = mapped.y + sr;
-                sweep = 1; break;
-            }
+                  {/* Centroid X and Y — side by side */}
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    {[
+                      ["Centroid X̄", `${formatNumber(result.centroid.centroidX)}`],
+                      ["Centroid Ȳ", `${formatNumber(result.centroid.centroidY)}`],
+                    ].map(([label, val]) => (
+                      <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400">{label}</div>
+                        <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
+                      </div>
+                    ))}
+                  </div>
 
-            const pathData = `M ${mapped.x} ${mapped.y} L ${startX} ${startY} A ${sr} ${sr} 0 0 ${sweep} ${endX} ${endY} Z`;
+                  <hr className="my-2 border-gray-200 dark:border-gray-600" />
 
-            return (
-              <g key={si}>
-                <path
-                  d={pathData}
-                  fill={shape.hollow === "Hollow" ? "rgba(156,163,175,0.5)" : "rgba(59,130,246,0.3)"}
-                  stroke="#111827"
-                  strokeWidth={3}
-                  strokeDasharray={shape.hollow === "Hollow" ? "8 6" : "0"}
-                />
-                <circle cx={mapped.x} cy={mapped.y} r={10} fill="#dc2626" />
-                <line x1={mapped.x} y1={mapped.y} x2={startX} y2={startY} stroke="#16a34a" strokeWidth={3} />
-                <line x1={mapped.x} y1={mapped.y} x2={endX} y2={endY} stroke="#16a34a" strokeWidth={3} />
-                <text x={(mapped.x + startX) / 2} y={(mapped.y + startY) / 2 - 12}
-                  fontSize="28" fontWeight="bold" fill="#16a34a" textAnchor="middle">
-                  r = {r}
-                </text>
-              </g>
-            );
-          }
+                  {/* Ix and Iy centroidal — side by side */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      ["Ix (centroid)", `${formatNumber(result.centroidMOI.Ix)}`],
+                      ["Iy (centroid)", `${formatNumber(result.centroidMOI.Iy)}`],
+                    ].map(([label, val]) => (
+                      <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400">{label}</div>
+                        <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
+                      </div>
+                    ))}
+                  </div>
 
-          // ======================
-          // 🔵 CIRCLE
-          // ======================
-          if (shape.type === "Circle") {
-            const cx = Number(shape.x);
-            const cy = Number(shape.y);
-            const r = Number(shape.radius);
-
-            if (isNaN(cx) || isNaN(cy) || isNaN(r) || r <= 0) return null;
-
-            const mappedCenter = map(cx, cy);
-            const scaledRadius = r * scale;
-
-            return (
-              <g key={si}>
-                <circle
-                  cx={mappedCenter.x}
-                  cy={mappedCenter.y}
-                  r={scaledRadius}
-                  fill={shape.hollow === "Hollow"
-                    ? "rgba(156, 163, 175, 0.5)"
-                    : "rgba(59, 130, 246, 0.25)"}
-                  stroke="#111827"
-                  strokeWidth={3}
-                  strokeDasharray={shape.hollow === "Hollow" ? "8 6" : "0"}
-                />
-
-                <circle
-                  cx={mappedCenter.x}
-                  cy={mappedCenter.y}
-                  r={10}
-                  fill="#dc2626"
-                />
-
-                <text
-                  x={mappedCenter.x + 16}
-                  y={mappedCenter.y - 16}
-                  fontSize="26"
-                  fontWeight="bold"
-                  fill="#dc2626"
-                >
-                  C({cx}, {cy})
-                </text>
-
-                <text
-                  x={mappedCenter.x}
-                  y={mappedCenter.y - scaledRadius - 20}
-                  fontSize="28"
-                  fontWeight="bold"
-                  fill="#16a34a"
-                  textAnchor="middle"
-                >
-                  r = {r}
-                </text>
-              </g>
-            );
-          }
-                    
-          // ======================
-          // 🔷 POLYGON
-          // ======================
-          if (shape.type !== "Polygon") return null;
-
-          // ✅ Order nodes by sides for correct winding order (no angle sort)
-          // Pass the full nodes array so indices in sides still match
-          const orderedNodes = orderNodesBySides(shape.nodes, shape.sides);
-
-          const validMapped = orderedNodes
-            .map(n => {
-              if (!n || n.x.trim() === "" || n.y.trim() === "") return null;
-              const x = Number(n.x);
-              const y = Number(n.y);
-              if (isNaN(x) || isNaN(y)) return null;
-              return { ...map(x, y), realX: x, realY: y };
-            })
-            .filter((p): p is { x: number; y: number; realX: number; realY: number } => p !== null);
-
-          const isClosed =
-            shape.nodes.length >= 3 &&
-            shape.sides.length >= shape.nodes.length;
-
-          return (
-            <g key={si}>
-              {isClosed && validMapped.length >= 3 && (
-                <polygon
-                  points={validMapped.map(p => `${p.x},${p.y}`).join(" ")}
-                  fill={shape.hollow === "Hollow" ? "rgba(156, 163, 175, 0.5)" : "rgba(59, 130, 246, 0.25)"}
-                  stroke={shape.hollow === "Hollow" ? "none" : "#111827"}
-                  strokeWidth={2}
-                />
+                  {/* Custom axis results */}
+                  {axisType === "Custom" && result.customMOI && (
+                    <>
+                      <hr className="my-2 border-gray-200 dark:border-gray-600" />
+                      <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-2">About Custom Axis</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          ["Ix (custom)", `${formatNumber(result.customMOI.Ix)}`],
+                          ["Iy (custom)", `${formatNumber(result.customMOI.Iy)}`],
+                        ].map(([label, val]) => (
+                          <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+                            <div className="text-[10px] text-gray-500 dark:text-gray-400">{label}</div>
+                            <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
+            </div>
 
-              {/* EDGES + DISTANCE */}
-              {shape.sides.map((s, i) => {
-                const A = shape.nodes[s.a];
-                const B = shape.nodes[s.b];
-
-                if (
-                  A.x.trim() === "" || A.y.trim() === "" ||
-                  B.x.trim() === "" || B.y.trim() === ""
-                ) return null;
-
-                const ax = Number(A.x), ay = Number(A.y);
-                const bx = Number(B.x), by = Number(B.y);
-
-                if ([ax, ay, bx, by].some(isNaN)) return null;
-
-                const p1 = map(ax, ay);
-                const p2 = map(bx, by);
-
-                const distance = Math.sqrt(
-                  Math.pow(bx - ax, 2) + Math.pow(by - ay, 2)
-                );
-
-                const midX = (p1.x + p2.x) / 2;
-                const midY = (p1.y + p2.y) / 2;
-
+            {/* Shape Cards */}
+            <div className="flex flex-wrap gap-6 flex-1">
+              {shapes.map((shape, index) => {
+                const isCircular = shape.type !== "Polygon";
                 return (
-                  <g key={i}>
-                    <line
-                      x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
-                      stroke={shape.hollow === "Hollow" ? "#000000" : "#111827"}
-                      strokeWidth={3}
-                      strokeDasharray={shape.hollow === "Hollow" ? "8 6" : "0"}
+                  <div key={index} className="bg-white dark:bg-gray-800 rounded-xl shadow px-6 py-4 w-[340px] relative z-10">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold dark:text-white">Shape {index + 1}</h3>
+                      <button onClick={() => handleRemoveShape(index)}
+                        className="w-8 h-8 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 transition">–</button>
+                    </div>
+
+                    <button
+                      onClick={() => { const copy = [...shapes]; copy[index].isOpen = !copy[index].isOpen; setShapes(copy); }}
+                      className="w-full flex justify-between bg-[#008409] text-white px-4 py-2 rounded-lg hover:bg-[#15711b] transition"
+                    >
+                      Options
+                      <span className={`transition-transform ${shape.isOpen ? "rotate-180" : ""}`}>▼</span>
+                    </button>
+
+                    {shape.isOpen && (
+                      <div className="mt-4 space-y-4">
+                        <ShapeSelectDropdown
+                          value={shape.type}
+                          onChange={val => { const copy = [...shapes]; copy[index].type = val; setShapes(copy); }}
+                        />
+
+                        <select value={shape.hollow}
+                          onChange={e => { const copy = [...shapes]; copy[index].hollow = e.target.value as "Hollow" | "Solid"; setShapes(copy); }}
+                          className="w-full rounded px-3 py-1 bg-white dark:bg-gray-700 dark:text-white border border-gray-200 dark:border-gray-600 focus:outline-none">
+                          <option>Hollow</option>
+                          <option>Solid</option>
+                        </select>
+
+                        {shape.type === "Polygon" && (
+                          <div className="space-y-5">
+                            <div>
+                              <h4 className="font-semibold mb-2 dark:text-gray-200">Vertices</h4>
+                              {shape.nodes.map((node, i) => (
+                                <div key={i} className="flex items-center gap-2 mb-2">
+                                  <span className="w-16 text-sm dark:text-gray-300">Vertex {getJointLabel(index, i)}</span>
+                                  <input placeholder="x" value={node.x}
+                                    onChange={e => { const copy = [...shapes]; copy[index].nodes[i].x = e.target.value; setShapes(copy); }}
+                                    className="w-20 rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-2 py-1 focus:outline-none border border-transparent dark:border-gray-600" />
+                                  <input placeholder="y" value={node.y}
+                                    onChange={e => { const copy = [...shapes]; copy[index].nodes[i].y = e.target.value; setShapes(copy); }}
+                                    className="w-20 rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-2 py-1 focus:outline-none border border-transparent dark:border-gray-600" />
+                                  <button onClick={() => {
+                                    if (shape.nodes.length <= 2) return;
+                                    const copy = [...shapes];
+                                    copy[index].nodes.splice(i, 1);
+                                    copy[index].sides = copy[index].sides.filter(s => s.a !== i && s.b !== i);
+                                    setShapes(copy);
+                                  }} className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition">–</button>
+                                </div>
+                              ))}
+                              <button onClick={() => { const copy = [...shapes]; copy[index].nodes.push({ x: "", y: "" }); setShapes(copy); }}
+                                className="bg-[#008409] text-white px-3 py-1 rounded-md shadow hover:bg-[#15711b] transition text-[16px]">+ Add Vertex</button>
+                            </div>
+
+                            <div>
+                              <h4 className="font-semibold mb-2 dark:text-gray-200">Sides</h4>
+                              {shape.sides.map((side, i) => (
+                                <div key={i} className="flex items-center gap-2 mb-2">
+                                  <span className="w-12 text-sm dark:text-gray-300">Side</span>
+                                  <select value={side.a}
+                                    onChange={e => { const copy = [...shapes]; copy[index].sides[i].a = Number(e.target.value); setShapes(copy); }}
+                                    className="w-24 rounded bg-gray-100 dark:bg-gray-700 dark:text-white px-2 py-1 focus:outline-none border border-transparent dark:border-gray-600">
+                                    {shape.nodes.map((_, j) => <option key={j} value={j}>Vertex {getJointLabel(index, j)}</option>)}
+                                  </select>
+                                  <select value={side.b}
+                                    onChange={e => { const copy = [...shapes]; copy[index].sides[i].b = Number(e.target.value); setShapes(copy); }}
+                                    className="w-24 rounded bg-gray-100 dark:bg-gray-700 dark:text-white px-2 py-1 focus:outline-none border border-transparent dark:border-gray-600">
+                                    {shape.nodes.map((_, j) => <option key={j} value={j}>Vertex {getJointLabel(index, j)}</option>)}
+                                  </select>
+                                  <button onClick={() => { const copy = [...shapes]; copy[index].sides.splice(i, 1); setShapes(copy); }}
+                                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition">–</button>
+                                </div>
+                              ))}
+                              <button onClick={() => {
+                                if (shape.nodes.length < 2) return;
+                                const copy = [...shapes]; copy[index].sides.push({ a: 0, b: 1 }); setShapes(copy);
+                              }} className="bg-[#008409] text-white px-3 py-1 rounded-md shadow hover:bg-[#15711b] transition text-[16px]">+ Add Side</button>
+                            </div>
+                          </div>
+                        )}
+
+                        {isCircular && (
+                          <CircularInputs
+                            radius={shape.radius} x={shape.x} y={shape.y}
+                            onRadiusChange={val => { const copy = [...shapes]; copy[index].radius = val; setShapes(copy); }}
+                            onXChange={val => { const copy = [...shapes]; copy[index].x = val; setShapes(copy); }}
+                            onYChange={val => { const copy = [...shapes]; copy[index].y = val; setShapes(copy); }}
+                          />
+                        )}
+
+                        <button onClick={handleAddShape}
+                          className="w-full bg-[#008409] text-white py-2 rounded-lg font-semibold hover:bg-[#15711b] transition">
+                          + Add Shape
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+
+          {/* ══════════════ SOLUTION DISPLAY ══════════════ */}
+          {result && stepLines.length > 0 && (
+            <div className="mt-10 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 relative z-10">
+              <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-700">
+                <h3 className="text-[15px] font-semibold text-gray-800 dark:text-gray-100 tracking-wide">Step-by-Step Solution</h3>
+              </div>
+              <div className="px-6 py-5">
+                <button
+                  onClick={() => {
+                    setStatus("generating");
+                    const payload = { lines: stepLines, resultRows, shapes };
+                    const encoded = encodeURIComponent(JSON.stringify(payload));
+                    window.open(`/print/moi?data=${encoded}`, "_blank");
+                    setStatus("done");
+                    setTimeout(() => setStatus("idle"), 2500);
+                  }}
+                  disabled={off}
+                  className={`w-full mb-4 py-3 rounded-xl font-semibold text-white transition ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
+                    }`}
+                >
+                  {labels[status]}
+                </button>
+                <MOIStepRenderer lines={stepLines} />
+              </div>
+            </div>
+          )}
+
+
+        </div>
+      </main>
+
+      <main className="flex sm:hidden flex-col flex-grow bg-gray-50 dark:bg-gray-900">
+        <div className="w-full px-4 py-6 flex flex-col gap-4">
+
+          <h1 className="text-[22px] font-bold text-center -mt-2">
+            Moment of Inertia for Composite Shapes Calculator
+          </h1>
+
+          <ShapeCanvas
+            shapes={shapes}
+            axisType={axisType}
+            axisX={Number(axisX)}
+            axisY={Number(axisY)}
+          />
+          {/* ADD THIS */}
+          <p className="text-sm text-center -mt-8 mb-5">
+            <button
+              onClick={() => setShowHowTo(true)}
+              className="text-[#1848a0] dark:text-blue-400 underline hover:text-[#163d8a] dark:hover:text-blue-300 transition"
+            >
+              How to Use Calculator
+            </button>
+          </p>
+
+          <p className="text-sm text-gray-700 dark:text-gray-300 -mt-6">
+            <span className="font-semibold">Note:</span> The most lower left point of the composite shape should be at (0,0). <br /> Divide the composite shape into simple shapes, then enter the dimensions and location of each shape.
+
+          </p>
+
+          {/* Reference Axis */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 w-full">
+            <h3 className="font-semibold mb-3">Reference Axis</h3>
+            <select
+              value={axisType}
+              onChange={e => setAxisType(e.target.value as "Centroidal" | "Custom")}
+              className="w-full rounded bg-white dark:bg-gray-700 dark:text-white px-2 py-1 mb-4 focus:outline-none border border-gray-200 dark:border-gray-600"
+            >
+              <option value="Centroidal">Centroidal Axis</option>
+              <option value="Custom">Custom Axis</option>
+            </select>
+            {axisType === "Custom" && (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-20 dark:text-gray-300">x-Axis</span>
+                  <input value={axisX} onChange={e => setAxisX(e.target.value)} placeholder="x"
+                    className="flex-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-20 dark:text-gray-300">y-Axis</span>
+                  <input value={axisY} onChange={e => setAxisY(e.target.value)} placeholder="y"
+                    className="flex-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Shape Cards */}
+          {shapes.map((shape, index) => {
+            const isCircular = shape.type !== "Polygon";
+            return (
+              <div key={index} className="bg-white dark:bg-gray-800 rounded-xl shadow px-4 py-4 w-full">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold dark:text-white">Shape {index + 1}</h3>
+                  <button onClick={() => handleRemoveShape(index)}
+                    className="w-8 h-8 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 transition">–</button>
+                </div>
+
+                <button
+                  onClick={() => { const copy = [...shapes]; copy[index].isOpen = !copy[index].isOpen; setShapes(copy); }}
+                  className="w-full flex justify-between bg-[#008409] text-white px-3 py-1 rounded-lg hover:bg-[#15711b] transition"
+                >
+                  Options
+                  <span className={`transition-transform ${shape.isOpen ? "rotate-180" : ""}`}>▼</span>
+                </button>
+
+                {shape.isOpen && (
+                  <div className="mt-4 space-y-4">
+                    <ShapeSelectDropdown
+                      value={shape.type}
+                      onChange={val => { const copy = [...shapes]; copy[index].type = val; setShapes(copy); }}
                     />
-                    <text
-                      x={midX} y={midY - 18}
-                      fontSize="28" fontWeight="bold" fill="#000000"
-                      textAnchor="middle" dominantBaseline="middle">
-                      {distance}
-                    </text>
-                  </g>
-                );
-              })}
 
-              {/* NODES + LABELS */}
-              {shape.nodes.map((n, i) => {
-                const x = Number(n.x);
-                const y = Number(n.y);
-                if (isNaN(x) || isNaN(y)) return null;
+                    <select value={shape.hollow}
+                      onChange={e => { const copy = [...shapes]; copy[index].hollow = e.target.value as "Hollow" | "Solid"; setShapes(copy); }}
+                      className="w-full rounded px-3 py-1 bg-white dark:bg-gray-700 dark:text-white border border-gray-200 dark:border-gray-600 focus:outline-none">
+                      <option>Hollow</option>
+                      <option>Solid</option>
+                    </select>
 
-                const p = map(x, y);
-                const label = getGlobalLabel(si, i);
+                    {shape.type === "Polygon" && (
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="font-semibold mb-2 dark:text-gray-200">Vertices</h4>
+                          {shape.nodes.map((node, i) => (
+                            <div key={i} className="flex items-center gap-1 mb-2 w-full min-w-0">
+                              <span className="w-14 shrink-0 text-xs dark:text-gray-300">Vertex {getJointLabel(index, i)}</span>
+                              <input placeholder="x" value={node.x}
+                                onChange={e => { const copy = [...shapes]; copy[index].nodes[i].x = e.target.value; setShapes(copy); }}
+                                className="w-0 flex-1 min-w-0 rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600"
+                              />
+                              <input placeholder="y" value={node.y}
+                                onChange={e => { const copy = [...shapes]; copy[index].nodes[i].y = e.target.value; setShapes(copy); }}
+                                className="w-0 flex-1 min-w-0 rounded bg-gray-100 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600"
+                              />
+                              <button onClick={() => {
+                                if (shape.nodes.length <= 2) return;
+                                const copy = [...shapes];
+                                copy[index].nodes.splice(i, 1);
+                                copy[index].sides = copy[index].sides.filter(s => s.a !== i && s.b !== i);
+                                setShapes(copy);
+                              }} className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition font-semibold">
+                                –</button>
+                            </div>
+                          ))}
+                          <button onClick={() => { const copy = [...shapes]; copy[index].nodes.push({ x: "", y: "" }); setShapes(copy); }}
+                            className="bg-[#008409] text-white px-3 py-1 rounded-md shadow hover:bg-[#15711b] transition text-sm">+ Add Vertex</button>
+                        </div>
 
-                return (
-                  <g key={i}>
-                    <circle cx={p.x} cy={p.y} r={10} fill="#dc2626" />
-                    <text x={p.x + 14} y={p.y - 14} fontSize="32" fontWeight="bold" fill="#111827">
-                      {label}
-                    </text>
-                  </g>
-                );
-              })}
-            </g>
-          );
-        })}
+                        <div>
+                          <h4 className="font-semibold mb-2 dark:text-gray-200">
+                            Sides</h4>
+                          {shape.sides.map((side, i) => (
+                            <div key={i} className="flex items-center gap-2 mb-2">
+                              <span className="w-10 text-xs dark:text-gray-300">Side</span>
+                              <select value={side.a}
+                                onChange={e => { const copy = [...shapes]; copy[index].sides[i].a = Number(e.target.value); setShapes(copy); }}
+                                className="flex-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-white px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600">
+                                {shape.nodes.map((_, j) => <option key={j} value={j}>Vertex {getJointLabel(index, j)}</option>)}
+                              </select>
+                              <select value={side.b}
+                                onChange={e => { const copy = [...shapes]; copy[index].sides[i].b = Number(e.target.value); setShapes(copy); }}
+                                className="flex-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-white px-3 py-1 focus:outline-none border border-transparent dark:border-gray-600">
+                                {shape.nodes.map((_, j) => <option key={j} value={j}>Vertex {getJointLabel(index, j)}</option>)}
+                              </select>
+                              <button onClick={() => { const copy = [...shapes]; copy[index].sides.splice(i, 1); setShapes(copy); }}
+                                className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition font-semibold">
 
-        {axisType === "Custom" && axisX !== undefined && axisY !== undefined && (() => {
-          const p = map(axisX, axisY);
+                                –</button>
+                            </div>
+                          ))}
+                          <button onClick={() => {
+                            if (shape.nodes.length < 2) return;
+                            const copy = [...shapes]; copy[index].sides.push({ a: 0, b: 1 }); setShapes(copy);
+                          }} className="bg-[#008409] text-white px-3 py-1 rounded-md shadow hover:bg-[#15711b] transition text-sm">+ Add Side</button>
+                        </div>
+                      </div>
+                    )}
 
-          return (
-            <g>
-              <line
-                x1={0}
-                y1={p.y}
-                x2={SIZE}
-                y2={p.y}
-                stroke="#ef4444"
-                strokeWidth={3}
-                strokeDasharray="12 8"
-              />
+                    {isCircular && (
+                      <CircularInputs
+                        radius={shape.radius} x={shape.x} y={shape.y}
+                        onRadiusChange={val => { const copy = [...shapes]; copy[index].radius = val; setShapes(copy); }}
+                        onXChange={val => { const copy = [...shapes]; copy[index].x = val; setShapes(copy); }}
+                        onYChange={val => { const copy = [...shapes]; copy[index].y = val; setShapes(copy); }}
+                      />
+                    )}
 
-              <line
-                x1={p.x}
-                y1={0}
-                x2={p.x}
-                y2={SIZE}
-                stroke="#2563eb"
-                strokeWidth={3}
-                strokeDasharray="12 8"
-              />
+                    <button onClick={handleAddShape}
+                      className="w-full bg-[#008409] text-white px-3 py-1 rounded-lg hover:bg-[#15711b] transition">
+                      + Add Shape
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
-              <circle
-                cx={p.x}
-                cy={p.y}
-                r={10}
-                fill="#111827"
-              />
+          {/* Calculate Button */}
+          {/* How to Use Button */}
+          <button onClick={() => setShowHowTo(true)}
+            className="w-full bg-[#008409] text-white px-1 -py-1 rounded-lg hover:bg-[#15711b] transition text-lg font-semibold">
+            How to Use
+          </button>
 
-              <text
-                x={p.x + 18}
-                y={p.y - 18}
-                fontSize="26"
-                fontWeight="bold"
-                fill="#111827"
-              >
-                ({axisX}, {axisY})
-              </text>
-            </g>
-          );
-        })()}
+          {/* Calculate Button */}
+          <button onClick={calculateResultant}
+            className="w-full bg-[#1848a0] text-white px-3 py-2 rounded-lg hover:bg-[#163d8a] transition text-lg font-semibold">
+            Calculate
+          </button>
 
-      </svg>
-    </div>
+          {/* Quick Results Panel */}
+          {result && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 w-full">
+              <h3 className="font-semibold mb-3 text-blue-900 dark:text-blue-400">Quick Results</h3>
+
+              {/* Total Area — full width */}
+              <div className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2 mb-2">
+                <div className="text-[10px] text-gray-500 dark:text-gray-400">Total Area</div>
+                <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{formatNumber(result.centroid.totalArea)}</div>
+              </div>
+
+              {/* Centroid X and Y — side by side */}
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                {[
+                  ["Centroid X̄", `${formatNumber(result.centroid.centroidX)}`],
+                  ["Centroid Ȳ", `${formatNumber(result.centroid.centroidY)}`],
+                ].map(([label, val]) => (
+                  <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400">{label}</div>
+                    <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
+                  </div>
+                ))}
+              </div>
+
+              <hr className="my-2 border-gray-200 dark:border-gray-600" />
+
+              {/* Ix and Iy centroidal — side by side */}
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ["Ix (centroid)", `${formatNumber(result.centroidMOI.Ix)}`],
+                  ["Iy (centroid)", `${formatNumber(result.centroidMOI.Iy)}`],
+                ].map(([label, val]) => (
+                  <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400">{label}</div>
+                    <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Custom axis results */}
+              {axisType === "Custom" && result.customMOI && (
+                <>
+                  <hr className="my-2 border-gray-200 dark:border-gray-600" />
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-2">About Custom Axis</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      ["Ix (custom)", `${formatNumber(result.customMOI.Ix)}`],
+                      ["Iy (custom)", `${formatNumber(result.customMOI.Iy)}`],
+                    ].map(([label, val]) => (
+                      <div key={label} className="bg-blue-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400">{label}</div>
+                        <div className="text-sm font-bold text-[#1848a0] dark:text-blue-400">{val}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Solution Display */}
+          {result && stepLines.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 w-full">
+              <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Step-by-Step Solution</h3>
+              </div>
+              <div className="px-4 py-4">
+                <button
+                  onClick={() => {
+                    setStatus("generating");
+                    const payload = { lines: stepLines, resultRows, shapes };
+                    const encoded = encodeURIComponent(JSON.stringify(payload));
+                    window.open(`/print/moi?data=${encoded}`, "_blank");
+                    setStatus("done");
+                    setTimeout(() => setStatus("idle"), 2500);
+                  }}
+                  disabled={off}
+                  className={`w-full mb-4 py-3 rounded-xl font-semibold text-white transition ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"}`}
+                >
+                  {labels[status]}
+                </button>
+                <MOIStepRenderer lines={stepLines} />
+              </div>
+            </div>
+          )}
+
+        </div>
+      </main>
+
+      <Footer />
+
+      {/* How to Use Modal — moved here so nothing overlaps it */}
+      {showHowTo && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
+          onClick={() => setShowHowTo(false)}>
+          <div className="relative max-w-2xl w-full mx-4 max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowHowTo(false)}
+              className="absolute -top-3 -right-3 z-10 bg-white dark:bg-gray-800 text-black dark:text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-lg font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+              ✕
+            </button>
+            <img
+              src="/EX.png"
+              alt="How to Use"
+              className="w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
+    </div> 
   );
 }

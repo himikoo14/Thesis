@@ -397,7 +397,7 @@ export default function DistributedLoadPage() {
     <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
       <Header />
 
-      {/* How to Use Modal */} 
+      {/* How to Use Modal */}
       {showHowTo && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
           onClick={() => setShowHowTo(false)}>
@@ -430,6 +430,15 @@ export default function DistributedLoadPage() {
             axisX={Number(axisX)}
             axisY={Number(axisY)}
           />
+          {/* ADD THIS */}
+          <p className="text-sm text-center -mt-5 mb-2">
+            <button
+              onClick={() => setShowHowTo(true)}
+              className="font-sans text-[#1848a0] dark:text-blue-400 underline underline-offset-2 hover:text-[#163d8a] dark:hover:text-blue-300 transition font-medium"
+            >
+              How to Use Calculator
+            </button>
+          </p>
 
           <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
             <span className="font-semibold">Note:</span> The most lower left point of the composite shape should be at (0,0).
@@ -470,13 +479,6 @@ export default function DistributedLoadPage() {
               </div>
 
               {/* How to Use Button */}
-              <div className="mt-4">
-                <button onClick={() => setShowHowTo(true)}
-                  className="w-full bg-[#008409] text-white py-1 rounded-lg hover:bg-[#15711b] transition text-[18px]">
-                  How to Use
-                </button>
-              </div>
-
               {/* Calculate Button */}
               <div className="mt-2">
                 <button onClick={calculateResultant}
@@ -698,6 +700,15 @@ export default function DistributedLoadPage() {
             axisX={Number(axisX)}
             axisY={Number(axisY)}
           />
+          {/* ADD THIS */}
+          <p className="text-sm text-center -mt-8 mb-5">
+            <button
+              onClick={() => setShowHowTo(true)}
+              className="text-[#1848a0] dark:text-blue-400 underline hover:text-[#163d8a] dark:hover:text-blue-300 transition"
+            >
+              How to Use Calculator
+            </button>
+          </p>
 
           <p className="text-sm text-gray-700 dark:text-gray-300 -mt-6">
             <span className="font-semibold">Note:</span> The most lower left point of the composite shape should be at (0,0). <br /> Divide the composite shape into simple shapes, then enter the dimensions and location of each shape.
@@ -844,10 +855,7 @@ export default function DistributedLoadPage() {
 
           {/* Calculate Button */}
           {/* How to Use Button */}
-          <button onClick={() => setShowHowTo(true)}
-            className="w-full bg-[#008409] text-white px-1 -py-1 rounded-lg hover:bg-[#15711b] transition text-lg font-semibold">
-           How to Use 
-          </button>
+
 
           {/* Calculate Button */}
           <button onClick={calculateResultant}
@@ -945,6 +953,26 @@ export default function DistributedLoadPage() {
       </main>
 
       <Footer />
-    </div>
+
+      {/* How to Use Modal — moved here so nothing overlaps it */}
+      {showHowTo && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
+          onClick={() => setShowHowTo(false)}>
+          <div className="relative max-w-2xl w-full mx-4 max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowHowTo(false)}
+              className="absolute -top-3 -right-3 z-10 bg-white dark:bg-gray-800 text-black dark:text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-lg font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+              ✕
+            </button>
+            <img
+              src="/EX.png"
+              alt="How to Use"
+              className="w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
+    </div> 
   );
 }
