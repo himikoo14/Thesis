@@ -76,7 +76,7 @@ export default function Resultant2D() {
 
             <main className="flex-grow flex flex-col items-center px-4 py-10">
                 <h1 className="text-[32px] font-bold mb-2 text-center text-gray-900 dark:text-white">
-                    Resultant of Coplanar Forces
+                    Resultant of Concurrent Forces in 2D
                 </h1>
                 <p className="text-gray-500 dark:text-gray-400 mb-8 text-center">
                     Procedure for Solving the Resultant of a Two-Dimensional Force System

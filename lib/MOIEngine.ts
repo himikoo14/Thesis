@@ -126,10 +126,10 @@ export function computeMOI(shapes: ShapeData[]) {
       Cy += d;
       Ix = I_parallel;
       Iy = I_perp;
-} else if (shape.type === "Semi-circle-2") {
-  Cy -= d;
-  Ix = I_parallel;
-  Iy = I_perp;
+    } else if (shape.type === "Semi-circle-2") {
+      Cy -= d;
+      Ix = I_parallel;
+      Iy = I_perp;
 
     } else if (shape.type === "Semi-circle-3") {
       // Flat right, curves left → centroid shifts left
@@ -177,7 +177,22 @@ export function computeMOI(shapes: ShapeData[]) {
 
   function getFormulas(shape: ShapeData, r: number): { Ix_formula: string | null; Iy_formula: string | null } {
     if (shape.type === "Polygon") {
-      const pts = shape.nodes.map(p => ({ x: Number(p.x), y: Number(p.y) }));
+      const pts = shape.nodes
+        .map(p => ({ x: Number(p.x), y: Number(p.y) }))
+        .filter(p => !isNaN(p.x) && !isNaN(p.y));
+
+      if (pts.length === 3) {
+        const xs = pts.map(p => p.x);
+        const ys = pts.map(p => p.y);
+        const b = Math.max(...xs) - Math.min(...xs);
+        const h = Math.max(...ys) - Math.min(...ys);
+        return {
+          Ix_formula: `\\dfrac{${fmtR(b)}(${fmtR(h)})^3}{36}`,
+          Iy_formula: `\\dfrac{(${fmtR(b)})^3 ${fmtR(h)}}{36}`,
+        };
+      }
+
+      // Rectangle or other polygon — use bh³/12
       const xs = pts.map(p => p.x);
       const ys = pts.map(p => p.y);
       const b = Math.max(...xs) - Math.min(...xs);
@@ -195,19 +210,19 @@ export function computeMOI(shapes: ShapeData[]) {
       };
     }
 
-if (shape.type === "Semi-circle-1" || shape.type === "Semi-circle-2") {
-  return {
-    Ix_formula: `\\left(\\dfrac{\\pi}{8} - \\dfrac{8}{9\\pi}\\right)(${fmtR(r)})^4`,
-    Iy_formula: `\\dfrac{\\pi (${fmtR(r)})^4}{8}`,
-  };
-}
+    if (shape.type === "Semi-circle-1" || shape.type === "Semi-circle-2") {
+      return {
+        Ix_formula: `\\left(\\dfrac{\\pi}{8} - \\dfrac{8}{9\\pi}\\right)(${fmtR(r)})^4`,
+        Iy_formula: `\\dfrac{\\pi (${fmtR(r)})^4}{8}`,
+      };
+    }
 
-if (shape.type === "Semi-circle-3" || shape.type === "Semi-circle-4") {
-  return {
-    Ix_formula: `\\dfrac{\\pi (${fmtR(r)})^4}{8}`,
-    Iy_formula: `\\left(\\dfrac{\\pi}{8} - \\dfrac{8}{9\\pi}\\right)(${fmtR(r)})^4`,
-  };
-}
+    if (shape.type === "Semi-circle-3" || shape.type === "Semi-circle-4") {
+      return {
+        Ix_formula: `\\dfrac{\\pi (${fmtR(r)})^4}{8}`,
+        Iy_formula: `\\left(\\dfrac{\\pi}{8} - \\dfrac{8}{9\\pi}\\right)(${fmtR(r)})^4`,
+      };
+    }
 
 
     if (shape.type.startsWith("Quarter")) {
@@ -300,9 +315,9 @@ if (shape.type === "Semi-circle-3" || shape.type === "Semi-circle-4") {
     const dx = r.Cx - centroidX;
     const dy = r.Cy - centroidY;
 
-const sign = step1[index].hollow === "Hollow" ? -1 : 1;
-const Ix_transferred = r.Ix + sign * Math.abs(r.A) * dy * dy;
-const Iy_transferred = r.Iy + sign * Math.abs(r.A) * dx * dx;
+    const sign = step1[index].hollow === "Hollow" ? -1 : 1;
+    const Ix_transferred = r.Ix + sign * Math.abs(r.A) * dy * dy;
+    const Iy_transferred = r.Iy + sign * Math.abs(r.A) * dx * dx;
 
     Ix_final += Ix_transferred;
     Iy_final += Iy_transferred;
