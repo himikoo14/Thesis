@@ -399,9 +399,9 @@ export default function DistributedLoadPage() {
 
       {/* How to Use Modal */}
       {showHowTo && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
-          onClick={() => setShowHowTo(false)}>
-          <div className="relative max-w-2xl w-full mx-4 max-h-[90vh]"
+        <div className="hidden sm:flex fixed inset-0 z-[9999] items-center justify-center bg-black/50"
+         onClick={() => setShowHowTo(false)}>
+          <div className="relative max-w-5xl w-full mx-4 max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setShowHowTo(false)}
@@ -956,7 +956,7 @@ export default function DistributedLoadPage() {
 
       {/* How to Use Modal — moved here so nothing overlaps it */}
       {showHowTo && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
+        <div className="fixed inset-0 z-[9999] sm:hidden flex items-center justify-center bg-black/50"
           onClick={() => setShowHowTo(false)}>
           <div className="relative max-w-2xl w-full mx-4 max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}>
@@ -966,13 +966,13 @@ export default function DistributedLoadPage() {
               ✕
             </button>
             <img
-              src="/EX.png"
+              src="/EX1.png"
               alt="How to Use"
               className="w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
             />
           </div>
         </div>
       )}
-    </div> 
+    </div>
   );
 }

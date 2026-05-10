@@ -70,6 +70,7 @@ function KTX({ tex }: { tex: string }) {
   return <div ref={ref} className="my-0.5 overflow-x-auto dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white" />;
 }
 
+
 /* ===================== LOCAL TYPES ===================== */
 type GenericObject = Record<string, any>;
 
@@ -432,6 +433,7 @@ export default function TrussSolverUI() {
   const [forces, setForces] = useState<Force[]>([{ Joint: 0, magnitude: "", angle: "" }]);
   const [solution, setSolution] = useState<Solution | null>(null);
   const [isDark, setIsDark] = useState(false);
+  const [showHowTo, setShowHowTo] = useState(false);
 
   // Detect dark mode
   useEffect(() => {
@@ -498,10 +500,22 @@ export default function TrussSolverUI() {
         <h1 className="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-white">Truss Calculator</h1>
         <h2 className="text-xl font-semibold text-center mb-6 text-gray-700 dark:text-gray-300">Real-Time Free Body Diagram</h2>
 
+
         {/* FBD canvas */}
         <div className="relative rounded-xl shadow h-[420px] mb-8 overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
           <MainFBD numericNodes={numericNodes} members={members} supports={supports} forces={forces} solution={solution} allNodes={allNodes} isDark={isDark} />
         </div>
+
+        {/* ADD THIS */}
+        <p className="text-sm text-center -mt-4 mb-4">
+          <button
+            onClick={() => setShowHowTo(true)}
+            className="font-sans text-[#1848a0] dark:text-blue-400 underline underline-offset-2 hover:text-[#163d8a] dark:hover:text-blue-300 transition font-medium"
+          >
+            How to Use Calculator
+          </button>
+        </p>
+
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 
@@ -684,11 +698,21 @@ export default function TrussSolverUI() {
         <h1 className="text-2xl font-bold text-center mb-1 text-gray-900 dark:text-white -mt-3">Truss Calculator</h1>
         <h2 className="text-base font-semibold text-center mb-4 text-gray-700 dark:text-gray-300">Real-Time Free Body Diagram</h2>
 
+
         {/* FBD canvas */}
         <div className="relative rounded-xl shadow h-[250px] mb-6 overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
           <MainFBD numericNodes={numericNodes} members={members} supports={supports} forces={forces} solution={solution} allNodes={allNodes} isDark={isDark} />
         </div>
 
+        {/* ADD THIS */}
+        <p className="text-sm text-center -mt-2 mb-4">
+          <button
+            onClick={() => setShowHowTo(true)}
+            className="text-[#1848a0] dark:text-blue-400 underline hover:text-[#163d8a] dark:hover:text-blue-300 transition"
+          >
+            How to Use Calculator
+          </button>
+        </p>
         <div className="flex flex-col gap-4 mb-6">
 
           {/* Supports */}
@@ -868,7 +892,32 @@ export default function TrussSolverUI() {
       </main>
 
       <Footer />
-    </section>
 
+      {/* ADD THIS — How to Use Modal */}
+      {showHowTo && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
+          onClick={() => setShowHowTo(false)}
+        >
+          <div
+            className="relative max-w-2xl w-full mx-4 max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowHowTo(false)}
+              className="absolute -top-3 -right-3 z-10 bg-white dark:bg-gray-800 text-black dark:text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-lg font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            >
+              ✕
+            </button>
+            <img
+              src="/TRUSS.png"
+              alt="How to Use"
+              className="w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
+
+    </section>
   );
-}
+} 

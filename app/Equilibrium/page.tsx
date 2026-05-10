@@ -403,6 +403,8 @@ function EquilibriumContent() {
   const [solution, setSolution] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
+  const [showHowTo, setShowHowTo] = useState(false); // ← ADD THIS
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const activeTab = (searchParams.get("tab") as "concurrent" | "nonconcurrent") || "concurrent";
@@ -470,6 +472,16 @@ function EquilibriumContent() {
               <h2 className="text-[18px] font-semibold text-center mb-2">Unknown Forces and Angles Calculator</h2>
               <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Real-Time Free Body Diagram</p>
               <FBD forces={forces} setForces={setForces} />
+              <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Drag arrows to change angles</p>
+              {/* ADD THIS */}
+              <p className="text-sm text-center mt-1">
+                <button
+                  onClick={() => setShowHowTo(true)}
+                  className="text-[#1848a0] dark:text-blue-400 underline hover:text-[#163d8a] dark:hover:text-blue-300 transition"
+                >
+                  How to Use Calculator
+                </button>
+              </p>
               <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Drag arrows to change angles</p>
             </div>
 
@@ -626,6 +638,16 @@ function EquilibriumContent() {
               <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Real-Time Free Body Diagram</p>
               <FBD forces={forces} setForces={setForces} />
               <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Drag arrows to change angles</p>
+              {/* ADD THIS */}
+              <p className="text-sm text-center mt-1">
+                <button
+                  onClick={() => setShowHowTo(true)}
+                  className="font-sans text-[#1848a0] dark:text-blue-400 underline underline-offset-2 hover:text-[#163d8a] dark:hover:text-blue-300 transition font-medium"
+                >
+                  How to Use Calculator
+                </button>
+              </p>
+              <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Drag arrows to change angles</p>
             </div>
 
             {/* Note */}
@@ -762,8 +784,34 @@ function EquilibriumContent() {
         )}
       </div>
 
-      <Footer />
-    </div>
+<Footer />
+
+      {/* ADD THIS — How to Use Modal */}
+      {showHowTo && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
+          onClick={() => setShowHowTo(false)}
+        >
+          <div
+            className="relative max-w-2xl w-full mx-4 max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowHowTo(false)}
+              className="absolute -top-3 -right-3 z-10 bg-white dark:bg-gray-800 text-black dark:text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-lg font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            >
+              ✕
+            </button>
+            <img
+              src="/2D EQUI.png"
+              alt="How to Use"
+              className="w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
+
+    </div> 
   );
 }
 export default function Equilibrium() {
