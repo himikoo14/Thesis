@@ -482,7 +482,6 @@ function EquilibriumContent() {
                   How to Use Calculator
                 </button>
               </p>
-              <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Drag arrows to change angles</p>
             </div>
 
             {/* Note */}
@@ -647,7 +646,6 @@ function EquilibriumContent() {
                   How to Use Calculator
                 </button>
               </p>
-              <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Drag arrows to change angles</p>
             </div>
 
             {/* Note */}
