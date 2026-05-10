@@ -71,7 +71,8 @@ function attachOrbit(canvas: HTMLElement, state: any) {
     const onWheel = (e: WheelEvent) => {
         e.preventDefault();
         state.radius = Math.max(3, Math.min(16, state.radius + e.deltaY * 0.012));
-    }; const onTouchStart = (e: TouchEvent) => {
+    };
+    const onTouchStart = (e: TouchEvent) => {
         if (e.touches.length === 1) { state.isDragging = true; state.prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
     };
     const onTouchEnd = () => { state.isDragging = false; };
@@ -83,7 +84,8 @@ function attachOrbit(canvas: HTMLElement, state: any) {
         state.prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     };
     canvas.addEventListener("mousedown", onDown);
-    canvas.addEventListener("wheel", onWheel as any, { passive: false }); canvas.addEventListener("touchstart", onTouchStart, { passive: true });
+    canvas.addEventListener("wheel", onWheel as any, { passive: false });
+    canvas.addEventListener("touchstart", onTouchStart, { passive: true });
     canvas.addEventListener("touchend", onTouchEnd);
     canvas.addEventListener("touchmove", onTouchMove, { passive: false });
     window.addEventListener("mousemove", onMove);
@@ -106,7 +108,6 @@ function buildForceObjects(
     labelsRef: React.MutableRefObject<CSS2DObject[]>,
     darkMode: boolean
 ) {
-    // Clear old
     arrowsRef.current.forEach(a => scene.remove(a));
     arrowsRef.current = [];
     labelsRef.current.forEach(l => scene.remove(l));
@@ -140,18 +141,42 @@ function buildForceObjects(
 
         const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.7 });
 
-        const makeLabel = (text: string, pos: THREE.Vector3) => {
+        /**
+         * makeLabel — pill-style label with a translucent background tinted
+         * to the force colour, so it reads cleanly against any scene bg.
+         *
+         * Layout:  ┌──────────────┐
+         *          │  text here   │   ← 11 px mono, bold, force colour
+         *          └──────────────┘
+         *
+         * The background is the force hex at 18 % opacity (dark) / 12 % opacity
+         * (light), giving just enough contrast without fighting the 3-D scene.
+         * A 1 px border at 35 % opacity sharpens the pill outline.
+         */
+        const makeLabel = (text: string, pos: THREE.Vector3, variant: "angle" | "force" = "angle") => {
+            const isForce = variant === "force";
+            const bgAlpha = darkMode ? "2e" : "1a";         // ~18 % / ~10 %
+            const borderAlpha = darkMode ? "59" : "40";     // ~35 % / ~25 %
+            const bg = `${hexColor}${bgAlpha}`;
+            const border = `${hexColor}${borderAlpha}`;
+
             const div = document.createElement("div");
             div.textContent = text;
-            // AFTER
-            div.style.cssText = `
-  color: ${hexColor};
-  font-size: 11px;
-  font-weight: 700;
-  font-family: monospace;
-  white-space: nowrap;
-  pointer-events: none;
-`;
+            div.style.cssText = [
+                `color: ${hexColor}`,
+                `background: ${bg}`,
+                `border: 1px solid ${border}`,
+                `border-radius: ${isForce ? "5px" : "4px"}`,
+                `padding: ${isForce ? "2px 6px" : "1px 5px"}`,
+                `font-size: ${isForce ? "11px" : "10px"}`,
+                `font-weight: 600`,
+                `font-family: ui-monospace, monospace`,
+                `white-space: nowrap`,
+                `pointer-events: none`,
+                `line-height: 1.4`,
+                `letter-spacing: 0.01em`,
+            ].join("; ");
+
             const obj = new CSS2DObject(div);
             obj.position.copy(pos);
             scene.add(obj);
@@ -172,7 +197,7 @@ function buildForceObjects(
             const midAz = azR / 2;
             makeLabel(`φ=${az.toFixed(1)}°`, new THREE.Vector3(
                 (arcR + 0.25) * Math.cos(midAz), 0.15, (arcR + 0.25) * Math.sin(midAz)
-            ));
+            ), "angle");
         }
 
         // ── Elevation arc + label ──
@@ -195,7 +220,7 @@ function buildForceObjects(
                 (arcR + 0.25) * Math.cos(midEl) * Math.cos(azR),
                 (arcR + 0.25) * Math.sin(midEl) + 0.1,
                 (arcR + 0.25) * Math.cos(midEl) * Math.sin(azR)
-            ));
+            ), "angle");
         }
 
         // ── Force label at tip ──
@@ -204,21 +229,9 @@ function buildForceObjects(
             len * Math.sin(elR),
             len * Math.cos(elR) * Math.sin(azR)
         );
-        makeLabel(`F${i + 1}=${m} kN`, tipPos);
+        makeLabel(`F${i + 1} = ${m} kN`, tipPos, "force");
 
-        // ── XZ projection line ──
-        const projLen = len * Math.cos(elR);
-        const projVec = new THREE.Vector3(Math.cos(azR) * projLen, 0, Math.sin(azR) * projLen);
-        scene.add(new THREE.Line(
-            new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), projVec]),
-            new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.3 })
-        ));
 
-        // ── Vertical line from projection to tip ──
-        scene.add(new THREE.Line(
-            new THREE.BufferGeometry().setFromPoints([projVec, tipPos]),
-            new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.3 })
-        ));
     });
 }
 
@@ -227,7 +240,7 @@ function buildForceObjects(
 ================================================================ */
 type FBD3DProps = {
     forces: Force3D[];
-    height?: string;         // e.g. "300px" — default "260px sm:300px"
+    height?: string;
     showResultant?: boolean;
     resultant?: { sumFx: number; sumFy: number; sumFz: number; R: number };
 };
@@ -247,7 +260,6 @@ export default function FBD3DComponent({ forces, height, showResultant = false, 
     const orbitRef = useRef({ theta: -0.6, phi: 0.85, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } });
     const darkMode = useDarkMode();
 
-    // Mount once
     useEffect(() => {
         const el = mountRef.current!;
         const W = el.clientWidth, H = el.clientHeight;
@@ -294,7 +306,6 @@ export default function FBD3DComponent({ forces, height, showResultant = false, 
         };
     }, []);
 
-    // Dark mode reactive
     useEffect(() => {
         const scene = sceneRef.current;
         if (!scene) return;
@@ -308,18 +319,14 @@ export default function FBD3DComponent({ forces, height, showResultant = false, 
                 (child.material as THREE.MeshBasicMaterial).color.set(darkMode ? 0xffffff : 0x333333);
             }
         });
-        // Rebuild labels with new dark mode colors
-        const scene2 = sceneRef.current!;
-        buildForceObjects(scene2, forces, arrowsRef, labelsRef, darkMode);
+        buildForceObjects(scene, forces, arrowsRef, labelsRef, darkMode);
     }, [darkMode]);
 
-    // Update forces
     useEffect(() => {
         const scene = sceneRef.current;
         if (!scene) return;
         buildForceObjects(scene, forces, arrowsRef, labelsRef, darkMode);
 
-        // Add resultant arrow if needed
         if (showResultant && resultant && resultant.R > 0.001) {
             const rv = new THREE.Vector3(resultant.sumFx, resultant.sumFz, resultant.sumFy);
             const maxMag = Math.max(1, ...forces.map(f => parseFloat(f.magnitude) || 0), resultant.R);
