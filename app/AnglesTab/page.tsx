@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import * as THREE from "three";
+import FBD3DComponent from "../../components/FBD3D";
 
 /* ================================================================
    DARK MODE HOOK — reactive to toggle
@@ -83,249 +84,6 @@ class ForceSystem3D {
     }
     return { steps, sumFx, sumFy, sumFz, R, azimuth, elevation };
   }
-}
-
-/* ================================================================
-   THREE.JS HELPERS
-================================================================ */
-const FORCE_COLORS = [0x1848a0, 0xd63031, 0xe17055, 0x6c5ce7, 0x00b894, 0xfdcb6e];
-
-function buildBaseScene(dark: boolean) {
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(dark ? 0x1f2937 : 0xffffff);
-  scene.add(new THREE.GridHelper(6, 12, dark ? 0x4b5563 : 0xdddddd, dark ? 0x374151 : 0xeeeeee));
-  const axLen = 3;
-  const mkAxis = (a: THREE.Vector3, b: THREE.Vector3, c: number) =>
-    new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([a, b]),
-      new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.6 })
-    );
-  scene.add(mkAxis(new THREE.Vector3(-axLen, 0, 0), new THREE.Vector3(axLen, 0, 0), 0xff4444));
-  scene.add(mkAxis(new THREE.Vector3(0, -axLen, 0), new THREE.Vector3(0, axLen, 0), 0x2266ff));
-  scene.add(mkAxis(new THREE.Vector3(0, 0, -axLen), new THREE.Vector3(0, 0, axLen), 0x22bb44));
-  scene.add(new THREE.Mesh(
-    new THREE.SphereGeometry(0.07, 16, 16),
-    new THREE.MeshBasicMaterial({ color: dark ? 0xffffff : 0x333333 })
-  ));
-  scene.add(new THREE.AmbientLight(0xffffff, 1));
-  return scene;
-}
-
-function attachOrbit(canvas: HTMLElement, state: any) {
-  const onDown = (e: MouseEvent) => { state.isDragging = true; state.prevMouse = { x: e.clientX, y: e.clientY }; };
-  const onUp = () => { state.isDragging = false; };
-  const onMove = (e: MouseEvent) => {
-    if (!state.isDragging) return;
-    state.theta -= (e.clientX - state.prevMouse.x) * 0.012;
-    state.phi = Math.max(0.15, Math.min(Math.PI - 0.15, state.phi + (e.clientY - state.prevMouse.y) * 0.012));
-    state.prevMouse = { x: e.clientX, y: e.clientY };
-  };
-  const onWheel = (e: WheelEvent) => { state.radius = Math.max(3, Math.min(16, state.radius + e.deltaY * 0.012)); };
-
-  // Touch support
-  const onTouchStart = (e: TouchEvent) => {
-    if (e.touches.length === 1) {
-      state.isDragging = true;
-      state.prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    }
-  };
-  const onTouchEnd = () => { state.isDragging = false; };
-  const onTouchMove = (e: TouchEvent) => {
-    if (!state.isDragging || e.touches.length !== 1) return;
-    e.preventDefault();
-    state.theta -= (e.touches[0].clientX - state.prevMouse.x) * 0.012;
-    state.phi = Math.max(0.15, Math.min(Math.PI - 0.15, state.phi + (e.touches[0].clientY - state.prevMouse.y) * 0.012));
-    state.prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  };
-
-  canvas.addEventListener("mousedown", onDown);
-  canvas.addEventListener("wheel", onWheel as any, { passive: true });
-  canvas.addEventListener("touchstart", onTouchStart, { passive: true });
-  canvas.addEventListener("touchend", onTouchEnd);
-  canvas.addEventListener("touchmove", onTouchMove, { passive: false });
-  window.addEventListener("mousemove", onMove);
-  window.addEventListener("mouseup", onUp);
-
-  return () => {
-    canvas.removeEventListener("mousedown", onDown);
-    canvas.removeEventListener("wheel", onWheel as any);
-    canvas.removeEventListener("touchstart", onTouchStart);
-    canvas.removeEventListener("touchend", onTouchEnd);
-    canvas.removeEventListener("touchmove", onTouchMove);
-    window.removeEventListener("mousemove", onMove);
-    window.removeEventListener("mouseup", onUp);
-  };
-}
-
-/* ================================================================
-   FBD3D — live canvas with reactive dark mode
-================================================================ */
-function FBD3D({ forces }: { forces: any[] }) {
-  const mountRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const rendRef = useRef<THREE.WebGLRenderer | null>(null);
-  const arrowsRef = useRef<THREE.ArrowHelper[]>([]);
-  const orbitRef = useRef({ theta: -0.6, phi: 0.85, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } });
-  const darkMode = useDarkMode();
-
-  // Mount once
-  useEffect(() => {
-    const el = mountRef.current!;
-    const W = el.clientWidth, H = el.clientHeight;
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(W, H);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    el.appendChild(renderer.domElement);
-    rendRef.current = renderer;
-
-    const scene = buildBaseScene(darkMode);
-    sceneRef.current = scene;
-
-    const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
-    const orbit = orbitRef.current;
-    let raf: number;
-    const animate = () => {
-      raf = requestAnimationFrame(animate);
-      camera.position.set(
-        orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta),
-        orbit.radius * Math.cos(orbit.phi),
-        orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta)
-      );
-      camera.lookAt(0, 0, 0);
-      renderer.render(scene, camera);
-    };
-    animate();
-    const cleanup = attachOrbit(renderer.domElement, orbit);
-    return () => { cancelAnimationFrame(raf); cleanup(); renderer.dispose(); if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement); };
-  }, []);
-
-  // React to dark mode toggle
-  useEffect(() => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-    (scene.background as THREE.Color).set(darkMode ? 0x1f2937 : 0xffffff);
-    scene.children.forEach(child => {
-      if (child instanceof THREE.GridHelper) {
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((m: any) => m.color?.set(darkMode ? 0x4b5563 : 0xdddddd));
-      }
-      if (child instanceof THREE.Mesh && child.geometry instanceof THREE.SphereGeometry) {
-        (child.material as THREE.MeshBasicMaterial).color.set(darkMode ? 0xffffff : 0x333333);
-      }
-    });
-  }, [darkMode]);
-
-  // Update arrows when forces change
-  useEffect(() => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-    arrowsRef.current.forEach(a => scene.remove(a));
-    arrowsRef.current = [];
-    const maxMag = Math.max(1, ...forces.map(f => parseFloat(f.magnitude) || 0));
-    const scale = 2.5 / maxMag;
-    forces.forEach((f, i) => {
-      const m = parseFloat(f.magnitude), az = parseFloat(f.azimuth), el = parseFloat(f.elevation);
-      if (isNaN(m) || isNaN(az) || isNaN(el) || m === 0) return;
-      const azR = az * Math.PI / 180, elR = el * Math.PI / 180;
-      const vec = new THREE.Vector3(m * Math.cos(elR) * Math.cos(azR), m * Math.sin(elR), m * Math.cos(elR) * Math.sin(azR));
-      const arr = new THREE.ArrowHelper(vec.clone().normalize(), new THREE.Vector3(0, 0, 0), m * scale, FORCE_COLORS[i % FORCE_COLORS.length], m * scale * 0.2, m * scale * 0.12);
-      scene.add(arr);
-      arrowsRef.current.push(arr);
-    });
-  }, [forces]);
-
-  return (
-    <div className="relative w-full h-[260px] sm:h-[300px] rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden mt-2">
-      <div ref={mountRef} className="w-full h-full cursor-grab" />
-      <div className="absolute top-2 left-2.5 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 pointer-events-none font-mono">
-        <span className="text-[#ff4444]">■</span> X &nbsp;
-        <span className="text-[#22bb44]">■</span> Y &nbsp;
-        <span className="text-[#2266ff]">■</span> Z
-      </div>
-      <div className="absolute bottom-2 right-2.5 text-[10px] text-gray-400 pointer-events-none">
-        Drag to rotate · Scroll to zoom
-      </div>
-    </div>
-  );
-}
-
-/* ================================================================
-   RESULTANT FBD3D — with reactive dark mode
-================================================================ */
-function ResultantFBD3D({ forces, result }: { forces: any[]; result: any }) {
-  const mountRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const darkMode = useDarkMode();
-
-  useEffect(() => {
-    const el = mountRef.current;
-    if (!el) return;
-    const W = el.clientWidth, H = el.clientHeight;
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(W, H);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    el.appendChild(renderer.domElement);
-
-    const scene = buildBaseScene(darkMode);
-    sceneRef.current = scene;
-
-    const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 100);
-    const maxMag = Math.max(1, ...forces.map(f => parseFloat(f.magnitude) || 0), result.R);
-    const scale = 2.5 / maxMag;
-
-    forces.forEach((f, i) => {
-      const m = parseFloat(f.magnitude), az = parseFloat(f.azimuth), el = parseFloat(f.elevation);
-      if (isNaN(m) || isNaN(az) || isNaN(el) || m === 0) return;
-      const azR = az * Math.PI / 180, elR = el * Math.PI / 180;
-      const vec = new THREE.Vector3(m * Math.cos(elR) * Math.cos(azR), m * Math.sin(elR), m * Math.cos(elR) * Math.sin(azR));
-      scene.add(new THREE.ArrowHelper(vec.clone().normalize(), new THREE.Vector3(0, 0, 0), m * scale, FORCE_COLORS[i % FORCE_COLORS.length], m * scale * 0.2, m * scale * 0.12));
-    });
-    if (result.R > 0.001) {
-      const rv = new THREE.Vector3(result.sumFx, result.sumFz, result.sumFy);
-      scene.add(new THREE.ArrowHelper(rv.clone().normalize(), new THREE.Vector3(0, 0, 0), result.R * scale, 0x009900, result.R * scale * 0.2, result.R * scale * 0.12));
-    }
-
-    const orbit = { theta: -0.6, phi: 0.85, radius: 7, isDragging: false, prevMouse: { x: 0, y: 0 } };
-    let raf: number;
-    const animate = () => {
-      raf = requestAnimationFrame(animate);
-      camera.position.set(
-        orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta),
-        orbit.radius * Math.cos(orbit.phi),
-        orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta)
-      );
-      camera.lookAt(0, 0, 0);
-      renderer.render(scene, camera);
-    };
-    animate();
-    const cleanup = attachOrbit(renderer.domElement, orbit);
-    return () => { cancelAnimationFrame(raf); cleanup(); renderer.dispose(); if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement); };
-  }, [forces, result]);
-
-  // React to dark mode toggle
-  useEffect(() => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-    (scene.background as THREE.Color).set(darkMode ? 0x1f2937 : 0xffffff);
-    scene.children.forEach(child => {
-      if (child instanceof THREE.GridHelper) {
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((m: any) => m.color?.set(darkMode ? 0x4b5563 : 0xdddddd));
-      }
-    });
-  }, [darkMode]);
-
-  return (
-    <div className="relative w-full h-[260px] sm:h-[300px] rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden mt-2">
-      <div ref={mountRef} className="w-full h-full cursor-grab" />
-      <div className="absolute top-2 left-2.5 text-[11px] font-bold text-[#009900] pointer-events-none">
-        — Resultant (R)
-      </div>
-      <div className="absolute bottom-2 right-2.5 text-[10px] text-gray-400 pointer-events-none hidden sm:block">
-        Drag to rotate · Scroll to zoom
-      </div>
-    </div>
-  );
 }
 
 /* ================================================================
@@ -430,7 +188,6 @@ export default function AnglesTab() {
   return (
     <div className="flex flex-col items-center w-full" style={{ scrollbarGutter: "stable" }}>
 
-
       {/* Canvas */}
       <div className="w-full max-w-xl">
         <h2 className="text-[17px] sm:text-[18px] font-semibold text-center mb-2 text-gray-900 dark:text-white">
@@ -439,7 +196,8 @@ export default function AnglesTab() {
         <p className="text-[12px] sm:text-[13px] text-gray-500 dark:text-gray-400 text-center mb-3">
           Real-Time Free Body Diagram
         </p>
-        <FBD3D forces={forces} />
+        {/* ← REPLACED: was <FBD3D forces={forces} /> */}
+        <FBD3DComponent forces={forces} />
       </div>
 
       {/* Inputs */}
@@ -453,7 +211,6 @@ export default function AnglesTab() {
 
         {forces.map((f, i) => (
           <div key={i} className="mb-4 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
-            {/* On small screens: stack vertically. On sm+: 3-column grid */}
             <div className="flex flex-col sm:grid sm:grid-cols-3 gap-2 mb-2">
               <div>
                 <label className={labelCls}>Force {i + 1} (kN)</label>
@@ -491,13 +248,12 @@ export default function AnglesTab() {
           Calculate
         </button>
       </div>
+
       <div className="w-full max-w-xl">
-        {/* Results + Step-by-step */}
         {result && (
           <>
-            {/* ── WIDE SCREEN (sm+): stacked layout ── */}
+            {/* ── WIDE SCREEN (sm+) ── */}
             <div className="hidden sm:flex flex-col gap-4 mt-4 w-full max-w-xl">
-              {/* Top: result grid */}
               <div className={cardCls}>
                 <h3 className={h3Cls}>Results</h3>
                 <div className="grid grid-cols-2 gap-2 mb-3">
@@ -509,13 +265,11 @@ export default function AnglesTab() {
                   ))}
                 </div>
                 <button onClick={handleExportPDF} disabled={off}
-                  className={`w-full py-3 rounded-[10px] text-[14px] font-semibold text-white transition ${off ? "opacity-60 cursor-not-allowed bg-[#1848a0]" : "cursor-pointer bg-[#1848a0] hover:bg-[#163d8a]"
-                    }`}>
+                  className={`w-full py-3 rounded-[10px] text-[14px] font-semibold text-white transition ${off ? "opacity-60 cursor-not-allowed bg-[#1848a0]" : "cursor-pointer bg-[#1848a0] hover:bg-[#163d8a]"}`}>
                   {labels[status]}
                 </button>
               </div>
 
-              {/* Bottom: step-by-step */}
               <div className={cardCls}>
                 <h3 className={h3Cls}>Step-by-Step Solution</h3>
                 <div className="space-y-4">
@@ -532,7 +286,7 @@ export default function AnglesTab() {
               </div>
             </div>
 
-            {/* ── MOBILE (below sm): compact stacked ── */}
+            {/* ── MOBILE ── */}
             <div className="flex sm:hidden flex-col gap-3 mt-4 w-full max-w-xl">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-3">
                 <h3 className="text-[11px] font-semibold mb-2 text-gray-900 dark:text-white">Resultant Force</h3>
@@ -554,8 +308,7 @@ export default function AnglesTab() {
               </div>
 
               <button onClick={handleExportPDF} disabled={off}
-                className={`w-full rounded-lg px-3 py-2 font-semibold text-white transition text-[12px] ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"
-                  }`}>
+                className={`w-full rounded-lg px-3 py-2 font-semibold text-white transition text-[12px] ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"}`}>
                 {labels[status]}
               </button>
 
@@ -574,7 +327,12 @@ export default function AnglesTab() {
                 </div>
                 <div className="mt-3">
                   <p className="font-semibold text-[11px] mb-1.5 text-gray-900 dark:text-white">Final FBD</p>
-                  <ResultantFBD3D forces={forces} result={result} />
+                  {/* ← REPLACED: was <ResultantFBD3D forces={forces} result={result} /> */}
+                  <FBD3DComponent
+                    forces={forces}
+                    showResultant={true}
+                    resultant={{ sumFx: result.sumFx, sumFy: result.sumFy, sumFz: result.sumFz, R: result.R }}
+                  />
                 </div>
               </div>
             </div>
@@ -582,6 +340,5 @@ export default function AnglesTab() {
         )}
       </div>
     </div>
-
   );
 }

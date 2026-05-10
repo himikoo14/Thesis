@@ -1,196 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState, ReactNode } from "react";
-import * as THREE from "three";
-
-const DARK_BG = 0x1f2937;
-const LIGHT_BG = 0xffffff;
-
-function useDarkMode() {
-  const [dark, setDark] = useState(
-    typeof window !== "undefined" && document.documentElement.classList.contains("dark")
-  );
-  useEffect(() => {
-    const obs = new MutationObserver(() =>
-      setDark(document.documentElement.classList.contains("dark"))
-    );
-    obs.observe(document.documentElement, { attributeFilter: ["class"] });
-    return () => obs.disconnect();
-  }, []);
-  return dark;
-}
-
-function CoordThreeCanvas({ points, forces }: { points: any[]; forces: any[] }) {
-
-  const mountRef = useRef<HTMLDivElement>(null);
-  const dynamicGroupRef = useRef<THREE.Group | null>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const orbitRef = useRef({ theta: Math.PI * 1.25, phi: 0.65, r: 6, isDragging: false, prev: { x: 0, y: 0 } });
-  const rafRef = useRef(0);
-  const darkMode = useDarkMode();
-
-  useEffect(() => {
-    const el = mountRef.current;
-    if (!el) return;
-    const dark = document.documentElement.classList.contains("dark");
-    const W = el.clientWidth || 500, H = el.clientHeight || 260;
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setClearColor(dark ? DARK_BG : LIGHT_BG, 1);
-    renderer.setSize(W, H);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    el.appendChild(renderer.domElement);
-
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(dark ? DARK_BG : LIGHT_BG);
-    sceneRef.current = scene;
-
-    scene.add(new THREE.GridHelper(6, 12, dark ? 0x4b5563 : 0xdddddd, dark ? 0x374151 : 0xeeeeee));
-    scene.add(new THREE.HemisphereLight(0xffffff, 0xe0e0e0, 1.2));
-    scene.add(new THREE.Mesh(
-      new THREE.SphereGeometry(0.08, 24, 24),
-      new THREE.MeshStandardMaterial({ color: dark ? 0xd1d5db : 0x222222 })
-    ));
-
-    const axes: [number[], number][] = [
-      [[1, 0, 0], 0x2a9d8f],
-      [[0, 1, 0], 0x4361ee],
-      [[0, 0, 1], 0xe63946],
-    ];
-    axes.forEach(([dir, color]) => {
-      const [dx, dy, dz] = dir;
-      scene.add(new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(-dx * 2, -dy * 2, -dz * 2),
-          new THREE.Vector3(dx * 2, dy * 2, dz * 2),
-        ]),
-        new THREE.LineBasicMaterial({ color })
-      ));
-    });
-
-    const dynGroup = new THREE.Group();
-    scene.add(dynGroup);
-    dynamicGroupRef.current = dynGroup;
-
-    const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
-    const orbit = orbitRef.current;
-
-    const onDown = (e: MouseEvent) => { orbit.isDragging = true; orbit.prev = { x: e.clientX, y: e.clientY }; };
-    const onUp = () => { orbit.isDragging = false; };
-    const onMove = (e: MouseEvent) => {
-      if (!orbit.isDragging) return;
-      orbit.theta -= (e.clientX - orbit.prev.x) * 0.014;
-      orbit.phi = Math.max(0.12, Math.min(Math.PI - 0.12, orbit.phi + (e.clientY - orbit.prev.y) * 0.014));
-      orbit.prev = { x: e.clientX, y: e.clientY };
-    };
-    const onWheel = (e: WheelEvent) => { orbit.r = Math.max(3, Math.min(12, orbit.r + e.deltaY * 0.01)); };
-
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) { orbit.isDragging = true; orbit.prev = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }
-    };
-    const onTouchEnd = () => { orbit.isDragging = false; };
-    const onTouchMove = (e: TouchEvent) => {
-      if (!orbit.isDragging || e.touches.length !== 1) return;
-      e.preventDefault();
-      orbit.theta -= (e.touches[0].clientX - orbit.prev.x) * 0.014;
-      orbit.phi = Math.max(0.12, Math.min(Math.PI - 0.12, orbit.phi + (e.touches[0].clientY - orbit.prev.y) * 0.014));
-      orbit.prev = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    };
-
-    renderer.domElement.addEventListener("mousedown", onDown);
-    renderer.domElement.addEventListener("wheel", onWheel, { passive: true });
-    renderer.domElement.addEventListener("touchstart", onTouchStart, { passive: true });
-    renderer.domElement.addEventListener("touchend", onTouchEnd);
-    renderer.domElement.addEventListener("touchmove", onTouchMove, { passive: false });
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-
-    const animate = () => {
-      rafRef.current = requestAnimationFrame(animate);
-      camera.position.set(
-        orbit.r * Math.sin(orbit.phi) * Math.cos(orbit.theta),
-        orbit.r * Math.cos(orbit.phi),
-        orbit.r * Math.sin(orbit.phi) * Math.sin(orbit.theta)
-      );
-      camera.lookAt(0, 0, 0);
-      renderer.render(scene, camera);
-    };
-    animate();
-
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      renderer.domElement.removeEventListener("mousedown", onDown);
-      renderer.domElement.removeEventListener("wheel", onWheel);
-      renderer.domElement.removeEventListener("touchstart", onTouchStart);
-      renderer.domElement.removeEventListener("touchend", onTouchEnd);
-      renderer.domElement.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-      renderer.dispose();
-      if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement);
-    };
-  }, []);
-
-  useEffect(() => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-    (scene.background as THREE.Color).set(darkMode ? DARK_BG : LIGHT_BG);
-    scene.children.forEach(child => {
-      if (child instanceof THREE.GridHelper) {
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach((m: any) => m.color?.set(darkMode ? 0x4b5563 : 0xdddddd));
-      }
-      if (child instanceof THREE.Mesh && child.geometry instanceof THREE.SphereGeometry) {
-        (child.material as THREE.MeshStandardMaterial).color.set(darkMode ? 0xd1d5db : 0x222222);
-      }
-    });
-  }, [darkMode]);
-
-  useEffect(() => {
-    const group = dynamicGroupRef.current;
-    if (!group) return;
-    while (group.children.length) group.remove(group.children[0]);
-    const COLORS = [0xe63946, 0x2a9d8f, 0x4361ee, 0xf4a261, 0xa8dadc, 0x9b5de5];
-    points.forEach((p, i) => {
-      const mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(0.1, 16, 16),
-        new THREE.MeshStandardMaterial({ color: COLORS[i % COLORS.length] })
-      );
-      mesh.position.set(parseFloat(p.y) || 0, parseFloat(p.z) || 0, parseFloat(p.x) || 0);
-      group.add(mesh);
-    });
-    forces.forEach(f => {
-      const mag = parseFloat(f.mag);
-      if (!mag) return;
-      const a = points[f.from], b = points[f.to];
-      if (!a || !b) return;
-      const from = new THREE.Vector3(parseFloat(a.y) || 0, parseFloat(a.z) || 0, parseFloat(a.x) || 0);
-      const to = new THREE.Vector3(parseFloat(b.y) || 0, parseFloat(b.z) || 0, parseFloat(b.x) || 0);
-      const len = from.distanceTo(to);
-      if (len < 0.001) return;
-      group.add(new THREE.ArrowHelper(
-        new THREE.Vector3().subVectors(to, from).normalize(), from, len, 0xf4a261, 0.25, 0.14
-      ));
-    });
-  }, [points, forces]);
-
-  return (
-    <div className="relative rounded-[14px] overflow-hidden border border-gray-200 dark:border-gray-600">
-      <div ref={mountRef} className="w-full h-[240px] sm:h-[320px] cursor-grab" />
-      <div className="absolute top-2.5 left-3 flex gap-1.5 pointer-events-none">
-        {([["X", "#e63946", "#fff0f1", "#fecdd3"], ["Y", "#2a9d8f", "#f0faf9", "#99f6e4"], ["Z", "#4361ee", "#f0f2ff", "#c7d2fe"]] as [string, string, string, string][]).map(([l, c, bg, border]) => (
-          <span key={l} className="rounded-md px-1.5 py-0.5 text-[11px] sm:text-[13px] font-bold"
-            style={{ background: bg, color: c, border: `1.5px solid ${border}` }}>
-            {l}
-          </span>
-        ))}
-      </div>
-      <div className="absolute bottom-2 right-3 text-[10px] text-gray-300 dark:text-gray-500 pointer-events-none">
-        Drag to rotate · Scroll to zoom
-      </div>
-    </div>
-  );
-}
+import FBD3DComponent from "../../components/FBD3D";
 
 function useKatex() {
   const [ok, setOk] = useState(false);
@@ -355,7 +166,6 @@ export default function CoordinateTab() {
     });
   };
 
-
   const handleExportPDF = async () => {
     if (!result) return;
     setStatus("generating");
@@ -377,14 +187,31 @@ export default function CoordinateTab() {
       setTimeout(() => setStatus("idle"), 3000);
     }
   };
+
+  // Convert coordinate-based forces to FBD3DComponent format
+  const fbd3DForces = forces.map(f => {
+    const mag = parseFloat(f.mag);
+    const a = points[f.from], b = points[f.to];
+    if (!mag || !a || !b) return { magnitude: "", azimuth: "", elevation: "" };
+    const ax = parseFloat(a.x) || 0, ay = parseFloat(a.y) || 0, az = parseFloat(a.z) || 0;
+    const bx = parseFloat(b.x) || 0, by = parseFloat(b.y) || 0, bz = parseFloat(b.z) || 0;
+    const dx = bx - ax, dy = by - ay, dz = bz - az;
+    const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (!len) return { magnitude: "", azimuth: "", elevation: "" };
+    const azimuth = (Math.atan2(dy, dx) * 180) / Math.PI;
+    const elevation = (Math.asin(dz / len) * 180) / Math.PI;
+    return { magnitude: String(mag), azimuth: String(azimuth), elevation: String(elevation) };
+  });
+
   const inputCls = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-[13px] w-full outline-none text-gray-900 dark:text-white";
   const selectCls = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-[13px] outline-none text-gray-900 dark:text-white w-full";
   const cardCls = "bg-white dark:bg-gray-800 rounded-[14px] border border-gray-200 dark:border-gray-600 p-4 sm:p-5 shadow-sm";
   const h3Cls = "text-[14px] sm:text-[15px] font-semibold mt-0 mb-3 text-gray-900 dark:text-white";
 
   return (
-    <div className=" w-full max-w-[580px] mx-auto bg-transparent">
-      {/* 3D Canvas */}
+    <div className="w-full max-w-[580px] mx-auto bg-transparent">
+
+      {/* ← REPLACED: was <CoordThreeCanvas points={points} forces={forces} /> */}
       <div className="w-full max-w-[580px] mx-auto mb-4">
         <h2 className="text-[17px] sm:text-[18px] font-semibold text-center mb-2 text-gray-900 dark:text-white">
           Cartesian Vector Method
@@ -392,7 +219,7 @@ export default function CoordinateTab() {
         <p className="text-[12px] sm:text-[13px] text-gray-500 dark:text-gray-400 text-center mt-0 mb-3">
           Real-Time Free Body Diagram
         </p>
-        <CoordThreeCanvas points={points} forces={forces} />
+        <FBD3DComponent forces={fbd3DForces} />
       </div>
 
       {/* Inputs */}
@@ -473,21 +300,18 @@ export default function CoordinateTab() {
       {/* Solution */}
       {result && (
         <>
-          {/* ── WIDE SCREEN (sm+): side-by-side layout ── */}
+          {/* ── WIDE SCREEN (sm+) ── */}
           <div className="hidden sm:block flex-col gap-3 mt-4">
             <h3 className="text-[15px] sm:text-[16px] font-semibold text-gray-900 dark:text-white mb-4">
               Step-by-Step Solution
             </h3>
-
             <div className="mt-4">
               <button
                 onClick={handleExportPDF}
                 disabled={off}
-                className={`w-full py-3 rounded-[10px] text-[14px] sm:text-[15px] font-semibold text-white mb-3 transition ${off ? "opacity-60 cursor-not-allowed bg-[#1848a0]" : "cursor-pointer bg-[#1848a0] hover:bg-[#163d8a]"
-                  }`}>
+                className={`w-full py-3 rounded-[10px] text-[14px] sm:text-[15px] font-semibold text-white mb-3 transition ${off ? "opacity-60 cursor-not-allowed bg-[#1848a0]" : "cursor-pointer bg-[#1848a0] hover:bg-[#163d8a]"}`}>
                 {labels[status]}
               </button>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
                 {result.resultRows.map((row: { label: string; value: string }, i: number) => (
                   <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[10px] border border-blue-100 dark:border-gray-600 px-3 py-2.5">
@@ -496,14 +320,12 @@ export default function CoordinateTab() {
                   </div>
                 ))}
               </div>
-
               <StepByStepSolution steps={result.stepLines} title="" />
             </div>
           </div>
 
-          {/* ── MOBILE (below sm): compact stacked layout ── */}
+          {/* ── MOBILE ── */}
           <div className="flex sm:hidden flex-col gap-3 mt-4">
-            {/* Result grid — smaller text */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-3">
               <h3 className="text-[11px] font-semibold mb-2 text-gray-900 dark:text-white">Results</h3>
               <div className="grid grid-cols-2 gap-1.5">
@@ -515,17 +337,12 @@ export default function CoordinateTab() {
                 ))}
               </div>
             </div>
-
-            {/* PDF button */}
             <button
               onClick={handleExportPDF}
               disabled={off}
-              className={`w-full py-3 rounded-[10px] text-[14px] sm:text-[15px] font-semibold text-white mb-3 transition ${off ? "opacity-60 cursor-not-allowed bg-[#1848a0]" : "cursor-pointer bg-[#1848a0] hover:bg-[#163d8a]"
-                }`}>
+              className={`w-full py-3 rounded-[10px] text-[14px] sm:text-[15px] font-semibold text-white mb-3 transition ${off ? "opacity-60 cursor-not-allowed bg-[#1848a0]" : "cursor-pointer bg-[#1848a0] hover:bg-[#163d8a]"}`}>
               {labels[status]}
             </button>
-
-            {/* Step-by-step — smaller fonts via wrapper */}
             <div className="overflow-x-auto text-[11px]">
               <StepByStepSolution steps={result.stepLines} title="Step-by-Step Solution" />
             </div>
@@ -533,8 +350,5 @@ export default function CoordinateTab() {
         </>
       )}
     </div>
-
-
-
   );
 }
