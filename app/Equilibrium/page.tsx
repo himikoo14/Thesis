@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect, ReactNode, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation"; import Header from "../../components/Header";
+import { useRef, useState, useEffect, ReactNode, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import "katex/dist/katex.min.css";
 import BeamPage from "../Beam/page";
@@ -86,7 +87,6 @@ function KTX({ tex }: { tex: string }) {
     try { katex.render(tex, el.current, { displayMode: true, throwOnError: false }); }
     catch (_) { if (el.current) el.current.innerText = tex; }
   }, [tex, katexReady]);
-  // FIX: dark mode KaTeX text
   return <div ref={el} className="my-0.5 overflow-x-auto dark:[&_.katex]:text-white dark:[&_.katex-html]:text-white" />;
 }
 
@@ -101,12 +101,10 @@ function StepByStepSolution({ steps, title = "Step-by-Step Solution" }: { steps:
         {steps.map((line, i) => {
           switch (line.type) {
             case "heading":
-              // FIX: was hardcoded color: "#1848a0"
               return <p key={i} className="font-semibold text-[16px] mt-2.5 mb-0.5 text-[#1848a0] dark:text-blue-400">{line.text}</p>;
             case "math":
               return <KTX key={i} tex={line.tex} />;
             case "text":
-              // FIX: was hardcoded color: "#333"
               return <p key={i} className="text-[15px] text-gray-700 dark:text-gray-300 my-0.5">{line.text}</p>;
             case "diagram":
               return (
@@ -160,7 +158,6 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
   };
 
   return (
-    // FIX: added dark:bg-gray-800 dark:border-gray-600
     <svg
       ref={svgRef}
       width="300" height="300"
@@ -186,7 +183,6 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
       </defs>
 
       <g transform="translate(150,150)">
-        {/* FIX: axis lines use currentColor + opacity instead of hardcoded light gray */}
         <line x1={-140} y1={0} x2={140} y2={0} stroke="currentColor" strokeWidth="1" opacity="0.2" />
         <line x1={0} y1={-140} x2={0} y2={140} stroke="currentColor" strokeWidth="1" opacity="0.2" />
         <text x={143} y={4} fontSize="10" fill="currentColor" opacity="0.4">x</text>
@@ -215,7 +211,6 @@ function FBD({ forces, setForces }: { forces: ForceInput[]; setForces: (f: Force
 
           return (
             <g key={i} className="cursor-pointer" onMouseDown={() => setDragIndex(i)} onTouchStart={() => setDragIndex(i)}>
-
               {showArc && v.angle !== 0 && (
                 <>
                   <path d={`M ${arcR} 0 A ${arcR} ${arcR} 0 ${largeArc} 0 ${arcEndX} ${arcEndY}`}
@@ -254,6 +249,8 @@ function calculate(forces: ForceInput[]): {
   solvedLabel?: string;
 } | { error: string } {
 
+  const normalize = (a: number) => ((a % 360) + 360) % 360;
+
   const magUnknownIndices = forces.map((f, i) => f.magnitudeUnknown ? i : -1).filter(i => i !== -1);
   const angUnknownIndices = forces.map((f, i) => f.angleUnknown ? i : -1).filter(i => i !== -1);
   const totalUnknowns = magUnknownIndices.length + angUnknownIndices.length;
@@ -273,6 +270,7 @@ function calculate(forces: ForceInput[]): {
     })
     .filter(Boolean) as { magnitude: number; angle: number; label: string }[];
 
+  // Case: no unknowns — find resultant
   if (totalUnknowns === 0) {
     if (knownForces.length === 0) return { error: "Please enter at least one valid force." };
     try {
@@ -292,6 +290,7 @@ function calculate(forces: ForceInput[]): {
     } catch (e: any) { return { error: e.message }; }
   }
 
+  // Case: 1 force with both magnitude and angle unknown
   if (magUnknownIndices.length === 1 && angUnknownIndices.length === 1 && magUnknownIndices[0] === angUnknownIndices[0]) {
     const idx = magUnknownIndices[0];
     try {
@@ -312,6 +311,7 @@ function calculate(forces: ForceInput[]): {
     } catch (e: any) { return { error: e.message }; }
   }
 
+  // Case: 1 unknown angle, 0 unknown magnitudes
   if (magUnknownIndices.length === 0 && angUnknownIndices.length === 1) {
     const idx = angUnknownIndices[0];
     const mag = parseFloat(forces[idx].magnitude);
@@ -333,10 +333,16 @@ function calculate(forces: ForceInput[]): {
         `\\theta = ${fmtNum(ang)}^{\\circ}`,
       ];
       const allSteps = [...result.steps, ...angleSteps];
-      return { steps: allSteps, stepLines: fromLegacySteps(allSteps), resultRows: [{ label: `Force ${idx + 1} Angle`, value: `${fmtNum(ang)}°` }], solvedLabel: `F${idx + 1} angle = ${fmtNum(ang)}°` };
+      return {
+        steps: allSteps,
+        stepLines: fromLegacySteps(allSteps),
+        resultRows: [{ label: `Force ${idx + 1} Angle`, value: `${fmtNum(ang)}°` }],
+        solvedLabel: `F${idx + 1} angle = ${fmtNum(ang)}°`,
+      };
     } catch (e: any) { return { error: e.message }; }
   }
 
+  // Case: 1+ unknown magnitudes, 0 unknown angles
   if (magUnknownIndices.length >= 1 && angUnknownIndices.length === 0) {
     const unknownForces = magUnknownIndices.map((i) => {
       const angle = parseFloat(forces[i].angle);
@@ -361,6 +367,7 @@ function calculate(forces: ForceInput[]): {
     } catch (e: any) { return { error: e.message }; }
   }
 
+  // Case: 1 unknown magnitude + 1 unknown angle (different forces)
   if (magUnknownIndices.length === 1 && angUnknownIndices.length === 1) {
     const magIdx = magUnknownIndices[0];
     const angIdx = angUnknownIndices[0];
@@ -391,7 +398,7 @@ function calculate(forces: ForceInput[]): {
     } catch (e: any) { return { error: e.message }; }
   }
 
-// Case: 2 unknown angles, 0 unknown magnitudes
+  // Case: 2 unknown angles, 0 unknown magnitudes
   if (magUnknownIndices.length === 0 && angUnknownIndices.length === 2) {
     const [idx1, idx2] = angUnknownIndices;
     const mag1 = Math.abs(parseFloat(forces[idx1].magnitude));
@@ -411,15 +418,13 @@ function calculate(forces: ForceInput[]): {
 
     const alpha = Math.acos(cosAlpha);
     const phiC = Math.atan2(Cy, Cx);
+    const phiDeg = normalize(phiC * 180 / Math.PI);
 
-    // Law of sines: sin(β)/mag2 = sin(α)/C
     const sinBeta = (mag2 * Math.sin(alpha)) / C;
     const beta = Math.asin(Math.max(-1, Math.min(1, sinBeta)));
+    const betaDeg = beta * 180 / Math.PI;
+    const alphaDeg = alpha * 180 / Math.PI;
 
-    const theta1rad = phiC + beta;
-    const theta2rad = phiC - (Math.PI - beta - alpha) - (Math.PI - alpha);
-
-    // Compute both candidate angles and verify by checking equilibrium
     const candidates = [
       { t1: phiC + beta, t2: phiC + beta - alpha },
       { t1: phiC - beta, t2: phiC - beta + alpha },
@@ -435,27 +440,27 @@ function calculate(forces: ForceInput[]): {
       if (err < bestErr) { bestErr = err; bestT1 = t1; bestT2 = t2; }
     }
 
-    const normalize = (a: number) => ((a % 360) + 360) % 360;
     const t1deg = normalize(bestT1 * 180 / Math.PI);
     const t2deg = normalize(bestT2 * 180 / Math.PI);
 
-const stepLines: StepLine[] = [
-  { type: "heading", text: `Finding Angles of F${idx1 + 1} and F${idx2 + 1}` },
-  { type: "text", text: `Known forces sum: Rx = ${fmtNum(Rx)} kN, Ry = ${fmtNum(Ry)} kN` },
-  { type: "text", text: `For equilibrium, F${idx1+1} + F${idx2+1} must equal (${fmtNum(Cx)}, ${fmtNum(Cy)}) kN` },
-  { type: "math", tex: `C = \\sqrt{(${fmtNum(Cx)})^2 + (${fmtNum(Cy)})^2} = ${fmtNum(C)} \\text{ kN}` },
-  { type: "text", text: `By Law of Cosines:` },
-  { type: "math", tex: `C^2 = F_{${idx1+1}}^2 + F_{${idx2+1}}^2 - 2 \\cdot F_{${idx1+1}} \\cdot F_{${idx2+1}} \\cdot \\cos\\alpha` },
-  { type: "math", tex: `\\cos\\alpha = \\frac{${fmtNum(mag1)}^2 + ${fmtNum(mag2)}^2 - ${fmtNum(C)}^2}{2(${fmtNum(mag1)})(${fmtNum(mag2)})} = ${fmtNum(cosAlpha)}` },
-  { type: "math", tex: `\\alpha = ${fmtNum(alpha * 180 / Math.PI)}^\\circ` },
-  { type: "text", text: `Direction of required resultant:` },
-  { type: "math", tex: `\\varphi = ${fmtNum(((phiC * 180 / Math.PI) % 360 + 360) % 360)}^\\circ` },
-  { type: "text", text: `By Law of Sines:` },
-  { type: "math", tex: `\\frac{\\sin\\beta}{F_{${idx2+1}}} = \\frac{\\sin\\alpha}{C}` },
-  { type: "math", tex: `\\beta = \\sin^{-1}\\!\\left(\\frac{${fmtNum(mag2)} \\cdot \\sin(${fmtNum(alpha * 180/Math.PI)}^\\circ)}{${fmtNum(C)}}\\right) = ${fmtNum(beta * 180/Math.PI)}^\\circ` },
-  { type: "math", tex: `\\theta_{F${idx1+1}} = \\varphi - \\beta = ${fmtNum(((phiC * 180 / Math.PI) % 360 + 360) % 360)}^\\circ - ${fmtNum(beta * 180/Math.PI)}^\\circ = ${fmtNum(t1deg)}^\\circ` },
-  { type: "math", tex: `\\theta_{F${idx2+1}} = \\theta_{F${idx1+1}} + \\alpha = ${fmtNum(t1deg)}^\\circ + ${fmtNum(alpha * 180/Math.PI)}^\\circ = ${fmtNum(t2deg)}^\\circ` },
-];
+    const stepLines: StepLine[] = [
+      { type: "heading", text: `Finding Angles of F${idx1 + 1} and F${idx2 + 1}` },
+      { type: "text", text: `Known forces sum: Rx = ${fmtNum(Rx)} kN, Ry = ${fmtNum(Ry)} kN` },
+      { type: "text", text: `For equilibrium, F${idx1 + 1} + F${idx2 + 1} must equal (${fmtNum(Cx)}, ${fmtNum(Cy)}) kN` },
+      { type: "math", tex: `C = \\sqrt{(${fmtNum(Cx)})^2 + (${fmtNum(Cy)})^2} = ${fmtNum(C)} \\text{ kN}` },
+      { type: "text", text: `By Law of Cosines:` },
+      { type: "math", tex: `C^2 = F_{${idx1 + 1}}^2 + F_{${idx2 + 1}}^2 - 2 \\cdot F_{${idx1 + 1}} \\cdot F_{${idx2 + 1}} \\cdot \\cos\\alpha` },
+      { type: "math", tex: `\\cos\\alpha = \\frac{${fmtNum(mag1)}^2 + ${fmtNum(mag2)}^2 - ${fmtNum(C)}^2}{2(${fmtNum(mag1)})(${fmtNum(mag2)})} = ${fmtNum(cosAlpha)}` },
+      { type: "math", tex: `\\alpha = ${fmtNum(alphaDeg)}^\\circ` },
+      { type: "text", text: `Direction of required resultant:` },
+      { type: "math", tex: `\\varphi = ${fmtNum(phiDeg)}^\\circ` },
+      { type: "text", text: `By Law of Sines:` },
+      { type: "math", tex: `\\frac{\\sin\\beta}{F_{${idx2 + 1}}} = \\frac{\\sin\\alpha}{C}` },
+      { type: "math", tex: `\\beta = \\sin^{-1}\\!\\left(\\frac{${fmtNum(mag2)} \\cdot \\sin(${fmtNum(alphaDeg)}^\\circ)}{${fmtNum(C)}}\\right) = ${fmtNum(betaDeg)}^\\circ` },
+      { type: "math", tex: `\\theta_{F${idx1 + 1}} = \\varphi - \\beta = ${fmtNum(phiDeg)}^\\circ - ${fmtNum(betaDeg)}^\\circ = ${fmtNum(t1deg)}^\\circ` },
+      { type: "math", tex: `\\theta_{F${idx2 + 1}} = \\theta_{F${idx1 + 1}} + \\alpha = ${fmtNum(t1deg)}^\\circ + ${fmtNum(alphaDeg)}^\\circ = ${fmtNum(t2deg)}^\\circ` },
+    ];
+
     return {
       steps: [],
       stepLines,
@@ -463,68 +468,7 @@ const stepLines: StepLine[] = [
         { label: `Force ${idx1 + 1} Angle`, value: `${fmtNum(t1deg)}°` },
         { label: `Force ${idx2 + 1} Angle`, value: `${fmtNum(t2deg)}°` },
       ],
-      solvedLabel: `F${idx1+1} angle = ${fmtNum(t1deg)}° | F${idx2+1} angle = ${fmtNum(t2deg)}°`,
-    };
-  }  if (magUnknownIndices.length === 0 && angUnknownIndices.length === 2) {
-    const [idx1, idx2] = angUnknownIndices;
-    const mag1 = parseFloat(forces[idx1].magnitude);
-    const mag2 = parseFloat(forces[idx2].magnitude);
-    if (isNaN(mag1)) return { error: `Force ${idx1 + 1}: provide magnitude when angle is unknown.` };
-    if (isNaN(mag2)) return { error: `Force ${idx2 + 1}: provide magnitude when angle is unknown.` };
-
-    // Sum of known forces
-    const Rx = knownForces.reduce((s, f) => s + f.magnitude * Math.cos(f.angle * Math.PI / 180), 0);
-    const Ry = knownForces.reduce((s, f) => s + f.magnitude * Math.sin(f.angle * Math.PI / 180), 0);
-
-    // The two unknown vectors must sum to (-Rx, -Ry)
-    const Cx = -Rx, Cy = -Ry;
-    const C = Math.hypot(Cx, Cy);
-
-    // Law of cosines: C² = mag1² + mag2² - 2·mag1·mag2·cos(α)
-    // where α is the angle between the two unknown vectors
-    const cosAlpha = (mag1 ** 2 + mag2 ** 2 - C ** 2) / (2 * Math.abs(mag1) * Math.abs(mag2));
-    if (Math.abs(cosAlpha) > 1) {
-      return { error: "No solution: the given magnitudes cannot form equilibrium with the known forces." };
-    }
-
-    const alpha = Math.acos(cosAlpha); // angle between F_idx1 and F_idx2
-    const phiC = Math.atan2(Cy, Cx);   // direction of the resultant needed
-
-    // Law of sines: sin(β)/mag2 = sin(α)/C  where β = angle between C and F_idx1
-    const sinBeta = (mag2 * Math.sin(alpha)) / C;
-    const beta = Math.asin(Math.max(-1, Math.min(1, sinBeta)));
-
-    // phi is direction of C; theta1 is below phi by beta
-    const theta1 = ((phiC - beta) * 180) / Math.PI;
-    const theta2 = theta1 + (alpha * 180) / Math.PI;
-
-const stepLines: StepLine[] = [
-  { type: "heading", text: `Finding Angles of F${idx1 + 1} and F${idx2 + 1}` },
-  { type: "text", text: `Known forces sum: Rx = ${fmtNum(Rx)} kN, Ry = ${fmtNum(Ry)} kN` },
-  { type: "text", text: `For equilibrium, F${idx1 + 1} + F${idx2 + 1} must equal (${fmtNum(Cx)}, ${fmtNum(Cy)}) kN` },
-  { type: "math", tex: `C = \\sqrt{(${fmtNum(Cx)})^2 + (${fmtNum(Cy)})^2} = ${fmtNum(C)} \\text{ kN}` },
-  { type: "text", text: `By Law of Cosines:` },
-  { type: "math", tex: `C^2 = F_{${idx1+1}}^2 + F_{${idx2+1}}^2 - 2 \\cdot F_{${idx1+1}} \\cdot F_{${idx2+1}} \\cdot \\cos\\alpha` },
-  { type: "math", tex: `\\cos\\alpha = \\frac{${fmtNum(mag1)}^2 + ${fmtNum(mag2)}^2 - ${fmtNum(C)}^2}{2(${fmtNum(mag1)})(${fmtNum(mag2)})} = ${fmtNum(cosAlpha)}` },
-  { type: "math", tex: `\\alpha = ${fmtNum(alpha * 180 / Math.PI)}^\\circ` },
-  { type: "text", text: `Direction of required resultant:` },
-  { type: "math", tex: `\\varphi = ${fmtNum(((phiC * 180 / Math.PI) % 360 + 360) % 360)}^\\circ` },
-  { type: "text", text: `By Law of Sines to find β (angle between resultant and F${idx1 + 1}):` },
-  { type: "math", tex: `\\frac{\\sin\\beta}{F_{${idx2+1}}} = \\frac{\\sin\\alpha}{C}` },
-  { type: "math", tex: `\\beta = \\sin^{-1}\\!\\left(\\frac{${fmtNum(mag2)} \\cdot \\sin(${fmtNum(alpha * 180 / Math.PI)}^\\circ)}{${fmtNum(C)}}\\right) = ${fmtNum(beta * 180 / Math.PI)}^\\circ` },
-{ type: "math", tex: `\\theta_{F${idx1 + 1}} = \\varphi - \\beta = ${fmtNum(((phiC * 180 / Math.PI) % 360 + 360) % 360)}^\\circ - ${fmtNum(beta * 180 / Math.PI)}^\\circ = ${fmtNum(((theta1 % 360) + 360) % 360)}^\\circ` },
-  { type: "math", tex: `\\theta_{F${idx2 + 1}} = \\theta_{F${idx1 + 1}} + \\alpha = ${fmtNum(((theta1 % 360) + 360) % 360)}^\\circ + ${fmtNum(alpha * 180 / Math.PI)}^\\circ = ${fmtNum(((theta2 % 360) + 360) % 360)}^\\circ` },
-];
-
-    const normalize = (a: number) => ((a % 360) + 360) % 360;
-    return {
-      steps: [],
-      stepLines,
-      resultRows: [
-        { label: `Force ${idx1 + 1} Angle`, value: `${fmtNum(normalize(theta1))}°` },
-        { label: `Force ${idx2 + 1} Angle`, value: `${fmtNum(normalize(theta2))}°` },
-      ],
-      solvedLabel: `F${idx1 + 1} angle = ${fmtNum(normalize(theta1))}° | F${idx2 + 1} angle = ${fmtNum(normalize(theta2))}°`,
+      solvedLabel: `F${idx1 + 1} angle = ${fmtNum(t1deg)}° | F${idx2 + 1} angle = ${fmtNum(t2deg)}°`,
     };
   }
 
@@ -533,14 +477,13 @@ const stepLines: StepLine[] = [
 
 /* ===================== MAIN COMPONENT ===================== */
 function EquilibriumContent() {
-
   const [forces, setForces] = useState<ForceInput[]>([
     { magnitude: "", angle: "", magnitudeUnknown: false, angleUnknown: false },
   ]);
   const [solution, setSolution] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
-  const [showHowTo, setShowHowTo] = useState(false); // ← ADD THIS
+  const [showHowTo, setShowHowTo] = useState(false);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -580,12 +523,161 @@ function EquilibriumContent() {
     setSolution(result);
   };
 
+  const SolutionBlock = () => (
+    <div className="mt-6 w-full max-w-xl bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+      {solution.solvedLabel && (
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-[#1848a0] dark:border-blue-600 rounded-xl">
+          <span className="font-semibold text-[#1848a0] dark:text-blue-400">✅ Solved: </span>
+          <strong className="dark:text-white">{solution.solvedLabel}</strong>
+        </div>
+      )}
+      <button
+        onClick={() => {
+          setStatus("generating");
+          const payload = { steps: solution.steps, resultRows: solution.resultRows, solvedLabel: solution.solvedLabel, forces };
+          const encoded = encodeURIComponent(JSON.stringify(payload));
+          window.open(`/print/equilibrium?data=${encoded}`, "_blank");
+          setStatus("done");
+          setTimeout(() => setStatus("idle"), 2500);
+        }}
+        disabled={off}
+        className={`w-full mb-4 py-3 rounded-xl font-semibold text-white transition ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"}`}
+      >
+        {labels[status]}
+      </button>
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        {solution.resultRows?.map((row: { label: string; value: string }, i: number) => (
+          <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[10px] border border-blue-100 dark:border-gray-600 px-3.5 py-2.5">
+            <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">{row.label}</div>
+            <div className="text-[16px] font-bold text-[#1848a0] dark:text-blue-400">{row.value}</div>
+          </div>
+        ))}
+      </div>
+      <StepByStepSolution steps={solution.stepLines} title="Step-by-Step Solution" />
+    </div>
+  );
+
+  const ForceSetupDesktop = () => (
+    <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 space-y-6 relative z-10">
+      <h2 className="text-[20px] font-semibold">Force Setup</h2>
+      <p className="text-[13px] text-gray-500 dark:text-gray-400 -mt-5 mb-3">
+        Enter the magnitude (kN) and angle (°) of each force. Click <span className="inline-flex items-center justify-center w-6 h-6 rounded border border-gray-300 dark:border-gray-600 font-bold text-[#1848a0] text-sm">?</span> to set the unknown value.
+      </p>
+      {forces.map((f, i) => (
+        <div key={i} className="flex gap-4 items-end">
+          <div className="flex-1">
+            <label className="block font-medium">Force {i + 1} (kN)</label>
+            <div className="relative mt-1">
+              <input
+                type={f.magnitudeUnknown ? "text" : "number"}
+                value={f.magnitudeUnknown ? "" : f.magnitude}
+                onChange={(e) => handleInputChange(i, "magnitude", e.target.value)}
+                disabled={f.magnitudeUnknown}
+                placeholder={f.magnitudeUnknown ? "Unknown" : ""}
+                className={`w-full rounded-xl border p-3 pr-14 ${f.magnitudeUnknown ? "bg-blue-50 dark:bg-blue-900/30 border-[#1848a0] text-[#1848a0] dark:text-blue-300 font-semibold placeholder-[#1848a0] cursor-not-allowed" : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white"}`}
+              />
+              <button type="button" onClick={() => toggleUnknown(i, "magnitude")}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl border text-lg font-semibold transition duration-200 ${f.magnitudeUnknown ? "bg-[#1848a0] text-white border-[#1848a0]" : "bg-white dark:bg-gray-700 text-[#1848a0] border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"}`}>?</button>
+            </div>
+          </div>
+          <div className="flex-1">
+            <label className="block font-medium">Angle {i + 1} (°)</label>
+            <div className="relative mt-1">
+              <input
+                type={f.angleUnknown ? "text" : "number"}
+                value={f.angleUnknown ? "" : f.angle}
+                onChange={(e) => handleInputChange(i, "angle", e.target.value)}
+                disabled={f.angleUnknown}
+                placeholder={f.angleUnknown ? "Unknown" : ""}
+                className={`w-full rounded-xl border p-3 pr-12 ${f.angleUnknown ? "bg-blue-50 dark:bg-blue-900/30 border-[#1848a0] text-[#1848a0] dark:text-blue-300 font-semibold placeholder-[#1848a0] cursor-not-allowed" : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white"}`}
+              />
+              <button type="button" onClick={() => toggleUnknown(i, "angle")}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl border text-lg font-semibold transition duration-200 ${f.angleUnknown ? "bg-[#1848a0] text-white border-[#1848a0]" : "bg-white dark:bg-gray-700 text-[#1848a0] border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"}`}>?</button>
+            </div>
+          </div>
+          {forces.length > 1 && (
+            <button onClick={() => setForces(forces.filter((_, idx) => idx !== i))}
+              className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200">–</button>
+          )}
+        </div>
+      ))}
+      <button onClick={() => setForces([...forces, { magnitude: "", angle: "", magnitudeUnknown: false, angleUnknown: false }])}
+        className="w-full bg-[#008409] text-white py-3 rounded-lg hover:bg-[#15711b] transition duration-200">
+        + Add Force
+      </button>
+      <button onClick={handleCalculate}
+        className="w-full bg-[#1848a0] text-white py-3 rounded-lg hover:bg-[#163d8a] transition duration-200 text-[18px]">
+        Calculate
+      </button>
+    </div>
+  );
+
+  const ForceSetupMobile = () => (
+    <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 space-y-4 relative z-10">
+      <h2 className="text-[20px] font-semibold">Force Setup</h2>
+      <p className="text-[13px] text-gray-500 dark:text-gray-400 -mt-3 mb-1">
+        Enter the magnitude (kN) and angle (°) of each force. Click <span className="inline-flex items-center justify-center w-6 h-6 rounded border border-gray-300 dark:border-gray-600 font-bold text-[#1848a0] text-sm">?</span> to set the unknown value.
+      </p>
+      {forces.map((f, i) => (
+        <div key={i} className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="block font-medium text-sm">Force {i + 1} (kN)</label>
+              <div className="relative mt-1">
+                <input
+                  type={f.magnitudeUnknown ? "text" : "number"}
+                  value={f.magnitudeUnknown ? "" : f.magnitude}
+                  onChange={(e) => handleInputChange(i, "magnitude", e.target.value)}
+                  disabled={f.magnitudeUnknown}
+                  placeholder={f.magnitudeUnknown ? "Unknown" : ""}
+                  className={`w-full h-8 rounded-lg border px-3 pr-10 text-sm ${f.magnitudeUnknown ? "bg-blue-50 dark:bg-blue-900/30 border-[#1848a0] text-[#1848a0] dark:text-blue-300 font-semibold placeholder-[#1848a0] cursor-not-allowed" : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white"}`}
+                />
+                <button type="button" onClick={() => toggleUnknown(i, "magnitude")}
+                  className={`absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md border text-sm font-semibold transition duration-200 ${f.magnitudeUnknown ? "bg-[#1848a0] text-white border-[#1848a0]" : "bg-white dark:bg-gray-700 text-[#1848a0] border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"}`}>?</button>
+              </div>
+            </div>
+            <div className="flex-1">
+              <label className="block font-medium text-sm">Angle {i + 1} (°)</label>
+              <div className="relative mt-1">
+                <input
+                  type={f.angleUnknown ? "text" : "number"}
+                  value={f.angleUnknown ? "" : f.angle}
+                  onChange={(e) => handleInputChange(i, "angle", e.target.value)}
+                  disabled={f.angleUnknown}
+                  placeholder={f.angleUnknown ? "Unknown" : ""}
+                  className={`w-full h-8 rounded-lg border px-3 pr-10 text-sm ${f.angleUnknown ? "bg-blue-50 dark:bg-blue-900/30 border-[#1848a0] text-[#1848a0] dark:text-blue-300 font-semibold placeholder-[#1848a0] cursor-not-allowed" : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white"}`}
+                />
+                <button type="button" onClick={() => toggleUnknown(i, "angle")}
+                  className={`absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md border text-sm font-semibold transition duration-200 ${f.angleUnknown ? "bg-[#1848a0] text-white border-[#1848a0]" : "bg-white dark:bg-gray-700 text-[#1848a0] border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"}`}>?</button>
+              </div>
+            </div>
+          </div>
+          {forces.length > 1 && (
+            <button onClick={() => setForces(forces.filter((_, idx) => idx !== i))}
+              className="w-full h-8 flex items-center justify-center bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200 text-sm font-medium">
+              Remove Force {i + 1}
+            </button>
+          )}
+        </div>
+      ))}
+      <div className="flex flex-col gap-2">
+        <button onClick={() => setForces([...forces, { magnitude: "", angle: "", magnitudeUnknown: false, angleUnknown: false }])}
+          className="w-full bg-[#008409] text-white px-2 py-1 rounded-lg hover:bg-[#15711b] transition duration-200 text-sm">
+          + Add Force
+        </button>
+        <button onClick={handleCalculate}
+          className="w-full bg-[#1848a0] text-white px-2 py-1 rounded-lg hover:bg-[#163d8a] transition duration-200 text-sm">
+          Calculate
+        </button>
+      </div>
+    </div>
+  );
+
   return (
-    // FIX: added dark:bg-gray-900 dark:text-white
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-[18px]">
       <Header />
 
-      {/* ── Tabs (desktop) ── */}
+      {/* Tabs desktop */}
       <div className="hidden sm:flex justify-center mb-6 gap-4 mt-4">
         <button onClick={() => setActiveTab("concurrent")}
           className={`px-5 py-2 rounded-lg font-semibold ${activeTab === "concurrent" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
@@ -597,160 +689,42 @@ function EquilibriumContent() {
         </button>
       </div>
 
-      {/* ================================================================
-            DESKTOP VIEW (hidden on mobile)
-        ================================================================ */}
+      {/* Desktop view */}
       <div className="hidden sm:flex flex-col items-center w-full">
         {activeTab === "concurrent" && (
           <>
-            {/* FBD */}
-            <div className="flex flex-col items-center justify-center mb-8 relative z-10 ">
+            <div className="flex flex-col items-center justify-center mb-8 relative z-10">
               <h1 className="text-3xl font-bold text-center mb-2">Concurrent Force System</h1>
               <h2 className="text-[18px] font-semibold text-center mb-2">Unknown Forces and Angles Calculator</h2>
               <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Real-Time Free Body Diagram</p>
               <FBD forces={forces} setForces={setForces} />
               <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Drag arrows to change angles</p>
-              {/* ADD THIS */}
               <p className="text-sm text-center mt-1">
-                <button
-                  onClick={() => setShowHowTo(true)}
-                  className="text-[#1848a0] dark:text-blue-400 underline hover:text-[#163d8a] dark:hover:text-blue-300 transition"
-                >
+                <button onClick={() => setShowHowTo(true)}
+                  className="text-[#1848a0] dark:text-blue-400 underline hover:text-[#163d8a] dark:hover:text-blue-300 transition">
                   How to Use Calculator
                 </button>
               </p>
             </div>
-
-            {/* Note */}
             <p className="w-full max-w-xl text-sm text-gray-700 dark:text-gray-300 mb-4 text-left -mt-5">
               <span className="font-semibold">Note:</span> The angle is measured from the positive x-axis, counterclockwise.
             </p>
-
-            {/* Force Setup Card */}
-            <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 space-y-6 relative z-10">
-              <h2 className="text-[20px] font-semibold">Force Setup</h2>
-              <p className="text-[13px] text-gray-500 dark:text-gray-400 -mt-5 mb-3">
-                Enter the magnitude (kN) and angle (°) of each force. Click <span className="inline-flex items-center justify-center w-6 h-6 rounded border border-gray-300 dark:border-gray-600 font-bold text-[#1848a0] text-sm">?</span> to set the unknown value.
-              </p>
-
-              {forces.map((f, i) => (
-                <div key={i} className="flex gap-4 items-end">
-                  {/* MAGNITUDE */}
-                  <div className="flex-1">
-                    <label className="block font-medium">Force {i + 1} (kN)</label>
-                    <div className="relative mt-1">
-                      <input
-                        type={f.magnitudeUnknown ? "text" : "number"}
-                        value={f.magnitudeUnknown ? "" : f.magnitude}
-                        onChange={(e) => handleInputChange(i, "magnitude", e.target.value)}
-                        disabled={f.magnitudeUnknown}
-                        placeholder={f.magnitudeUnknown ? "Unknown" : ""}
-                        className={`w-full rounded-xl border p-3 pr-14 ${f.magnitudeUnknown
-                          ? "bg-blue-50 dark:bg-blue-900/30 border-[#1848a0] text-[#1848a0] dark:text-blue-300 font-semibold placeholder-[#1848a0] cursor-not-allowed"
-                          : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white"
-                          }`}
-                      />
-                      <button type="button" onClick={() => toggleUnknown(i, "magnitude")}
-                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl border text-lg font-semibold transition duration-200 ${f.magnitudeUnknown
-                          ? "bg-[#1848a0] text-white border-[#1848a0]"
-                          : "bg-white dark:bg-gray-700 text-[#1848a0] border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                          }`}>?</button>
-                    </div>
-                  </div>
-
-                  {/* ANGLE */}
-                  <div className="flex-1">
-                    <label className="block font-medium">Angle {i + 1} (°)</label>
-                    <div className="relative mt-1">
-                      <input
-                        type={f.angleUnknown ? "text" : "number"}
-                        value={f.angleUnknown ? "" : f.angle}
-                        onChange={(e) => handleInputChange(i, "angle", e.target.value)}
-                        disabled={f.angleUnknown}
-                        placeholder={f.angleUnknown ? "Unknown" : ""}
-                        className={`w-full rounded-xl border p-3 pr-12 ${f.angleUnknown
-                          ? "bg-blue-50 dark:bg-blue-900/30 border-[#1848a0] text-[#1848a0] dark:text-blue-300 font-semibold placeholder-[#1848a0] cursor-not-allowed"
-                          : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white"
-                          }`}
-                      />
-                      <button type="button" onClick={() => toggleUnknown(i, "angle")}
-                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl border text-lg font-semibold transition duration-200 ${f.angleUnknown
-                          ? "bg-[#1848a0] text-white border-[#1848a0]"
-                          : "bg-white dark:bg-gray-700 text-[#1848a0] border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                          }`}>?</button>
-                    </div>
-                  </div>
-
-                  {forces.length > 1 && (
-                    <button onClick={() => setForces(forces.filter((_, idx) => idx !== i))}
-                      className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200">–</button>
-                  )}
-                </div>
-              ))}
-
-              <button onClick={() => setForces([...forces, { magnitude: "", angle: "", magnitudeUnknown: false, angleUnknown: false }])}
-                className="w-full bg-[#008409] text-white py-3 rounded-lg hover:bg-[#15711b] transition duration-200">
-                + Add Force
-              </button>
-              <button onClick={handleCalculate}
-                className="w-full bg-[#1848a0] text-white py-3 rounded-lg hover:bg-[#163d8a] transition duration-200 text-[18px]">
-                Calculate
-              </button>
-            </div>
-
-            {/* Error */}
+            <ForceSetupDesktop />
             {error && (
               <div className="mt-4 w-full max-w-xl bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-xl p-4">
                 ⚠️ {error}
               </div>
             )}
-
-            {/* Solution */}
-            {solution && (
-              <div className="mt-6 w-full max-w-xl bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-                {solution.solvedLabel && (
-                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-[#1848a0] dark:border-blue-600 rounded-xl">
-                    <span className="font-semibold text-[#1848a0] dark:text-blue-400">✅ Solved: </span>
-                    <strong className="dark:text-white">{solution.solvedLabel}</strong>
-                  </div>
-                )}
-                <button
-                  onClick={() => {
-                    setStatus("generating");
-                    const payload = { steps: solution.steps, resultRows: solution.resultRows, solvedLabel: solution.solvedLabel, forces };
-                    const encoded = encodeURIComponent(JSON.stringify(payload));
-                    window.open(`/print/equilibrium?data=${encoded}`, "_blank");
-                    setStatus("done");
-                    setTimeout(() => setStatus("idle"), 2500);
-                  }}
-                  disabled={off}
-                  className={`w-full mb-4 py-3 rounded-xl font-semibold text-white transition ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"}`}
-                >
-                  {labels[status]}
-                </button>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  {solution.resultRows?.map((row: { label: string; value: string }, i: number) => (
-                    <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[10px] border border-blue-100 dark:border-gray-600 px-3.5 py-2.5">
-                      <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">{row.label}</div>
-                      <div className="text-[16px] font-bold text-[#1848a0] dark:text-blue-400">{row.value}</div>
-                    </div>
-                  ))}
-                </div>
-                <StepByStepSolution steps={solution.stepLines} title="Step-by-Step Solution" />
-              </div>
-            )}
+            {solution && <SolutionBlock />}
           </>
         )}
-
         {activeTab === "nonconcurrent" && (
-          <div className="w-full max-w-6xl">
-            <BeamPage />
-          </div>
+          <div className="w-full max-w-6xl"><BeamPage /></div>
         )}
       </div>
 
-      {/* ── Tabs (mobile) ── */}
-      <div className="flex sm:hidden justify-center mb-6 gap-4 ">
+      {/* Tabs mobile */}
+      <div className="flex sm:hidden justify-center mb-6 gap-4">
         <button onClick={() => setActiveTab("concurrent")}
           className={`px-3 py-3 text-[12px] rounded-lg font-semibold ${activeTab === "concurrent" ? "bg-[#1848a0] text-white" : "bg-gray-200 dark:bg-gray-700 dark:text-white"}`}>
           Concurrent Forces System
@@ -761,194 +735,61 @@ function EquilibriumContent() {
         </button>
       </div>
 
-      {/* ================================================================
-            MOBILE VIEW (hidden on desktop)
-        ================================================================ */}
+      {/* Mobile view */}
       <div className="flex sm:hidden flex-col items-center w-full px-6">
         {activeTab === "concurrent" && (
           <>
-            {/* FBD */}
             <div className="flex flex-col mb-6 relative z-10">
               <h1 className="text-[25px] font-bold text-center mb-2">Concurrent Force System</h1>
               <h2 className="text-[13px] font-semibold text-center mb-2">Unknown Forces and Angles Calculator</h2>
               <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Real-Time Free Body Diagram</p>
               <FBD forces={forces} setForces={setForces} />
               <p className="text-[13px] text-gray-500 dark:text-gray-400 mt-1.5 text-center">Drag arrows to change angles</p>
-              {/* ADD THIS */}
               <p className="text-sm text-center mt-1">
-                <button
-                  onClick={() => setShowHowTo(true)}
-                  className="font-sans text-[#1848a0] dark:text-blue-400 underline underline-offset-2 hover:text-[#163d8a] dark:hover:text-blue-300 transition font-medium"
-                >
+                <button onClick={() => setShowHowTo(true)}
+                  className="font-sans text-[#1848a0] dark:text-blue-400 underline underline-offset-2 hover:text-[#163d8a] dark:hover:text-blue-300 transition font-medium">
                   How to Use Calculator
                 </button>
               </p>
             </div>
-
-            {/* Note */}
             <p className="w-full max-w-xl text-sm text-gray-700 dark:text-gray-300 mb-4 text-left -mt-4">
               <span className="font-semibold">Note:</span> The angle is measured from the positive x-axis, counterclockwise.
             </p>
-
-            {/* Force Setup Card */}
-            <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow p-6 space-y-4 relative z-10">
-              <h2 className="text-[20px] font-semibold">Force Setup</h2>
-              <p className="text-[13px] text-gray-500 dark:text-gray-400 -mt-3 mb-1">
-                Enter the magnitude (kN) and angle (°) of each force. Click <span className="inline-flex items-center justify-center w-6 h-6 rounded border border-gray-300 dark:border-gray-600 font-bold text-[#1848a0] text-sm">?</span> to set the unknown value.
-              </p>
-
-              {forces.map((f, i) => (
-                <div key={i} className="flex flex-col gap-2">
-                  <div className="flex gap-2">
-                    {/* MAGNITUDE */}
-                    <div className="flex-1">
-                      <label className="block font-medium text-sm">Force {i + 1} (kN)</label>
-                      <div className="relative mt-1">
-                        <input
-                          type={f.magnitudeUnknown ? "text" : "number"}
-                          value={f.magnitudeUnknown ? "" : f.magnitude}
-                          onChange={(e) => handleInputChange(i, "magnitude", e.target.value)}
-                          disabled={f.magnitudeUnknown}
-                          placeholder={f.magnitudeUnknown ? "Unknown" : ""}
-                          className={`w-full h-8 rounded-lg border px-3 pr-10 text-sm ${f.magnitudeUnknown
-                            ? "bg-blue-50 dark:bg-blue-900/30 border-[#1848a0] text-[#1848a0] dark:text-blue-300 font-semibold placeholder-[#1848a0] cursor-not-allowed"
-                            : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white"
-                            }`}
-                        />
-                        <button type="button" onClick={() => toggleUnknown(i, "magnitude")}
-                          className={`absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md border text-sm font-semibold transition duration-200 ${f.magnitudeUnknown
-                            ? "bg-[#1848a0] text-white border-[#1848a0]"
-                            : "bg-white dark:bg-gray-700 text-[#1848a0] border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                            }`}>?</button>
-                      </div>
-                    </div>
-
-                    {/* ANGLE */}
-                    <div className="flex-1">
-                      <label className="block font-medium text-sm">Angle {i + 1} (°)</label>
-                      <div className="relative mt-1">
-                        <input
-                          type={f.angleUnknown ? "text" : "number"}
-                          value={f.angleUnknown ? "" : f.angle}
-                          onChange={(e) => handleInputChange(i, "angle", e.target.value)}
-                          disabled={f.angleUnknown}
-                          placeholder={f.angleUnknown ? "Unknown" : ""}
-                          className={`w-full h-8 rounded-lg border px-3 pr-10 text-sm ${f.angleUnknown
-                            ? "bg-blue-50 dark:bg-blue-900/30 border-[#1848a0] text-[#1848a0] dark:text-blue-300 font-semibold placeholder-[#1848a0] cursor-not-allowed"
-                            : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 dark:text-white"
-                            }`}
-                        />
-                        <button type="button" onClick={() => toggleUnknown(i, "angle")}
-                          className={`absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md border text-sm font-semibold transition duration-200 ${f.angleUnknown
-                            ? "bg-[#1848a0] text-white border-[#1848a0]"
-                            : "bg-white dark:bg-gray-700 text-[#1848a0] border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                            }`}>?</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {forces.length > 1 && (
-                    <button onClick={() => setForces(forces.filter((_, idx) => idx !== i))}
-                      className="w-full h-8 flex items-center justify-center bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200 text-sm font-medium">
-                      Remove Force {i + 1}
-                    </button>
-                  )}
-                </div>
-              ))}
-
-              <div className="flex flex-col gap-2">
-                <button onClick={() => setForces([...forces, { magnitude: "", angle: "", magnitudeUnknown: false, angleUnknown: false }])}
-                  className="w-full bg-[#008409] text-white px-2 py-1 rounded-lg hover:bg-[#15711b] transition duration-200 text-sm">
-                  + Add Force
-                </button>
-                <button onClick={handleCalculate}
-                  className="w-full bg-[#1848a0] text-white px-2 py-1 rounded-lg hover:bg-[#163d8a] transition duration-200 text-sm">
-                  Calculate
-                </button>
-              </div>
-            </div>
-
-            {/* Error */}
+            <ForceSetupMobile />
             {error && (
               <div className="mt-4 w-full max-w-xl bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-xl p-4">
                 ⚠️ {error}
               </div>
             )}
-
-            {/* Solution */}
-            {solution && (
-              <div className="mt-6 w-full max-w-xl bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-                {solution.solvedLabel && (
-                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 border border-[#1848a0] dark:border-blue-600 rounded-xl">
-                    <span className="font-semibold text-[#1848a0] dark:text-blue-400">✅ Solved: </span>
-                    <strong className="dark:text-white">{solution.solvedLabel}</strong>
-                  </div>
-                )}
-                <button
-                  onClick={() => {
-                    setStatus("generating");
-                    const payload = { steps: solution.steps, resultRows: solution.resultRows, solvedLabel: solution.solvedLabel, forces };
-                    const encoded = encodeURIComponent(JSON.stringify(payload));
-                    window.open(`/print/equilibrium?data=${encoded}`, "_blank");
-                    setStatus("done");
-                    setTimeout(() => setStatus("idle"), 2500);
-                  }}
-                  disabled={off}
-                  className={`w-full mb-4 py-3 rounded-xl font-semibold text-white transition ${off ? "cursor-not-allowed bg-[#1848a0]/60" : "bg-[#1848a0] hover:bg-[#163d8a]"}`}
-                >
-                  {labels[status]}
-                </button>
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  {solution.resultRows?.map((row: { label: string; value: string }, i: number) => (
-                    <div key={i} className="bg-blue-50 dark:bg-gray-700 rounded-[10px] border border-blue-100 dark:border-gray-600 px-3.5 py-2.5">
-                      <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">{row.label}</div>
-                      <div className="text-[16px] font-bold text-[#1848a0] dark:text-blue-400">{row.value}</div>
-                    </div>
-                  ))}
-                </div>
-                <StepByStepSolution steps={solution.stepLines} title="Step-by-Step Solution" />
-              </div>
-            )}
+            {solution && <SolutionBlock />}
           </>
         )}
-
         {activeTab === "nonconcurrent" && (
-          <div className="w-full">
-            <BeamPage />
-          </div>
+          <div className="w-full"><BeamPage /></div>
         )}
       </div>
 
       <Footer />
 
-      {/* ADD THIS — How to Use Modal */}
+      {/* How to Use Modal */}
       {showHowTo && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
-          onClick={() => setShowHowTo(false)}
-        >
-          <div
-            className="relative max-w-2xl w-full mx-4 max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setShowHowTo(false)}
-              className="absolute -top-3 -right-3 z-10 bg-white dark:bg-gray-800 text-black dark:text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-lg font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-            >
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
+          onClick={() => setShowHowTo(false)}>
+          <div className="relative max-w-2xl w-full mx-4 max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowHowTo(false)}
+              className="absolute -top-3 -right-3 z-10 bg-white dark:bg-gray-800 text-black dark:text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg text-lg font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition">
               ✕
             </button>
-            <img
-              src="/2D EQUI.png"
-              alt="How to Use"
-              className="w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
-            />
+            <img src="/2D EQUI.png" alt="How to Use"
+              className="w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl" />
           </div>
         </div>
       )}
-
     </div>
   );
 }
+
 export default function Equilibrium() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
