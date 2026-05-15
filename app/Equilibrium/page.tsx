@@ -391,6 +391,143 @@ function calculate(forces: ForceInput[]): {
     } catch (e: any) { return { error: e.message }; }
   }
 
+// Case: 2 unknown angles, 0 unknown magnitudes
+  if (magUnknownIndices.length === 0 && angUnknownIndices.length === 2) {
+    const [idx1, idx2] = angUnknownIndices;
+    const mag1 = Math.abs(parseFloat(forces[idx1].magnitude));
+    const mag2 = Math.abs(parseFloat(forces[idx2].magnitude));
+    if (isNaN(mag1)) return { error: `Force ${idx1 + 1}: provide magnitude when angle is unknown.` };
+    if (isNaN(mag2)) return { error: `Force ${idx2 + 1}: provide magnitude when angle is unknown.` };
+
+    const Rx = knownForces.reduce((s, f) => s + f.magnitude * Math.cos(f.angle * Math.PI / 180), 0);
+    const Ry = knownForces.reduce((s, f) => s + f.magnitude * Math.sin(f.angle * Math.PI / 180), 0);
+    const Cx = -Rx, Cy = -Ry;
+    const C = Math.hypot(Cx, Cy);
+
+    const cosAlpha = (mag1 ** 2 + mag2 ** 2 - C ** 2) / (2 * mag1 * mag2);
+    if (Math.abs(cosAlpha) > 1) {
+      return { error: "No solution: the given magnitudes cannot form equilibrium with the known forces." };
+    }
+
+    const alpha = Math.acos(cosAlpha);
+    const phiC = Math.atan2(Cy, Cx);
+
+    // Law of sines: sin(β)/mag2 = sin(α)/C
+    const sinBeta = (mag2 * Math.sin(alpha)) / C;
+    const beta = Math.asin(Math.max(-1, Math.min(1, sinBeta)));
+
+    const theta1rad = phiC + beta;
+    const theta2rad = phiC - (Math.PI - beta - alpha) - (Math.PI - alpha);
+
+    // Compute both candidate angles and verify by checking equilibrium
+    const candidates = [
+      { t1: phiC + beta, t2: phiC + beta - alpha },
+      { t1: phiC - beta, t2: phiC - beta + alpha },
+      { t1: phiC + beta, t2: phiC + beta + alpha },
+      { t1: phiC - beta, t2: phiC - beta - alpha },
+    ];
+
+    let bestErr = Infinity, bestT1 = 0, bestT2 = 0;
+    for (const { t1, t2 } of candidates) {
+      const sumX = mag1 * Math.cos(t1) + mag2 * Math.cos(t2) + Rx;
+      const sumY = mag1 * Math.sin(t1) + mag2 * Math.sin(t2) + Ry;
+      const err = sumX ** 2 + sumY ** 2;
+      if (err < bestErr) { bestErr = err; bestT1 = t1; bestT2 = t2; }
+    }
+
+    const normalize = (a: number) => ((a % 360) + 360) % 360;
+    const t1deg = normalize(bestT1 * 180 / Math.PI);
+    const t2deg = normalize(bestT2 * 180 / Math.PI);
+
+const stepLines: StepLine[] = [
+  { type: "heading", text: `Finding Angles of F${idx1 + 1} and F${idx2 + 1}` },
+  { type: "text", text: `Known forces sum: Rx = ${fmtNum(Rx)} kN, Ry = ${fmtNum(Ry)} kN` },
+  { type: "text", text: `For equilibrium, F${idx1+1} + F${idx2+1} must equal (${fmtNum(Cx)}, ${fmtNum(Cy)}) kN` },
+  { type: "math", tex: `C = \\sqrt{(${fmtNum(Cx)})^2 + (${fmtNum(Cy)})^2} = ${fmtNum(C)} \\text{ kN}` },
+  { type: "text", text: `By Law of Cosines:` },
+  { type: "math", tex: `C^2 = F_{${idx1+1}}^2 + F_{${idx2+1}}^2 - 2 \\cdot F_{${idx1+1}} \\cdot F_{${idx2+1}} \\cdot \\cos\\alpha` },
+  { type: "math", tex: `\\cos\\alpha = \\frac{${fmtNum(mag1)}^2 + ${fmtNum(mag2)}^2 - ${fmtNum(C)}^2}{2(${fmtNum(mag1)})(${fmtNum(mag2)})} = ${fmtNum(cosAlpha)}` },
+  { type: "math", tex: `\\alpha = ${fmtNum(alpha * 180 / Math.PI)}^\\circ` },
+  { type: "text", text: `Direction of required resultant:` },
+  { type: "math", tex: `\\varphi = ${fmtNum(((phiC * 180 / Math.PI) % 360 + 360) % 360)}^\\circ` },
+  { type: "text", text: `By Law of Sines:` },
+  { type: "math", tex: `\\frac{\\sin\\beta}{F_{${idx2+1}}} = \\frac{\\sin\\alpha}{C}` },
+  { type: "math", tex: `\\beta = \\sin^{-1}\\!\\left(\\frac{${fmtNum(mag2)} \\cdot \\sin(${fmtNum(alpha * 180/Math.PI)}^\\circ)}{${fmtNum(C)}}\\right) = ${fmtNum(beta * 180/Math.PI)}^\\circ` },
+  { type: "math", tex: `\\theta_{F${idx1+1}} = \\varphi - \\beta = ${fmtNum(((phiC * 180 / Math.PI) % 360 + 360) % 360)}^\\circ - ${fmtNum(beta * 180/Math.PI)}^\\circ = ${fmtNum(t1deg)}^\\circ` },
+  { type: "math", tex: `\\theta_{F${idx2+1}} = \\theta_{F${idx1+1}} + \\alpha = ${fmtNum(t1deg)}^\\circ + ${fmtNum(alpha * 180/Math.PI)}^\\circ = ${fmtNum(t2deg)}^\\circ` },
+];
+    return {
+      steps: [],
+      stepLines,
+      resultRows: [
+        { label: `Force ${idx1 + 1} Angle`, value: `${fmtNum(t1deg)}°` },
+        { label: `Force ${idx2 + 1} Angle`, value: `${fmtNum(t2deg)}°` },
+      ],
+      solvedLabel: `F${idx1+1} angle = ${fmtNum(t1deg)}° | F${idx2+1} angle = ${fmtNum(t2deg)}°`,
+    };
+  }  if (magUnknownIndices.length === 0 && angUnknownIndices.length === 2) {
+    const [idx1, idx2] = angUnknownIndices;
+    const mag1 = parseFloat(forces[idx1].magnitude);
+    const mag2 = parseFloat(forces[idx2].magnitude);
+    if (isNaN(mag1)) return { error: `Force ${idx1 + 1}: provide magnitude when angle is unknown.` };
+    if (isNaN(mag2)) return { error: `Force ${idx2 + 1}: provide magnitude when angle is unknown.` };
+
+    // Sum of known forces
+    const Rx = knownForces.reduce((s, f) => s + f.magnitude * Math.cos(f.angle * Math.PI / 180), 0);
+    const Ry = knownForces.reduce((s, f) => s + f.magnitude * Math.sin(f.angle * Math.PI / 180), 0);
+
+    // The two unknown vectors must sum to (-Rx, -Ry)
+    const Cx = -Rx, Cy = -Ry;
+    const C = Math.hypot(Cx, Cy);
+
+    // Law of cosines: C² = mag1² + mag2² - 2·mag1·mag2·cos(α)
+    // where α is the angle between the two unknown vectors
+    const cosAlpha = (mag1 ** 2 + mag2 ** 2 - C ** 2) / (2 * Math.abs(mag1) * Math.abs(mag2));
+    if (Math.abs(cosAlpha) > 1) {
+      return { error: "No solution: the given magnitudes cannot form equilibrium with the known forces." };
+    }
+
+    const alpha = Math.acos(cosAlpha); // angle between F_idx1 and F_idx2
+    const phiC = Math.atan2(Cy, Cx);   // direction of the resultant needed
+
+    // Law of sines: sin(β)/mag2 = sin(α)/C  where β = angle between C and F_idx1
+    const sinBeta = (mag2 * Math.sin(alpha)) / C;
+    const beta = Math.asin(Math.max(-1, Math.min(1, sinBeta)));
+
+    // phi is direction of C; theta1 is below phi by beta
+    const theta1 = ((phiC - beta) * 180) / Math.PI;
+    const theta2 = theta1 + (alpha * 180) / Math.PI;
+
+const stepLines: StepLine[] = [
+  { type: "heading", text: `Finding Angles of F${idx1 + 1} and F${idx2 + 1}` },
+  { type: "text", text: `Known forces sum: Rx = ${fmtNum(Rx)} kN, Ry = ${fmtNum(Ry)} kN` },
+  { type: "text", text: `For equilibrium, F${idx1 + 1} + F${idx2 + 1} must equal (${fmtNum(Cx)}, ${fmtNum(Cy)}) kN` },
+  { type: "math", tex: `C = \\sqrt{(${fmtNum(Cx)})^2 + (${fmtNum(Cy)})^2} = ${fmtNum(C)} \\text{ kN}` },
+  { type: "text", text: `By Law of Cosines:` },
+  { type: "math", tex: `C^2 = F_{${idx1+1}}^2 + F_{${idx2+1}}^2 - 2 \\cdot F_{${idx1+1}} \\cdot F_{${idx2+1}} \\cdot \\cos\\alpha` },
+  { type: "math", tex: `\\cos\\alpha = \\frac{${fmtNum(mag1)}^2 + ${fmtNum(mag2)}^2 - ${fmtNum(C)}^2}{2(${fmtNum(mag1)})(${fmtNum(mag2)})} = ${fmtNum(cosAlpha)}` },
+  { type: "math", tex: `\\alpha = ${fmtNum(alpha * 180 / Math.PI)}^\\circ` },
+  { type: "text", text: `Direction of required resultant:` },
+  { type: "math", tex: `\\varphi = ${fmtNum(((phiC * 180 / Math.PI) % 360 + 360) % 360)}^\\circ` },
+  { type: "text", text: `By Law of Sines to find β (angle between resultant and F${idx1 + 1}):` },
+  { type: "math", tex: `\\frac{\\sin\\beta}{F_{${idx2+1}}} = \\frac{\\sin\\alpha}{C}` },
+  { type: "math", tex: `\\beta = \\sin^{-1}\\!\\left(\\frac{${fmtNum(mag2)} \\cdot \\sin(${fmtNum(alpha * 180 / Math.PI)}^\\circ)}{${fmtNum(C)}}\\right) = ${fmtNum(beta * 180 / Math.PI)}^\\circ` },
+{ type: "math", tex: `\\theta_{F${idx1 + 1}} = \\varphi - \\beta = ${fmtNum(((phiC * 180 / Math.PI) % 360 + 360) % 360)}^\\circ - ${fmtNum(beta * 180 / Math.PI)}^\\circ = ${fmtNum(((theta1 % 360) + 360) % 360)}^\\circ` },
+  { type: "math", tex: `\\theta_{F${idx2 + 1}} = \\theta_{F${idx1 + 1}} + \\alpha = ${fmtNum(((theta1 % 360) + 360) % 360)}^\\circ + ${fmtNum(alpha * 180 / Math.PI)}^\\circ = ${fmtNum(((theta2 % 360) + 360) % 360)}^\\circ` },
+];
+
+    const normalize = (a: number) => ((a % 360) + 360) % 360;
+    return {
+      steps: [],
+      stepLines,
+      resultRows: [
+        { label: `Force ${idx1 + 1} Angle`, value: `${fmtNum(normalize(theta1))}°` },
+        { label: `Force ${idx2 + 1} Angle`, value: `${fmtNum(normalize(theta2))}°` },
+      ],
+      solvedLabel: `F${idx1 + 1} angle = ${fmtNum(normalize(theta1))}° | F${idx2 + 1} angle = ${fmtNum(normalize(theta2))}°`,
+    };
+  }
+
   return { error: "Unsupported combination of unknowns." };
 }
 
@@ -782,7 +919,7 @@ function EquilibriumContent() {
         )}
       </div>
 
-<Footer />
+      <Footer />
 
       {/* ADD THIS — How to Use Modal */}
       {showHowTo && (
@@ -809,7 +946,7 @@ function EquilibriumContent() {
         </div>
       )}
 
-    </div> 
+    </div>
   );
 }
 export default function Equilibrium() {
